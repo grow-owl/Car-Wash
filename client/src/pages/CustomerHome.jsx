@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2, Sun, CloudRain, CloudSun } from 'lucide-react';
+import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2, Sun, Plus, Trash2 } from 'lucide-react';
 import { getServices, getPackages, getBeforeAfterGallery, getCustomerDetails } from '../api';
+import BeforeAfterSlider from '../components/BeforeAfterSlider';
+import ReviewModal from '../components/ReviewModal';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService }) {
   const [services, setServices] = useState([]);
@@ -20,7 +22,45 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   const [customerRewards, setCustomerRewards] = useState(null);
   const [searchingRewards, setSearchingRewards] = useState(false);
 
-  // REAL LIVE WEATHER DATA FOR SILIGURI (Coordinates: 26.7271° N, 88.3953° E)
+  // Multi-Vehicle Garage State
+  const [garageVehicles, setGarageVehicles] = useState([
+    { regNumber: 'WB-74-AX-8821', model: 'Creta (SUV)', type: 'SUV' },
+    { regNumber: 'WB-74-BY-1200', model: 'i20 (Hatchback)', type: 'Hatchback' }
+  ]);
+  const [newRegNo, setNewRegNo] = useState('');
+  const [newModel, setNewModel] = useState('');
+  const [newType, setNewType] = useState('Sedan');
+
+  // Customer Reviews State
+  const [reviewsList, setReviewsList] = useState([
+    {
+      name: 'Rahul Sharma',
+      vehicle: 'Hyundai Creta • WB-74-AX-8821',
+      rating: 5,
+      comment: 'Best hydrophobic foam wash in Siliguri! Water just slides off the bonnet. Staff is very professional.',
+      date: '2 Days Ago',
+      photo: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=400&q=80'
+    },
+    {
+      name: 'Amit Agarwal',
+      vehicle: 'BMW 3 Series • WB-74-BM-9900',
+      rating: 5,
+      comment: 'Got 9H Ceramic coating done. The showroom mirror gloss is incredible! Highly recommended VIP package.',
+      date: '5 Days Ago',
+      photo: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80'
+    },
+    {
+      name: 'Priya Mukherjee',
+      vehicle: 'Maruti Baleno • WB-74-BL-4512',
+      rating: 5,
+      comment: 'Interior 300°F steam sanitization eliminated all vent mold smell. Super clean car interior!',
+      date: '1 Week Ago',
+      photo: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80'
+    }
+  ]);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  // Real Live Weather Data for Siliguri
   const [weatherData, setWeatherData] = useState({
     temp: 28,
     condition: 'Sunny ☀️',
@@ -110,6 +150,22 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
     } finally {
       setSearchingRewards(false);
     }
+  };
+
+  const handleAddGarageVehicle = (e) => {
+    e.preventDefault();
+    if (!newRegNo) return;
+    setGarageVehicles([...garageVehicles, { regNumber: newRegNo, model: newModel || newType, type: newType }]);
+    setNewRegNo('');
+    setNewModel('');
+  };
+
+  const handleRemoveGarageVehicle = (idx) => {
+    setGarageVehicles(garageVehicles.filter((_, i) => i !== idx));
+  };
+
+  const handleAddReview = (newRev) => {
+    setReviewsList([newRev, ...reviewsList]);
   };
 
   const serviceCategoriesList = [
@@ -227,13 +283,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
               <button
                 onClick={() => {
-                  const galleryEl = document.getElementById('gallery-section');
-                  if (galleryEl) galleryEl.scrollIntoView({ behavior: 'smooth' });
+                  const servicesEl = document.getElementById('services-section');
+                  if (servicesEl) servicesEl.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="btn-secondary"
                 style={{ borderRadius: '30px', padding: '16px 32px' }}
               >
-                OUR WORK GALLERY
+                Our Services
               </button>
             </div>
 
@@ -266,8 +322,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
+      {/* INTERACTIVE BEFORE / AFTER SLIDER SECTION */}
+      <section className="container" style={{ marginTop: '70px' }}>
+        <BeforeAfterSlider />
+      </section>
+
       {/* SERVICES WE PROVIDE (12-CARD GRID) */}
-      <section id="services-section" className="container" style={{ marginTop: '70px' }}>
+      <section id="services-section" className="container" style={{ marginTop: '90px' }}>
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 800, marginBottom: '6px' }}>
             OVER 1000+ VEHICLES DETAILED IN SILIGURI
@@ -403,14 +464,15 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         })()}
       </section>
 
-      {/* CUSTOMER LOYALTY & REWARDS INSTANT LOOKUP BOX */}
+      {/* MULTI-VEHICLE GARAGE & LOYALTY LOOKUP */}
       <section className="container" style={{ marginTop: '90px' }}>
         <div className="glass-panel" style={{ padding: '36px', border: '2px solid var(--accent-aqua)', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
+          
           <div style={{ textAlign: 'center', maxWidth: '650px', margin: '0 auto 28px auto' }}>
-            <span className="badge badge-aqua" style={{ marginBottom: '8px' }}>CUSTOMER PORTAL & LOYALTY LOOKUP</span>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800 }}>Check Your Points, Coupons & Rewards</h2>
+            <span className="badge badge-aqua" style={{ marginBottom: '8px' }}>CUSTOMER PORTAL & MULTI-VEHICLE GARAGE</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800 }}>My Garage & Rewards Lookup</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-              Enter your registered Phone Number or Vehicle Reg Number below to check your points balance & active promo coupons!
+              Manage all your family vehicles in one place & check points balance for 1-click slot booking!
             </p>
 
             <form onSubmit={handleLoyaltyLookup} style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
@@ -424,9 +486,95 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 style={{ flex: 1, minWidth: '280px' }}
               />
               <button type="submit" className="btn-primary" style={{ padding: '12px 28px' }}>
-                <Search size={18} /> {searchingRewards ? 'Searching...' : 'Check My Rewards'}
+                <Search size={18} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
               </button>
             </form>
+          </div>
+
+          {/* MULTI-VEHICLE GARAGE LIST & ADD FORM */}
+          <div style={{
+            background: 'rgba(0, 31, 35, 0.85)',
+            border: '1px solid var(--border-light)',
+            borderRadius: '16px',
+            padding: '24px',
+            marginTop: '24px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Car size={20} color="var(--accent-aqua)" /> My Saved Vehicles Garage ({garageVehicles.length})
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>1-Click Select Vehicle to Book</div>
+            </div>
+
+            <div className="grid-2" style={{ gap: '16px', marginBottom: '20px' }}>
+              {garageVehicles.map((v, idx) => (
+                <div key={idx} style={{
+                  background: 'rgba(2, 73, 80, 0.7)',
+                  border: '1px solid var(--accent-aqua)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  display: 'flex',
+                  justify: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#FFFFFF' }}>{v.regNumber}</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{v.model} • {v.type}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => onStartBooking(v.type)}
+                      className="btn-aqua"
+                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                    >
+                      Book Slot
+                    </button>
+                    <button
+                      onClick={() => handleRemoveGarageVehicle(idx)}
+                      style={{ background: 'transparent', border: 'none', color: '#e0725a', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Add New Vehicle to Garage Form */}
+            <form onSubmit={handleAddGarageVehicle} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+              <input
+                type="text"
+                required
+                placeholder="Vehicle No (e.g. WB-74-BY-1200)"
+                value={newRegNo}
+                onChange={(e) => setNewRegNo(e.target.value.toUpperCase())}
+                className="input-field"
+                style={{ flex: 1, minWidth: '180px' }}
+              />
+              <input
+                type="text"
+                placeholder="Car Model (e.g. i20)"
+                value={newModel}
+                onChange={(e) => setNewModel(e.target.value)}
+                className="input-field"
+                style={{ flex: 1, minWidth: '140px' }}
+              />
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+                className="input-field"
+                style={{ width: '130px' }}
+              >
+                <option value="Hatchback">Hatchback</option>
+                <option value="Sedan">Sedan</option>
+                <option value="SUV">SUV</option>
+                <option value="Luxury">Luxury</option>
+              </select>
+              <button type="submit" className="btn-secondary" style={{ padding: '10px 20px' }}>
+                <Plus size={16} /> Add Car to Garage
+              </button>
+            </form>
+
           </div>
 
           {/* DISPLAY CUSTOMER REWARDS CARD ON LOOKUP */}
@@ -498,32 +646,62 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
-      {/* INSIDE THE WASH BAY GALLERY */}
-      <section id="gallery-section" className="container" style={{ marginTop: '90px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 800, marginBottom: '6px' }}>
-            INSIDE THE WASH BAY
+      {/* VERIFIED CUSTOMER REVIEWS & REVIEWS SUBMISSION */}
+      <section className="container" style={{ marginTop: '90px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <span className="badge badge-aqua">VERIFIED REVIEWS</span>
+            <h2 style={{ fontSize: '2.3rem', fontWeight: 800, marginTop: '4px' }}>Customer Testimonials & Ratings</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Real feedback & photos from car owners in Siliguri</p>
           </div>
-          <h2 style={{ fontSize: '2.3rem', fontWeight: 800 }}>Real Detailing Gallery & Results</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Verified customer vehicles inside our high-pressure & detailing bays in Siliguri</p>
+
+          <button
+            onClick={() => setShowReviewModal(true)}
+            className="btn-slot-hover"
+            style={{
+              background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
+              color: '#003135',
+              fontWeight: 800,
+              fontSize: '0.95rem',
+              border: 'none',
+              padding: '12px 28px',
+              borderRadius: '28px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Star size={18} fill="#003135" /> Write a Verified Review
+          </button>
         </div>
 
         <div className="grid-3" style={{ gap: '20px' }}>
-          {[
-            { title: 'Pressure Foam Wash', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=600&q=80' },
-            { title: '300°F Interior Steam', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=600&q=80' },
-            { title: '9H Ceramic Shield', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=80' },
-            { title: 'Wheel & Rim Scrub', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=600&q=80' },
-            { title: 'Leather Conditioning', img: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=600&q=80' },
-            { title: 'Paint Correction', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=600&q=80' }
-          ].map((item, idx) => (
-            <div key={idx} className="glass-panel" style={{ overflow: 'hidden', padding: '0' }}>
-              <div style={{ height: '220px', position: 'relative' }}>
-                <img src={item.img} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,31,35,0.9) 0%, transparent 60%)' }} />
-                <div style={{ position: 'absolute', bottom: '14px', left: '16px', fontWeight: 800, fontSize: '1.1rem', color: '#FFFFFF' }}>
-                  {item.title}
+          {reviewsList.map((rev, idx) => (
+            <div key={idx} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[...Array(rev.rating)].map((_, i) => (
+                      <Star key={i} size={16} color="#FFD700" fill="#FFD700" />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{rev.date}</span>
                 </div>
+
+                <p style={{ fontSize: '0.9rem', color: '#FFFFFF', lineHeight: '1.5', marginBottom: '16px', fontStyle: 'italic' }}>
+                  "{rev.comment}"
+                </p>
+              </div>
+
+              <div>
+                {rev.photo && (
+                  <div style={{ height: '140px', borderRadius: '10px', overflow: 'hidden', marginBottom: '12px', border: '1px solid var(--border-light)' }}>
+                    <img src={rev.photo} alt="Customer vehicle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+                <div style={{ fontWeight: 800, color: 'var(--accent-aqua)', fontSize: '0.95rem' }}>{rev.name}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{rev.vehicle}</div>
               </div>
             </div>
           ))}
@@ -642,6 +820,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
         </div>
       </section>
+
+      {/* VERIFIED REVIEW MODAL */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSubmitReview={handleAddReview}
+      />
 
       {/* FLOATING WHATSAPP CHAT BUTTON */}
       <div style={{
