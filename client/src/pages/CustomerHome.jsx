@@ -709,90 +709,96 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       </section>
 
       {/* QUICK ENQUIRY FORM & LOCATION MAP (SILIGURI LOCATION) */}
-      <section id="contact-section" className="container" style={{ marginTop: '90px' }}>
-        <div className="grid-2" style={{ gap: '30px', alignItems: 'stretch' }}>
+      <section id="contact-section" className="container" style={{ marginTop: '50px' }}>
+        <div className="grid-2" style={{ gap: '20px', alignItems: 'stretch' }}>
           
           {/* Left: Quick Enquiry Form */}
-          <div className="glass-panel" style={{ padding: '36px', border: '1px solid var(--accent-aqua)' }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '6px' }}>
+          <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--accent-aqua)' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
               GET A QUICK CALLBACK
             </div>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '8px' }}>Quick Enquiry</h3>
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-              Fill in your details and our bay supervisor will contact you with slot availability & custom quotes.
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '4px' }}>Quick Enquiry</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+              Fill in your details and our supervisor will contact you with slot availability.
             </p>
 
-            <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <input
-                type="text"
-                required
-                placeholder="Enter Full Name *"
-                value={enqName}
-                onChange={(e) => setEnqName(e.target.value)}
-                className="input-field"
-              />
+            <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="grid-2" style={{ gap: '10px' }}>
+                <input
+                  type="text"
+                  required
+                  placeholder="Full Name *"
+                  value={enqName}
+                  onChange={(e) => setEnqName(e.target.value)}
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                />
 
-              <input
-                type="text"
-                required
-                placeholder="Enter Phone Number *"
-                value={enqPhone}
-                onChange={(e) => setEnqPhone(e.target.value)}
-                className="input-field"
-              />
+                <input
+                  type="text"
+                  required
+                  placeholder="Phone Number *"
+                  value={enqPhone}
+                  onChange={(e) => setEnqPhone(e.target.value)}
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                />
+              </div>
 
               <select
                 value={enqService}
                 onChange={(e) => setEnqService(e.target.value)}
                 className="input-field"
+                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
               >
                 <option value="Car Washing">Car Washing & Foam Wash</option>
-                <option value="Under Coating">Under Coating (Anti-Rust Chassis Protection)</option>
-                <option value="Car Polish">Car Polish & Dual Action Buffing</option>
+                <option value="Under Coating">Under Coating (Anti-Rust Protection)</option>
+                <option value="Car Polish">Car Polish & Buffing</option>
                 <option value="Foam Wash">High Pressure Snow Foam Wash</option>
                 <option value="Ceramic Coating">9H Nano Ceramic Coating</option>
-                <option value="Teflon Coating">Teflon Paint Protection Coating</option>
-                <option value="Bike Detailing">Bike & Motorcycle Detailing</option>
-                <option value="AC Disinfection">AC Vent Disinfection & Ozone Steam</option>
-                <option value="Glass Coating">Windshield Rain Repellent Glass Coating</option>
-                <option value="Steam Detailing">300°F Deep Thermal Steam Detailing</option>
-                <option value="Interior Spa">Interior Spa & Leather Conditioning</option>
-                <option value="Anti-Rust Shield">Anti-Rust Underbody Shield</option>
+                <option value="Teflon Coating">Teflon Coating</option>
+                <option value="Bike Detailing">Bike Detailing</option>
+                <option value="AC Disinfection">AC Vent Disinfection</option>
+                <option value="Glass Coating">Windshield Glass Coating</option>
+                <option value="Steam Detailing">300°F Steam Detailing</option>
+                <option value="Interior Spa">Interior Spa</option>
+                <option value="Anti-Rust Shield">Anti-Rust Shield</option>
               </select>
 
               <textarea
-                placeholder="Message or specific requirement..."
-                rows={3}
+                placeholder="Specific requirement..."
+                rows={2}
                 value={enqMsg}
                 onChange={(e) => setEnqMsg(e.target.value)}
                 className="input-field"
+                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
               />
 
-              <button type="submit" className="btn-aqua" style={{ justifyContent: 'center', padding: '14px' }}>
-                <Send size={18} /> Submit Quick Enquiry
+              <button type="submit" className="btn-aqua" style={{ justifyContent: 'center', padding: '10px', fontSize: '0.88rem' }}>
+                <Send size={16} /> Submit Enquiry
               </button>
             </form>
           </div>
 
           {/* Right: Location Map Card */}
-          <div className="glass-panel" style={{ padding: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '6px' }}>
-                VISIT OUR WASH FACILITY IN SILIGURI
+              <div style={{ fontSize: '0.8rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
+                VISIT OUR FACILITY
               </div>
-              <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '16px' }}>Auto Detailing Bay Hub</h3>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '12px' }}>Auto Detailing Bay Hub</h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px', fontSize: '0.92rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <MapPin size={20} color="var(--accent-aqua)" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <MapPin size={18} color="var(--accent-aqua)" />
                   <span>Siliguri, West Bengal</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Phone size={20} color="var(--accent-aqua)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Phone size={18} color="var(--accent-aqua)" />
                   <span>+91 8609504186</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Clock size={20} color="var(--accent-terracotta)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Clock size={18} color="var(--accent-terracotta)" />
                   <span>Mon - Sat: 08:00 AM - 07:00 PM (Sunday Open)</span>
                 </div>
               </div>
@@ -800,8 +806,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
             {/* Map Visual Box */}
             <div style={{
-              height: '200px',
-              borderRadius: '12px',
+              height: '110px',
+              borderRadius: '10px',
               background: 'url(https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=800&q=80) center/cover',
               position: 'relative',
               overflow: 'hidden',
@@ -812,8 +818,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             }}>
               <div style={{ position: 'absolute', inset: 0, background: 'rgba(0, 49, 53, 0.7)' }} />
               <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                <MapPin size={32} color="var(--accent-aqua)" />
-                <div style={{ fontWeight: 800, color: '#FFFFFF', marginTop: '6px' }}>CAR WASH • SILIGURI</div>
+                <MapPin size={24} color="var(--accent-aqua)" />
+                <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', marginTop: '2px' }}>CAR WASH • SILIGURI</div>
               </div>
             </div>
           </div>
