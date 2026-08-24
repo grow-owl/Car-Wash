@@ -406,28 +406,57 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px', display: 'block' }}>
                   Select Available Time Slot:
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                  {slots.map(s => (
-                    <button
-                      key={s.time}
-                      disabled={!s.available}
-                      onClick={() => setSelectedSlot(s.time)}
-                      style={{
-                        background: selectedSlot === s.time ? 'var(--accent-aqua)' : 'rgba(0,49,53,0.8)',
-                        color: selectedSlot === s.time ? '#003135' : 'var(--text-main)',
-                        border: selectedSlot === s.time ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                        borderRadius: '8px',
-                        padding: '10px',
-                        fontWeight: 700,
-                        fontSize: '0.88rem',
-                        cursor: s.available ? 'pointer' : 'not-allowed',
-                        opacity: s.available ? 1 : 0.4
-                      }}
-                    >
-                      {s.time} {!s.available && '(Booked)'}
-                    </button>
-                  ))}
-                </div>
+                {(() => {
+                  const defaultSlots = [
+                    { slotTime: '08:00 AM', available: true },
+                    { slotTime: '09:30 AM', available: true },
+                    { slotTime: '11:00 AM', available: true },
+                    { slotTime: '01:00 PM', available: true },
+                    { slotTime: '02:30 PM', available: true },
+                    { slotTime: '04:00 PM', available: true },
+                    { slotTime: '05:30 PM', available: true }
+                  ];
+
+                  const slotsToRender = (slots && slots.length > 0) ? slots : defaultSlots;
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                      {slotsToRender.map((s, idx) => {
+                        const timeLabel = typeof s === 'string' ? s : (s.slotTime || s.time || '10:00 AM');
+                        const isAvailable = typeof s === 'object' ? (s.available !== false) : true;
+                        const isSelected = selectedSlot === timeLabel;
+
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            disabled={!isAvailable}
+                            onClick={() => setSelectedSlot(timeLabel)}
+                            style={{
+                              background: isSelected ? 'var(--accent-aqua)' : 'rgba(0,49,53,0.85)',
+                              color: isSelected ? '#003135' : '#FFFFFF',
+                              border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                              borderRadius: '8px',
+                              padding: '12px',
+                              fontWeight: 800,
+                              fontSize: '0.92rem',
+                              cursor: isAvailable ? 'pointer' : 'not-allowed',
+                              opacity: isAvailable ? 1 : 0.45,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <Clock size={15} color={isSelected ? '#003135' : 'var(--accent-aqua)'} />
+                            <span>{timeLabel}</span>
+                            {!isAvailable && <span style={{ fontSize: '0.7rem' }}>(Booked)</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
