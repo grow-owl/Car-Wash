@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2, Sun, Plus, Trash2 } from 'lucide-react';
 import { getServices, getPackages, getBeforeAfterGallery, getCustomerDetails } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
-import ReviewModal from '../components/ReviewModal';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService }) {
   const [services, setServices] = useState([]);
@@ -31,8 +30,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   const [newModel, setNewModel] = useState('');
   const [newType, setNewType] = useState('Sedan');
 
-  // Customer Reviews State
-  const [reviewsList, setReviewsList] = useState([
+  // Customer Reviews List
+  const [reviewsList] = useState([
     {
       name: 'Rahul Sharma',
       vehicle: 'Hyundai Creta • WB-74-AX-8821',
@@ -58,44 +57,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       photo: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=400&q=80'
     }
   ]);
-  const [showReviewModal, setShowReviewModal] = useState(false);
-
-  // Real Live Weather Data for Siliguri
-  const [weatherData, setWeatherData] = useState({
-    temp: 28,
-    condition: 'Sunny ☀️',
-    recommendation: 'Perfect Day for Hydrophobic Foam Wash & 9H Ceramic Shield!'
-  });
 
   useEffect(() => {
     fetchData();
-    fetchLiveSiliguriWeather();
   }, [selectedVehicle]);
-
-  const fetchLiveSiliguriWeather = async () => {
-    try {
-      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=26.7271&longitude=88.3953&current_weather=true');
-      const data = await res.json();
-      if (data && data.current_weather) {
-        const temp = Math.round(data.current_weather.temperature);
-        const code = data.current_weather.weathercode;
-        let cond = 'Sunny ☀️';
-        let rec = 'Perfect Day for Hydrophobic Foam Wash & 9H Ceramic Shield!';
-
-        if (code >= 51 && code <= 99) {
-          cond = 'Rainy 🌧️';
-          rec = 'Protect your car with Windshield Hydrophobic Shield & Anti-Rust Coating!';
-        } else if (code >= 1 && code <= 3) {
-          cond = 'Partly Cloudy ⛅';
-          rec = 'Great Weather for Interior Steam Spa & Express Foam Wash!';
-        }
-
-        setWeatherData({ temp, condition: cond, recommendation: rec });
-      }
-    } catch (err) {
-      console.log('Live weather fetch fallback used:', err);
-    }
-  };
 
   const fetchData = async () => {
     try {
@@ -164,10 +129,6 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
     setGarageVehicles(garageVehicles.filter((_, i) => i !== idx));
   };
 
-  const handleAddReview = (newRev) => {
-    setReviewsList([newRev, ...reviewsList]);
-  };
-
   const serviceCategoriesList = [
     { title: 'Car Washing', desc: 'High pressure hydrophobic foam wash & underbody scrub.', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=500&q=80' },
     { title: 'Under Coating', desc: 'Anti-rust protective sealant for underbody chassis.', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=500&q=80' },
@@ -184,17 +145,17 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   ];
 
   return (
-    <div style={{ paddingBottom: '60px', position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       
-      {/* HERO SECTION WITH FULL IMAGE BACKGROUND & OVERLAY TEXT */}
+      {/* SECTION 1: HERO SECTION WITH VIBRANT TEAL OVERLAY */}
       <section style={{
         position: 'relative',
-        minHeight: '620px',
-        padding: '100px 0 120px 0',
-        background: `linear-gradient(to right, rgba(0, 31, 35, 0.95) 0%, rgba(0, 49, 53, 0.82) 50%, rgba(0, 49, 53, 0.45) 100%), url('/hero-bg.jpg') center/cover no-repeat`,
+        minHeight: '580px',
+        padding: '90px 0 100px 0',
+        background: `linear-gradient(to right, rgba(1, 59, 64, 0.92) 0%, rgba(4, 94, 103, 0.78) 50%, rgba(4, 94, 103, 0.45) 100%), url('/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
         alignItems: 'center',
-        boxShadow: 'inset 0 -50px 50px rgba(0, 31, 35, 0.9)'
+        borderBottom: '1px solid var(--border-light)'
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ maxWidth: '640px' }}>
@@ -205,7 +166,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               fontWeight: 800,
               marginBottom: '20px',
               color: '#FFFFFF',
-              textShadow: '0 4px 20px rgba(0,0,0,0.6)'
+              textShadow: '0 4px 20px rgba(0,0,0,0.5)'
             }}>
               A showroom finish,<br />
               every <span style={{ color: 'var(--accent-aqua)' }}>single visit.</span>
@@ -213,10 +174,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
             <p style={{
               fontSize: '1.15rem',
-              color: 'var(--text-muted)',
+              color: 'var(--ice-tint)',
               marginBottom: '36px',
               lineHeight: '1.65',
-              textShadow: '0 2px 10px rgba(0,0,0,0.8)'
+              textShadow: '0 2px 10px rgba(0,0,0,0.6)'
             }}>
               High-pressure hydrophobic foam, 300°F steam sanitization & 9H ceramic coatings engineered for maximum gloss & long-term paint protection in Siliguri.
             </p>
@@ -226,15 +187,15 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 onClick={() => onStartBooking(selectedVehicle)}
                 className="btn-slot-hover"
                 style={{
-                  background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
-                  color: '#003135',
+                  background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #26dbea 100%)',
+                  color: '#002d31',
                   fontWeight: 800,
                   fontSize: '1rem',
                   border: 'none',
                   padding: '16px 36px',
                   borderRadius: '30px',
                   cursor: 'pointer',
-                  boxShadow: '0 6px 25px rgba(15, 164, 175, 0.5)',
+                  boxShadow: '0 6px 25px rgba(20, 199, 212, 0.45)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px'
@@ -258,25 +219,25 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             {/* Stats Counter Glass Cards */}
             <div style={{ display: 'flex', gap: '20px' }}>
               <div style={{
-                background: 'rgba(0, 49, 53, 0.75)',
+                background: 'rgba(4, 94, 103, 0.65)',
                 backdropFilter: 'blur(12px)',
                 border: '1px solid var(--border-light)',
                 padding: '14px 24px',
                 borderRadius: '16px'
               }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>15+</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Years Experience</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Years Experience</div>
               </div>
 
               <div style={{
-                background: 'rgba(0, 49, 53, 0.75)',
+                background: 'rgba(4, 94, 103, 0.65)',
                 backdropFilter: 'blur(12px)',
                 border: '1px solid var(--border-light)',
                 padding: '14px 24px',
                 borderRadius: '16px'
               }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>5.0 ★</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Customer Rating</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Customer Rating</div>
               </div>
             </div>
 
@@ -284,531 +245,533 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
-      {/* INTERACTIVE BEFORE / AFTER SLIDER SECTION */}
-      <section className="container" style={{ marginTop: '70px' }}>
-        <BeforeAfterSlider />
+      {/* SECTION 2: INTERACTIVE BEFORE / AFTER SLIDER (BRIGHT TEAL BACKGROUND) */}
+      <section style={{
+        background: 'rgba(2, 60, 66, 0.75)',
+        padding: '50px 0',
+        borderBottom: '1px solid var(--border-light)'
+      }}>
+        <div className="container">
+          <BeforeAfterSlider />
+        </div>
       </section>
 
-      {/* SERVICES WE PROVIDE (12-CARD GRID) */}
-      <section id="services-section" className="container" style={{ marginTop: '90px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 800, marginBottom: '6px' }}>
-            OVER 1000+ VEHICLES DETAILED IN SILIGURI
-          </div>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800 }}>Services We Provide</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Professional vehicle restoration & hygiene packages tailored to your car</p>
-        </div>
-
-        <div className="grid-4" style={{ gap: '20px' }}>
-          {serviceCategoriesList.map((sc, idx) => (
-            <div
-              key={idx}
-              className="glass-card"
-              onClick={() => onStartBooking(selectedVehicle)}
-              style={{
-                overflow: 'hidden',
-                cursor: 'pointer',
-                border: '1px solid var(--border-light)',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <div style={{ height: '150px', position: 'relative', overflow: 'hidden' }}>
-                <img src={sc.img} alt={sc.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,31,35,0.9) 0%, transparent 70%)' }} />
-                <span className="badge badge-aqua" style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem' }}>
-                  PRO
-                </span>
-              </div>
-              <div style={{ padding: '16px' }}>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px', color: '#FFFFFF' }}>{sc.title}</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{sc.desc}</p>
-              </div>
+      {/* SECTION 3: SERVICES WE PROVIDE (LIGHTER AQUA TINT BACKGROUND) */}
+      <section id="services-section" style={{
+        background: 'rgba(4, 94, 103, 0.35)',
+        padding: '60px 0',
+        borderBottom: '1px solid var(--border-light)'
+      }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 800, marginBottom: '6px' }}>
+              OVER 1000+ VEHICLES DETAILED IN SILIGURI
             </div>
-          ))}
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 800 }}>Services We Provide</h2>
+            <p style={{ color: 'var(--ice-tint)' }}>Professional vehicle restoration & hygiene packages tailored to your car</p>
+          </div>
+
+          <div className="grid-4" style={{ gap: '20px' }}>
+            {serviceCategoriesList.map((sc, idx) => (
+              <div
+                key={idx}
+                className="glass-card"
+                onClick={() => onStartBooking(selectedVehicle)}
+                style={{
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border-light)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <div style={{ height: '150px', position: 'relative', overflow: 'hidden' }}>
+                  <img src={sc.img} alt={sc.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(1,59,64,0.9) 0%, transparent 70%)' }} />
+                  <span className="badge badge-aqua" style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem' }}>
+                    PRO
+                  </span>
+                </div>
+                <div style={{ padding: '16px' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px', color: '#FFFFFF' }}>{sc.title}</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', lineHeight: '1.4' }}>{sc.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* PACKAGES COMPARISON & PRICING MATRIX */}
-      <section id="pricing-section" className="container" style={{ marginTop: '90px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <span className="badge badge-terracotta">TRANSPARENT PRICING</span>
-          <h2 style={{ fontSize: '2.3rem', marginTop: '8px' }}>Wash & Detailing Packages</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Save up to 25% by bundling multiple maintenance services together</p>
+      {/* SECTION 4: PACKAGES COMPARISON & PRICING MATRIX (RICH GRADIENT BACKGROUND) */}
+      <section id="pricing-section" style={{
+        background: 'linear-gradient(180deg, rgba(2, 73, 80, 0.6) 0%, rgba(4, 94, 103, 0.8) 50%, rgba(1, 59, 64, 0.9) 100%)',
+        padding: '70px 0',
+        borderBottom: '1px solid var(--border-light)'
+      }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <span className="badge badge-terracotta">TRANSPARENT PRICING</span>
+            <h2 style={{ fontSize: '2.3rem', marginTop: '8px' }}>Wash & Detailing Packages</h2>
+            <p style={{ color: 'var(--ice-tint)' }}>Save up to 25% by bundling multiple maintenance services together</p>
+          </div>
+
+          {(() => {
+            const default3Packages = [
+              {
+                title: 'Basic Refresh Package',
+                price: 899,
+                tagline: 'Ideal for bi-weekly maintenance wash',
+                includedServices: ['Express High Pressure Foam Wash', 'Wheel & Tire Scrubbing', 'Light Interior Vacuum & Glass Shine'],
+                isPopular: false
+              },
+              {
+                title: 'Pro Shine & Protection Package',
+                price: 1799,
+                tagline: 'Complete internal & external restoration',
+                includedServices: ['Ultimate Hydro-Polishing Wash', '300°F Deep Interior Steam Sanitize', 'Underbody Chassis Wash', 'Ceramic Tire Armor & Wheel Polish'],
+                isPopular: true
+              },
+              {
+                title: 'VIP Platinum Showroom Package',
+                price: 3999,
+                tagline: 'For car enthusiasts & luxury vehicle owners',
+                includedServices: ['Ultimate Hydro-Polishing & Detailing', 'Deep Interior Spa & Leather Conditioning', 'Nano Ceramic Shield Wax Layer', 'Headlight Restoration & Windshield Hydrophobic Shield', 'Priority Bay Slot Access'],
+                isPopular: false
+              }
+            ];
+
+            const displayPackages = packages.length >= 3 ? packages : default3Packages;
+
+            return (
+              <div className="grid-3">
+                {displayPackages.map((pkg, idx) => (
+                  <div
+                    key={idx}
+                    className="glass-panel"
+                    style={{
+                      padding: '32px',
+                      position: 'relative',
+                      border: pkg.isPopular ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                      background: pkg.isPopular ? 'rgba(4, 94, 103, 0.88)' : 'var(--bg-glass-card)'
+                    }}
+                  >
+                    {pkg.isPopular && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-14px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'var(--accent-aqua)',
+                        color: '#002d31',
+                        padding: '4px 16px',
+                        borderRadius: '20px',
+                        fontWeight: 800,
+                        fontSize: '0.75rem'
+                      }}>
+                        MOST POPULAR
+                      </div>
+                    )}
+
+                    <h3 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>{pkg.title}</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginBottom: '20px' }}>{pkg.tagline}</p>
+
+                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent-aqua)', marginBottom: '20px' }}>
+                      ₹{pkg.price} <span style={{ fontSize: '0.9rem', color: 'var(--ice-tint)', fontWeight: 400 }}>/ wash</span>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '28px' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '10px' }}>
+                        INCLUDED SERVICES:
+                      </div>
+                      {pkg.includedServices.map((inc, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '8px' }}>
+                          <Check size={16} color="var(--accent-aqua)" />
+                          <span>{inc}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => onSelectService(pkg)}
+                      className={pkg.isPopular ? "btn-aqua" : "btn-secondary"}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      Book Package
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
+      </section>
 
-        {(() => {
-          const default3Packages = [
-            {
-              title: 'Basic Refresh Package',
-              price: 899,
-              tagline: 'Ideal for bi-weekly maintenance wash',
-              includedServices: ['Express High Pressure Foam Wash', 'Wheel & Tire Scrubbing', 'Light Interior Vacuum & Glass Shine'],
-              isPopular: false
-            },
-            {
-              title: 'Pro Shine & Protection Package',
-              price: 1799,
-              tagline: 'Complete internal & external restoration',
-              includedServices: ['Ultimate Hydro-Polishing Wash', '300°F Deep Interior Steam Sanitize', 'Underbody Chassis Wash', 'Ceramic Tire Armor & Wheel Polish'],
-              isPopular: true
-            },
-            {
-              title: 'VIP Platinum Showroom Package',
-              price: 3999,
-              tagline: 'For car enthusiasts & luxury vehicle owners',
-              includedServices: ['Ultimate Hydro-Polishing & Detailing', 'Deep Interior Spa & Leather Conditioning', 'Nano Ceramic Shield Wax Layer', 'Headlight Restoration & Windshield Hydrophobic Shield', 'Priority Bay Slot Access'],
-              isPopular: false
-            }
-          ];
+      {/* SECTION 5: MULTI-VEHICLE GARAGE & LOYALTY LOOKUP (BRIGHT CYAN-TEAL BACKGROUND) */}
+      <section style={{
+        background: 'rgba(1, 52, 57, 0.92)',
+        padding: '60px 0',
+        borderBottom: '1px solid var(--border-light)'
+      }}>
+        <div className="container">
+          <div className="glass-panel" style={{ padding: '24px', border: '2px solid var(--accent-aqua)', background: 'linear-gradient(135deg, rgba(2,73,80,0.95) 0%, rgba(4,94,103,0.9) 100%)' }}>
+            
+            <div style={{ textAlign: 'center', maxWidth: '650px', margin: '0 auto 20px auto' }}>
+              <span className="badge badge-aqua" style={{ marginBottom: '6px' }}>CUSTOMER PORTAL & MULTI-VEHICLE GARAGE</span>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '2px' }}>My Garage & Rewards Lookup</h2>
+              <p style={{ color: 'var(--ice-tint)', fontSize: '0.85rem', marginTop: '2px' }}>
+                Manage all your family vehicles in one place & check points balance for 1-click slot booking!
+              </p>
 
-          const displayPackages = packages.length >= 3 ? packages : default3Packages;
+              {/* SEARCH LOOKUP FORM */}
+              <form onSubmit={handleLoyaltyLookup} style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter Mobile No (+91 8609504186) or Vehicle No (WB-74-AX-8821)..."
+                  value={lookupInput}
+                  onChange={(e) => setLookupInput(e.target.value)}
+                  className="input-field"
+                  style={{ flex: 1, minWidth: '260px', height: '44px', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
+                />
+                <button type="submit" className="btn-primary" style={{ height: '44px', padding: '0 24px', fontSize: '0.88rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Search size={16} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
+                </button>
+              </form>
+            </div>
 
-          return (
-            <div className="grid-3">
-              {displayPackages.map((pkg, idx) => (
-                <div
-                  key={idx}
-                  className="glass-panel"
-                  style={{
-                    padding: '32px',
-                    position: 'relative',
-                    border: pkg.isPopular ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                    background: pkg.isPopular ? 'rgba(2, 73, 80, 0.85)' : 'var(--bg-glass-card)'
-                  }}
+            {/* MULTI-VEHICLE GARAGE LIST & ADD FORM */}
+            <div style={{
+              background: 'rgba(1, 46, 50, 0.85)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '14px',
+              padding: '18px',
+              marginTop: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Car size={18} color="var(--accent-aqua)" /> My Saved Vehicles Garage ({garageVehicles.length})
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>1-Click Select Vehicle to Book</div>
+              </div>
+
+              {/* VEHICLE CARDS GRID */}
+              <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
+                {garageVehicles.map((v, idx) => (
+                  <div key={idx} style={{
+                    background: 'rgba(4, 94, 103, 0.75)',
+                    border: '1px solid var(--accent-aqua)',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 800, fontSize: '1rem', color: '#FFFFFF', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{v.regNumber}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{v.model} • {v.type}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      <button
+                        onClick={() => onStartBooking(v.type)}
+                        className="btn-aqua"
+                        style={{ padding: '6px 14px', fontSize: '0.78rem', height: '32px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        Book Slot
+                      </button>
+                      <button
+                        onClick={() => handleRemoveGarageVehicle(idx)}
+                        title="Remove Vehicle"
+                        style={{ background: 'transparent', border: 'none', color: '#f2856e', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ADD NEW VEHICLE FORM */}
+              <form onSubmit={handleAddGarageVehicle} className="garage-add-form" style={{
+                borderTop: '1px solid var(--border-light)',
+                paddingTop: '14px'
+              }}>
+                <input
+                  type="text"
+                  required
+                  placeholder="Vehicle No (e.g. WB-74-BY-1200)"
+                  value={newRegNo}
+                  onChange={(e) => setNewRegNo(e.target.value.toUpperCase())}
+                  className="input-field"
+                  style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Car Model (e.g. i20)"
+                  value={newModel}
+                  onChange={(e) => setNewModel(e.target.value)}
+                  className="input-field"
+                  style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
+                />
+
+                <select
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                  className="input-field"
+                  style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
                 >
-                  {pkg.isPopular && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '-14px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'var(--accent-aqua)',
-                      color: '#003135',
-                      padding: '4px 16px',
-                      borderRadius: '20px',
-                      fontWeight: 800,
-                      fontSize: '0.75rem'
-                    }}>
-                      MOST POPULAR
+                  <option value="Hatchback">Hatchback</option>
+                  <option value="Sedan">Sedan</option>
+                  <option value="SUV">SUV</option>
+                  <option value="Luxury">Luxury</option>
+                </select>
+
+                <button type="submit" className="btn-secondary" style={{ height: '42px', padding: '0 16px', fontSize: '0.85rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                  <Plus size={16} /> Add Car to Garage
+                </button>
+              </form>
+
+            </div>
+
+            {/* DISPLAY CUSTOMER REWARDS CARD ON LOOKUP */}
+            {customerRewards && (
+              <div style={{
+                background: 'rgba(2, 73, 80, 0.95)',
+                border: '1px solid var(--accent-aqua)',
+                borderRadius: '16px',
+                padding: '24px',
+                marginTop: '20px',
+                boxShadow: '0 8px 30px rgba(20, 199, 212, 0.3)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 800 }}>VERIFIED CUSTOMER PROFILE</div>
+                    <h3 style={{ fontSize: '1.6rem', color: '#FFFFFF', marginTop: '2px' }}>{customerRewards.name}</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--ice-tint)' }}>Registered Phone: {customerRewards.phone}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ background: 'rgba(4,94,103,0.9)', padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>MY LOYALTY POINTS</div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>{customerRewards.loyaltyPoints} PTS</div>
+                    </div>
+
+                    <div style={{ background: 'rgba(4,94,103,0.9)', padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>MEMBERSHIP TIER</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: '4px' }}>{customerRewards.membershipStatus || 'VIP Member'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AVAILABLE COUPONS FOR CUSTOMER */}
+                <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Tag size={16} /> YOUR EXCLUSIVE APPLIED COUPONS & DISCOUNTS:
+                  </div>
+
+                  <div className="grid-3" style={{ gap: '14px' }}>
+                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>WELCOME20</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>20% OFF 1st Detailing Wash</div>
+                      </div>
+                      <span className="badge badge-aqua">READY TO USE</span>
+                    </div>
+
+                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>FRESH50</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>₹200 Flat Off Deep Interior Spa</div>
+                      </div>
+                      <span className="badge badge-aqua">READY TO USE</span>
+                    </div>
+
+                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>CARWASH-MARCUS88</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>Referral Code (Share for ₹150 Credit)</div>
+                      </div>
+                      <span className="badge badge-terracotta">MY REFERRAL</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 6: GOOGLE MAPS REVIEWS & TESTIMONIALS (SOFT ICE TINT BACKGROUND) */}
+      <section style={{
+        background: 'rgba(4, 94, 103, 0.45)',
+        padding: '60px 0',
+        borderBottom: '1px solid var(--border-light)'
+      }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <span className="badge badge-aqua">GOOGLE MAPS REVIEWS</span>
+            <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginTop: '4px' }}>Customer Testimonials & Ratings</h2>
+            <p style={{ color: 'var(--ice-tint)' }}>4.9 ★★★★★ Verified Customer Reviews on Google Maps • Siliguri</p>
+          </div>
+
+          <div className="grid-3" style={{ gap: '20px' }}>
+            {reviewsList.map((rev, idx) => (
+              <div key={idx} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {[...Array(rev.rating)].map((_, i) => (
+                        <Star key={i} size={16} color="#FFD700" fill="#FFD700" />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{rev.date}</span>
+                  </div>
+
+                  <p style={{ fontSize: '0.9rem', color: '#FFFFFF', lineHeight: '1.5', marginBottom: '16px', fontStyle: 'italic' }}>
+                    "{rev.comment}"
+                  </p>
+                </div>
+
+                <div>
+                  {rev.photo && (
+                    <div style={{ height: '140px', borderRadius: '10px', overflow: 'hidden', marginBottom: '12px', border: '1px solid var(--border-light)' }}>
+                      <img src={rev.photo} alt="Customer vehicle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   )}
-
-                  <h3 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>{pkg.title}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>{pkg.tagline}</p>
-
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent-aqua)', marginBottom: '20px' }}>
-                    ₹{pkg.price} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>/ wash</span>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '28px' }}>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '10px' }}>
-                      INCLUDED SERVICES:
-                    </div>
-                    {pkg.includedServices.map((inc, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '8px' }}>
-                        <Check size={16} color="var(--accent-aqua)" />
-                        <span>{inc}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => onSelectService(pkg)}
-                    className={pkg.isPopular ? "btn-aqua" : "btn-secondary"}
-                    style={{ width: '100%', justifyContent: 'center' }}
-                  >
-                    Book Package
-                  </button>
+                  <div style={{ fontWeight: 800, color: 'var(--accent-aqua)', fontSize: '0.95rem' }}>{rev.name}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>{rev.vehicle}</div>
                 </div>
-              ))}
-            </div>
-          );
-        })()}
-      </section>
-
-      {/* MULTI-VEHICLE GARAGE & LOYALTY LOOKUP */}
-      <section className="container" style={{ marginTop: '50px' }}>
-        <div className="glass-panel" style={{ padding: '24px', border: '2px solid var(--accent-aqua)', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
-          
-          <div style={{ textAlign: 'center', maxWidth: '650px', margin: '0 auto 20px auto' }}>
-            <span className="badge badge-aqua" style={{ marginBottom: '6px' }}>CUSTOMER PORTAL & MULTI-VEHICLE GARAGE</span>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '2px' }}>My Garage & Rewards Lookup</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '2px' }}>
-              Manage all your family vehicles in one place & check points balance for 1-click slot booking!
-            </p>
-
-            {/* SEARCH LOOKUP FORM WITH MATCHING HEIGHTS */}
-            <form onSubmit={handleLoyaltyLookup} style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <input
-                type="text"
-                required
-                placeholder="Enter Mobile No (+91 8609504186) or Vehicle No (WB-74-AX-8821)..."
-                value={lookupInput}
-                onChange={(e) => setLookupInput(e.target.value)}
-                className="input-field"
-                style={{ flex: 1, minWidth: '260px', height: '44px', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
-              />
-              <button type="submit" className="btn-primary" style={{ height: '44px', padding: '0 24px', fontSize: '0.88rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <Search size={16} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
-              </button>
-            </form>
+              </div>
+            ))}
           </div>
-
-          {/* MULTI-VEHICLE GARAGE LIST & ADD FORM */}
-          <div style={{
-            background: 'rgba(0, 31, 35, 0.85)',
-            border: '1px solid var(--border-light)',
-            borderRadius: '14px',
-            padding: '18px',
-            marginTop: '16px'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Car size={18} color="var(--accent-aqua)" /> My Saved Vehicles Garage ({garageVehicles.length})
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>1-Click Select Vehicle to Book</div>
-            </div>
-
-            {/* VEHICLE CARDS GRID */}
-            <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
-              {garageVehicles.map((v, idx) => (
-                <div key={idx} style={{
-                  background: 'rgba(2, 73, 80, 0.7)',
-                  border: '1px solid var(--accent-aqua)',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#FFFFFF', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{v.regNumber}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{v.model} • {v.type}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                    <button
-                      onClick={() => onStartBooking(v.type)}
-                      className="btn-aqua"
-                      style={{ padding: '6px 14px', fontSize: '0.78rem', height: '32px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center' }}
-                    >
-                      Book Slot
-                    </button>
-                    <button
-                      onClick={() => handleRemoveGarageVehicle(idx)}
-                      title="Remove Vehicle"
-                      style={{ background: 'transparent', border: 'none', color: '#e0725a', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ADD NEW VEHICLE FORM WITH UNIFORM 42px HEIGHTS & ALIGNMENT */}
-            <form onSubmit={handleAddGarageVehicle} style={{
-              display: 'grid',
-              gridTemplateColumns: '1.2fr 1fr 120px 1.2fr',
-              gap: '10px',
-              alignItems: 'center',
-              borderTop: '1px solid var(--border-light)',
-              paddingTop: '14px'
-            }}>
-              <input
-                type="text"
-                required
-                placeholder="Vehicle No (e.g. WB-74-BY-1200)"
-                value={newRegNo}
-                onChange={(e) => setNewRegNo(e.target.value.toUpperCase())}
-                className="input-field"
-                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
-              />
-
-              <input
-                type="text"
-                placeholder="Car Model (e.g. i20)"
-                value={newModel}
-                onChange={(e) => setNewModel(e.target.value)}
-                className="input-field"
-                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
-              />
-
-              <select
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-                className="input-field"
-                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
-              >
-                <option value="Hatchback">Hatchback</option>
-                <option value="Sedan">Sedan</option>
-                <option value="SUV">SUV</option>
-                <option value="Luxury">Luxury</option>
-              </select>
-
-              <button type="submit" className="btn-secondary" style={{ height: '42px', padding: '0 16px', fontSize: '0.85rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                <Plus size={16} /> Add Car to Garage
-              </button>
-            </form>
-
-          </div>
-
-          {/* DISPLAY CUSTOMER REWARDS CARD ON LOOKUP */}
-          {customerRewards && (
-            <div style={{
-              background: 'rgba(0, 31, 35, 0.9)',
-              border: '1px solid var(--accent-aqua)',
-              borderRadius: '16px',
-              padding: '24px',
-              marginTop: '20px',
-              boxShadow: '0 8px 30px rgba(15, 164, 175, 0.3)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-                <div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 800 }}>VERIFIED CUSTOMER PROFILE</div>
-                  <h3 style={{ fontSize: '1.6rem', color: '#FFFFFF', marginTop: '2px' }}>{customerRewards.name}</h3>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Registered Phone: {customerRewards.phone}</div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ background: 'rgba(0,49,53,0.9)', padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>MY LOYALTY POINTS</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>{customerRewards.loyaltyPoints} PTS</div>
-                  </div>
-
-                  <div style={{ background: 'rgba(0,49,53,0.9)', padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>MEMBERSHIP TIER</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: '4px' }}>{customerRewards.membershipStatus || 'VIP Member'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* AVAILABLE COUPONS FOR CUSTOMER */}
-              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Tag size={16} /> YOUR EXCLUSIVE APPLIED COUPONS & DISCOUNTS:
-                </div>
-
-                <div className="grid-3" style={{ gap: '14px' }}>
-                  <div style={{ padding: '12px 16px', background: 'rgba(0,49,53,0.8)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>WELCOME20</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>20% OFF 1st Detailing Wash</div>
-                    </div>
-                    <span className="badge badge-aqua">READY TO USE</span>
-                  </div>
-
-                  <div style={{ padding: '12px 16px', background: 'rgba(0,49,53,0.8)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>FRESH50</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>₹200 Flat Off Deep Interior Spa</div>
-                    </div>
-                    <span className="badge badge-aqua">READY TO USE</span>
-                  </div>
-
-                  <div style={{ padding: '12px 16px', background: 'rgba(0,49,53,0.8)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>CARWASH-MARCUS88</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Referral Code (Share for ₹150 Credit)</div>
-                    </div>
-                    <span className="badge badge-terracotta">MY REFERRAL</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
         </div>
       </section>
 
-      {/* VERIFIED CUSTOMER REVIEWS & REVIEWS SUBMISSION */}
-      <section className="container" style={{ marginTop: '90px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <span className="badge badge-aqua">VERIFIED REVIEWS</span>
-            <h2 style={{ fontSize: '2.3rem', fontWeight: 800, marginTop: '4px' }}>Customer Testimonials & Ratings</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Real feedback & photos from car owners in Siliguri</p>
-          </div>
-
-          <button
-            onClick={() => setShowReviewModal(true)}
-            className="btn-slot-hover"
-            style={{
-              background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
-              color: '#003135',
-              fontWeight: 800,
-              fontSize: '0.95rem',
-              border: 'none',
-              padding: '12px 28px',
-              borderRadius: '28px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Star size={18} fill="#003135" /> Write a Verified Review
-          </button>
-        </div>
-
-        <div className="grid-3" style={{ gap: '20px' }}>
-          {reviewsList.map((rev, idx) => (
-            <div key={idx} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    {[...Array(rev.rating)].map((_, i) => (
-                      <Star key={i} size={16} color="#FFD700" fill="#FFD700" />
-                    ))}
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{rev.date}</span>
-                </div>
-
-                <p style={{ fontSize: '0.9rem', color: '#FFFFFF', lineHeight: '1.5', marginBottom: '16px', fontStyle: 'italic' }}>
-                  "{rev.comment}"
-                </p>
-              </div>
-
-              <div>
-                {rev.photo && (
-                  <div style={{ height: '140px', borderRadius: '10px', overflow: 'hidden', marginBottom: '12px', border: '1px solid var(--border-light)' }}>
-                    <img src={rev.photo} alt="Customer vehicle" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-                <div style={{ fontWeight: 800, color: 'var(--accent-aqua)', fontSize: '0.95rem' }}>{rev.name}</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{rev.vehicle}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* QUICK ENQUIRY FORM & LOCATION MAP (SILIGURI LOCATION) */}
-      <section id="contact-section" className="container" style={{ marginTop: '50px' }}>
-        <div className="grid-2" style={{ gap: '20px', alignItems: 'stretch' }}>
-          
-          {/* Left: Quick Enquiry Form */}
-          <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--accent-aqua)' }}>
-            <div style={{ fontSize: '0.8rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
-              GET A QUICK CALLBACK
-            </div>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '4px' }}>Quick Enquiry</h3>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
-              Fill in your details and our supervisor will contact you with slot availability.
-            </p>
-
-            <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div className="grid-2" style={{ gap: '10px' }}>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full Name *"
-                  value={enqName}
-                  onChange={(e) => setEnqName(e.target.value)}
-                  className="input-field"
-                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                />
-
-                <input
-                  type="text"
-                  required
-                  placeholder="Phone Number *"
-                  value={enqPhone}
-                  onChange={(e) => setEnqPhone(e.target.value)}
-                  className="input-field"
-                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <select
-                value={enqService}
-                onChange={(e) => setEnqService(e.target.value)}
-                className="input-field"
-                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-              >
-                <option value="Car Washing">Car Washing & Foam Wash</option>
-                <option value="Under Coating">Under Coating (Anti-Rust Protection)</option>
-                <option value="Car Polish">Car Polish & Buffing</option>
-                <option value="Foam Wash">High Pressure Snow Foam Wash</option>
-                <option value="Ceramic Coating">9H Nano Ceramic Coating</option>
-                <option value="Teflon Coating">Teflon Coating</option>
-                <option value="Bike Detailing">Bike Detailing</option>
-                <option value="AC Disinfection">AC Vent Disinfection</option>
-                <option value="Glass Coating">Windshield Glass Coating</option>
-                <option value="Steam Detailing">300°F Steam Detailing</option>
-                <option value="Interior Spa">Interior Spa</option>
-                <option value="Anti-Rust Shield">Anti-Rust Shield</option>
-              </select>
-
-              <textarea
-                placeholder="Specific requirement..."
-                rows={2}
-                value={enqMsg}
-                onChange={(e) => setEnqMsg(e.target.value)}
-                className="input-field"
-                style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-              />
-
-              <button type="submit" className="btn-aqua" style={{ justifyContent: 'center', padding: '10px', fontSize: '0.88rem' }}>
-                <Send size={16} /> Submit Enquiry
-              </button>
-            </form>
-          </div>
-
-          {/* Right: Location Map Card */}
-          <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
+      {/* SECTION 7: QUICK ENQUIRY FORM & LOCATION MAP (CLEAN DEEP TEAL) */}
+      <section id="contact-section" style={{
+        background: 'rgba(1, 59, 64, 0.95)',
+        padding: '50px 0 70px 0'
+      }}>
+        <div className="container">
+          <div className="grid-2" style={{ gap: '20px', alignItems: 'stretch' }}>
+            
+            {/* Left: Quick Enquiry Form */}
+            <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--accent-aqua)' }}>
               <div style={{ fontSize: '0.8rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
-                VISIT OUR FACILITY
+                GET A QUICK CALLBACK
               </div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '12px' }}>Auto Detailing Bay Hub</h3>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '4px' }}>Quick Enquiry</h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginBottom: '14px' }}>
+                Fill in your details and our supervisor will contact you with slot availability.
+              </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <MapPin size={18} color="var(--accent-aqua)" />
-                  <span>Siliguri, West Bengal</span>
+              <form onSubmit={handleEnquirySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="grid-2" style={{ gap: '10px' }}>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Full Name *"
+                    value={enqName}
+                    onChange={(e) => setEnqName(e.target.value)}
+                    className="input-field"
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+
+                  <input
+                    type="text"
+                    required
+                    placeholder="Phone Number *"
+                    value={enqPhone}
+                    onChange={(e) => setEnqPhone(e.target.value)}
+                    className="input-field"
+                    style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Phone size={18} color="var(--accent-aqua)" />
-                  <span>+91 8609504186</span>
+
+                <select
+                  value={enqService}
+                  onChange={(e) => setEnqService(e.target.value)}
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                >
+                  <option value="Car Washing">Car Washing & Foam Wash</option>
+                  <option value="Under Coating">Under Coating (Anti-Rust Protection)</option>
+                  <option value="Car Polish">Car Polish & Buffing</option>
+                  <option value="Foam Wash">High Pressure Snow Foam Wash</option>
+                  <option value="Ceramic Coating">9H Nano Ceramic Coating</option>
+                  <option value="Teflon Coating">Teflon Coating</option>
+                  <option value="Bike Detailing">Bike Detailing</option>
+                  <option value="AC Disinfection">AC Vent Disinfection</option>
+                  <option value="Glass Coating">Windshield Glass Coating</option>
+                  <option value="Steam Detailing">300°F Steam Detailing</option>
+                  <option value="Interior Spa">Interior Spa</option>
+                  <option value="Anti-Rust Shield">Anti-Rust Shield</option>
+                </select>
+
+                <textarea
+                  placeholder="Specific requirement..."
+                  rows={2}
+                  value={enqMsg}
+                  onChange={(e) => setEnqMsg(e.target.value)}
+                  className="input-field"
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                />
+
+                <button type="submit" className="btn-aqua" style={{ justifyContent: 'center', padding: '10px', fontSize: '0.88rem' }}>
+                  <Send size={16} /> Submit Enquiry
+                </button>
+              </form>
+            </div>
+
+            {/* Right: Location Map Card */}
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
+                  VISIT OUR FACILITY
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Clock size={18} color="var(--accent-terracotta)" />
-                  <span>Mon - Sat: 08:00 AM - 07:00 PM (Sunday Open)</span>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '12px' }}>Auto Detailing Bay Hub</h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <MapPin size={18} color="var(--accent-aqua)" />
+                    <span>Siliguri, West Bengal</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Phone size={18} color="var(--accent-aqua)" />
+                    <span>+91 8609504186</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Clock size={18} color="var(--accent-terracotta)" />
+                    <span>Mon - Sat: 08:00 AM - 07:00 PM (Sunday Open)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Map Visual Box */}
+              <div style={{
+                height: '110px',
+                borderRadius: '10px',
+                background: 'url(https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=800&q=80) center/cover',
+                position: 'relative',
+                overflow: 'hidden',
+                border: '1px solid var(--accent-aqua)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(4, 94, 103, 0.7)' }} />
+                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+                  <MapPin size={24} color="var(--accent-aqua)" />
+                  <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', marginTop: '2px' }}>CAR WASH • SILIGURI</div>
                 </div>
               </div>
             </div>
 
-            {/* Map Visual Box */}
-            <div style={{
-              height: '110px',
-              borderRadius: '10px',
-              background: 'url(https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=800&q=80) center/cover',
-              position: 'relative',
-              overflow: 'hidden',
-              border: '1px solid var(--accent-aqua)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0, 49, 53, 0.7)' }} />
-              <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                <MapPin size={24} color="var(--accent-aqua)" />
-                <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', marginTop: '2px' }}>CAR WASH • SILIGURI</div>
-              </div>
-            </div>
           </div>
-
         </div>
       </section>
-
-      {/* VERIFIED REVIEW MODAL */}
-      <ReviewModal
-        isOpen={showReviewModal}
-        onClose={() => setShowReviewModal(false)}
-        onSubmitReview={handleAddReview}
-      />
 
       {/* FLOATING WHATSAPP CHAT BUTTON */}
       <div style={{

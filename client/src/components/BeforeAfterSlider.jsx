@@ -9,10 +9,10 @@ export default function BeforeAfterSlider({
   const [sliderPos, setSliderPos] = useState(50);
 
   return (
-    <div className="glass-panel" style={{ padding: '28px', border: '2px solid var(--accent-aqua)', overflow: 'hidden', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
+    <div className="glass-panel" style={{ padding: '24px 16px', border: '2px solid var(--accent-aqua)', overflow: 'hidden', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
       
       {/* SECTION HEADER */}
-      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -21,26 +21,26 @@ export default function BeforeAfterSlider({
           border: '1px solid var(--accent-aqua)',
           padding: '4px 14px',
           borderRadius: '20px',
-          fontSize: '0.8rem',
+          fontSize: '0.78rem',
           color: 'var(--accent-aqua)',
           fontWeight: 800,
           marginBottom: '8px'
         }}>
           <Sparkles size={14} /> INTERACTIVE BEFORE / AFTER SLIDER
         </div>
-        <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#FFFFFF' }}>The Difference You Can See & Feel</h2>
-        <div style={{ fontSize: '0.88rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-          <ArrowLeftRight size={16} color="var(--accent-aqua)" /> Drag center handle left & right to see hydrophobic transformation!
+        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#FFFFFF' }}>The Difference You Can See & Feel</h2>
+        <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+          <ArrowLeftRight size={14} color="var(--accent-aqua)" /> Drag handle left & right to see hydrophobic shine!
         </div>
       </div>
 
-      {/* SLIDER CONTAINER */}
-      <div style={{
+      {/* SLIDER CONTAINER WITH RESPONSIVE MOBILE HEIGHT */}
+      <div className="before-after-container" style={{
         position: 'relative',
         maxWidth: '860px',
         margin: '0 auto',
-        height: '420px',
-        borderRadius: '20px',
+        height: '380px',
+        borderRadius: '16px',
         overflow: 'hidden',
         boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
         border: '1px solid var(--border-light)',
@@ -53,20 +53,22 @@ export default function BeforeAfterSlider({
           alt="After Ceramic Shine"
           style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
         />
-        <div style={{
+        
+        {/* AFTER BADGE - POSITIONED BOTTOM RIGHT FOR NO OVERLAP */}
+        <div className="slider-badge-after" style={{
           position: 'absolute',
-          top: '16px',
-          right: '16px',
+          bottom: '12px',
+          right: '12px',
           background: 'rgba(15, 164, 175, 0.95)',
           color: '#003135',
           fontWeight: 800,
-          fontSize: '0.82rem',
-          padding: '6px 16px',
-          borderRadius: '20px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          fontSize: '0.75rem',
+          padding: '4px 12px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
           zIndex: 5
         }}>
-          ✨ AFTER: 9H CERAMIC SHINE
+          ✨ AFTER: CERAMIC SHINE
         </div>
 
         {/* BEFORE IMAGE (CLIPPED SLIDER TOP LAYER) */}
@@ -91,17 +93,19 @@ export default function BeforeAfterSlider({
               maxWidth: 'none'
             }}
           />
-          <div style={{
+
+          {/* BEFORE BADGE - POSITIONED TOP LEFT FOR NO OVERLAP */}
+          <div className="slider-badge-before" style={{
             position: 'absolute',
-            top: '16px',
-            left: '16px',
+            top: '12px',
+            left: '12px',
             background: 'rgba(150, 71, 52, 0.95)',
             color: '#FFFFFF',
             fontWeight: 800,
-            fontSize: '0.82rem',
-            padding: '6px 16px',
-            borderRadius: '20px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
+            fontSize: '0.75rem',
+            padding: '4px 12px',
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}>
             🚗 BEFORE: DUST & MUD
           </div>
@@ -124,8 +128,8 @@ export default function BeforeAfterSlider({
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: '44px',
-            height: '44px',
+            width: '38px',
+            height: '38px',
             borderRadius: '50%',
             background: 'var(--accent-aqua)',
             color: '#003135',
@@ -133,9 +137,9 @@ export default function BeforeAfterSlider({
             alignItems: 'center',
             justifyContent: 'center',
             boxShadow: '0 0 25px rgba(15, 164, 175, 0.9)',
-            border: '3px solid #FFFFFF'
+            border: '2px solid #FFFFFF'
           }}>
-            <ArrowLeftRight size={22} />
+            <ArrowLeftRight size={18} />
           </div>
         </div>
 
