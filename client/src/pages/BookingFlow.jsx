@@ -41,6 +41,39 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     fetchData();
   }, [vehicleType, selectedDate]);
 
+  const primary3Packages = [
+    {
+      _id: 'pkg-1',
+      name: 'Basic Refresh Package',
+      title: 'Basic Refresh Package',
+      price: 899,
+      durationMins: 35,
+      description: 'Express high-pressure foam wash, wheel scrub, tire dressing & light interior vacuum.',
+      includedServices: ['Express High Pressure Foam Wash', 'Wheel & Tire Scrubbing', 'Light Interior Vacuum & Glass Shine'],
+      isPopular: false
+    },
+    {
+      _id: 'pkg-2',
+      name: 'Pro Shine & Protection Package',
+      title: 'Pro Shine & Protection Package',
+      price: 1799,
+      durationMins: 60,
+      description: 'Complete interior deep steam sanitization, underbody wash & dual action wax polish.',
+      includedServices: ['Ultimate Hydro-Polishing Wash', '300°F Deep Interior Steam Sanitize', 'Underbody Chassis Wash', 'Ceramic Tire Armor & Wheel Polish'],
+      isPopular: true
+    },
+    {
+      _id: 'pkg-3',
+      name: 'VIP Platinum Showroom Package',
+      title: 'VIP Platinum Showroom Package',
+      price: 3999,
+      durationMins: 120,
+      description: '9H nano ceramic wax layer, leather spa, headlight restoration & priority bay slot.',
+      includedServices: ['Ultimate Hydro-Polishing & Detailing', 'Deep Interior Spa & Leather Conditioning', 'Nano Ceramic Shield Wax Layer', 'Headlight Restoration & Windshield Hydrophobic Shield', 'Priority Bay Slot Access'],
+      isPopular: false
+    }
+  ];
+
   const fetchData = async () => {
     try {
       const [svcRes, pkgRes, addRes, slotRes] = await Promise.all([
@@ -50,29 +83,22 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
         getSlotsAvailability(selectedDate)
       ]);
       setServices(svcRes.data);
-      setPackages(pkgRes.data);
+      setPackages(pkgRes.data.length >= 3 ? pkgRes.data : primary3Packages);
       setAllAddons(addRes.data);
       setSlots(slotRes.data);
-      if (!selectedService && svcRes.data.length > 0) {
-        setSelectedService(svcRes.data[0]);
+      if (!selectedService) {
+        setSelectedService(primary3Packages[1]);
       }
     } catch (err) {
       console.error('Error loading booking data:', err);
-    }
-  };
-
-  const handleToggleAddon = (addon) => {
-    if (selectedAddons.some(a => a.name === addon.name)) {
-      setSelectedAddons(selectedAddons.filter(a => a.name !== addon.name));
-    } else {
-      setSelectedAddons([...selectedAddons, { name: addon.name, price: addon.price }]);
+      if (!selectedService) setSelectedService(primary3Packages[1]);
     }
   };
 
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     try {
-      const basePrice = (selectedService?.price || 0) + selectedAddons.reduce((s, a) => s + a.price, 0);
+      const basePrice = selectedService?.price || 0;
       const res = await validateCoupon(couponCode, basePrice);
       if (res.data.valid) {
         setCouponDiscount(res.data.discountCalculated);
@@ -80,184 +106,217 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       }
     } catch (err) {
       setCouponStatus(err.response?.data?.error || 'Invalid Coupon Code');
-      setCouponDiscount(0);
     }
   };
 
-  const calculateSubtotal = () => {
-    const base = selectedService?.price || 0;
-    const addOnTotal = selectedAddons.reduce((sum, a) => sum + a.price, 0);
-    return base + addOnTotal;
-  };
-
   const calculateFinalTotal = () => {
-    return Math.max(0, calculateSubtotal() - couponDiscount);
+    const base = selectedService?.price || 0;
+    const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price || 0), 0);
+    const total = base + addonsTotal - couponDiscount;
+    return total > 0 ? total : 0;
   };
 
-  const handleFinalSubmit = async (e) => {
+  const handleConfirmBookingSubmit = async (e) => {
     e.preventDefault();
     if (!customerName || !phone || !vehicleNumber) {
-      alert('Please fill in your name, phone number, and vehicle registration number.');
+      alert('Please fill in Customer Name, Phone Number, and Vehicle Registration Number.');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
       const payload = {
         customerName,
         phone,
-        email,
+        email: email || 'customer@example.com',
         vehicleType,
         vehicleNumber,
         vehicleModel: vehicleModel || vehicleType,
-        serviceName: selectedService?.name || selectedService?.title || 'Custom Wash Service',
-        packageName: selectedService?.title ? selectedService.title : '',
-        addons: selectedAddons,
+        serviceName: selectedService?.name || 'Pro Shine & Protection Package',
+        packageName: selectedService?.title || selectedService?.name,
+        addons: selectedAddons.map(a => ({ name: a.name, price: a.price })),
         date: selectedDate,
         slotTime: selectedSlot,
         totalAmount: calculateFinalTotal(),
+        discountAmount: couponDiscount,
+        couponApplied: couponDiscount > 0 ? couponCode : '',
         paymentMode,
-        couponCode: couponDiscount > 0 ? couponCode : ''
+        paymentStatus: 'Paid'
       };
 
       const res = await createBooking(payload);
-      setIsSubmitting(false);
-      setConfirmedBooking(res.data.booking);
-      setShowInvoiceModal(true);
+      setConfirmedBooking(res.data);
 
-      if (onBookingComplete) {
-        onBookingComplete(res.data.booking.trackingCode);
-      }
+      if (onBookingComplete) onBookingComplete(res.data.trackingCode);
+
+      // Trigger Smart Upsell Modal after booking step
+      setShowUpsellModal(true);
     } catch (err) {
+      console.error('Booking submission error:', err);
+      alert('Failed to submit booking. Please check your fields.');
+    } finally {
       setIsSubmitting(false);
-      alert('Booking error: ' + (err.response?.data?.error || err.message));
     }
   };
 
-  const stepLabels = [
-    { num: 1, label: 'Service Selection' },
-    { num: 2, label: 'Vehicle Selection' },
-    { num: 3, label: 'Booking & Slot' },
-    { num: 4, label: 'Online Payment' }
-  ];
+  const handleUpsellModalClose = () => {
+    setShowUpsellModal(false);
+    setShowInvoiceModal(true);
+  };
 
   const vehiclesList = [
-    { type: 'Hatchback', icon: '🚗', desc: 'Compact 4-Seater Cars' },
-    { type: 'Sedan', icon: '🚘', desc: 'Executive Midsize Sedans' },
-    { type: 'SUV', icon: '🚙', desc: 'Full-size Crossovers & 7-Seaters' },
-    { type: 'Luxury', icon: '🏎️', desc: 'Sports & Premium Luxury Vehicles' },
-    { type: 'Truck', icon: '🛻', desc: 'Pickup Trucks & Commercial Vans' }
+    { type: 'Hatchback', desc: 'Compact 4-Seater', icon: '🚗' },
+    { type: 'Sedan', desc: 'Executive Midsize', icon: '🚘' },
+    { type: 'SUV', desc: 'Full-Size / Crossover', icon: '🚙' },
+    { type: 'Luxury', desc: 'Premium / Sports Car', icon: '🏎️' },
+    { type: 'Truck', desc: 'Pickup / Off-road', icon: '🛻' }
   ];
 
+  const displayPackagesList = packages.length >= 3 ? packages : primary3Packages;
+
   return (
-    <div className="container" style={{ paddingTop: '40px', paddingBottom: '80px', maxWidth: '1100px' }}>
+    <div className="container" style={{ paddingTop: '40px', paddingBottom: '80px' }}>
       
-      {/* EXPLICIT 4-STEP REVENUE FLOW INDICATOR BAR */}
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <span className="badge badge-aqua">CORE REVENUE FLOW</span>
-          <h1 style={{ fontSize: '2.2rem', marginTop: '6px' }}>4-Step Online Booking & Payment</h1>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          position: 'relative',
-          background: 'rgba(0, 49, 53, 0.8)',
-          border: '1px solid var(--border-light)',
-          borderRadius: '16px',
-          padding: '16px 24px'
-        }}>
-          {stepLabels.map((s) => {
-            const isActive = step === s.num;
-            const isDone = step > s.num;
-
-            return (
-              <div
-                key={s.num}
-                onClick={() => {
-                  if (s.num <= step) setStep(s.num);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: s.num <= step ? 'pointer' : 'default',
-                  opacity: isActive || isDone ? 1 : 0.45
-                }}
-              >
-                <div style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '50%',
-                  background: isActive ? 'var(--accent-aqua)' : isDone ? 'var(--accent-terracotta)' : 'rgba(2, 73, 80, 0.8)',
-                  color: isActive ? '#003135' : '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: isActive ? '0 0 15px var(--accent-aqua-glow)' : 'none'
-                }}>
-                  {isDone ? <Check size={20} /> : s.num}
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 700 }}>STEP 0{s.num}</div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: isActive ? 800 : 600, color: isActive ? 'var(--accent-aqua)' : '#FFFFFF' }}>
-                    {s.label}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {/* HEADER WIZARD TITLE */}
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <span className="badge badge-aqua">AUTO SPA APPOINTMENT</span>
+        <h1 style={{ fontSize: '2.4rem', marginTop: '6px' }}>Reserve Your Detailing Slot</h1>
+        <p style={{ color: 'var(--text-muted)' }}>Simple 4-step instant booking & digital invoice in Siliguri</p>
       </div>
 
+      {/* 4-STEP WIZARD PROGRESS BAR */}
+      <div style={{
+        display: 'flex',
+        justify: 'space-between',
+        marginBottom: '40px',
+        background: 'var(--bg-glass-card)',
+        padding: '16px 24px',
+        borderRadius: '16px',
+        border: '1px solid var(--border-light)',
+        gap: '12px',
+        flexWrap: 'wrap'
+      }}>
+        {[
+          { num: 1, label: 'Service Selection' },
+          { num: 2, label: 'Vehicle Selection' },
+          { num: 3, label: 'Booking & Slot' },
+          { num: 4, label: 'Online Payment' }
+        ].map(st => (
+          <div
+            key={st.num}
+            onClick={() => setStep(st.num)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              opacity: step === st.num ? 1 : 0.65
+            }}
+          >
+            <div style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              background: step === st.num ? 'var(--accent-aqua)' : 'rgba(0, 49, 53, 0.8)',
+              color: step === st.num ? '#003135' : 'var(--text-main)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              border: step === st.num ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)'
+            }}>
+              {st.num}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>STEP 0{st.num}</div>
+              <div style={{ fontSize: '0.92rem', fontWeight: step === st.num ? 800 : 600, color: step === st.num ? 'var(--accent-aqua)' : '#FFFFFF' }}>{st.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* MAIN STEP CONTENT CONTAINER */}
       <div className="glass-panel" style={{ padding: '36px', border: '1px solid var(--accent-aqua)' }}>
         
-        {/* STEP 1: SERVICE SELECTION */}
+        {/* STEP 1: SERVICE PACKAGE SELECTION (₹899, ₹1,799, ₹3,999) */}
         {step === 1 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>1. Select Desired Wash or Detailing Package</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Choose from our flagship foam wash, interior steam sanitization, or ceramic coating</p>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Choose from our 3 primary flagship detailing packages</p>
               </div>
               <span className="badge badge-aqua">Step 1 of 4</span>
             </div>
 
-            <div className="grid-2" style={{ gap: '20px', marginBottom: '32px' }}>
-              {services.map(svc => (
-                <div
-                  key={svc._id}
-                  onClick={() => setSelectedService(svc)}
-                  style={{
-                    background: selectedService?.name === svc.name ? 'rgba(15, 164, 175, 0.18)' : 'var(--bg-glass-card)',
-                    border: selectedService?.name === svc.name ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                    borderRadius: '14px',
-                    padding: '22px',
-                    cursor: 'pointer',
-                    transition: 'all 0.25s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#FFFFFF' }}>{svc.name}</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>₹{svc.price}</div>
-                  </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.5' }}>{svc.description}</p>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>⏱️ Duration: ~{svc.durationMins} mins</span>
-                    {selectedService?.name === svc.name && (
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle2 size={16} /> Selected
-                      </span>
+            <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
+              {displayPackagesList.map((pkg, idx) => {
+                const pkgName = pkg.title || pkg.name;
+                const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => setSelectedService(pkg)}
+                    style={{
+                      background: isSelected ? 'rgba(15, 164, 175, 0.2)' : 'var(--bg-glass-card)',
+                      border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'all 0.25s ease'
+                    }}
+                  >
+                    {pkg.isPopular && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'var(--accent-aqua)',
+                        color: '#003135',
+                        padding: '3px 12px',
+                        borderRadius: '20px',
+                        fontWeight: 800,
+                        fontSize: '0.7rem'
+                      }}>
+                        MOST POPULAR
+                      </div>
                     )}
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>{pkgName}</h4>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>₹{pkg.price}</div>
+                    </div>
+
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
+                      {pkg.description || pkg.tagline}
+                    </p>
+
+                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px', marginTop: '14px' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px' }}>
+                        INCLUDED SERVICES:
+                      </div>
+                      {pkg.includedServices && pkg.includedServices.map((inc, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          <Check size={14} color="var(--accent-aqua)" />
+                          <span>{inc}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '16px' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>⏱️ Duration: ~{pkg.durationMins || 50} mins</span>
+                      {isSelected && (
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle2 size={16} /> Selected
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ textAlign: 'right' }}>
@@ -298,275 +357,273 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                     transition: 'all 0.25s ease'
                   }}
                 >
-                  <div style={{ fontSize: '3rem', marginBottom: '10px' }}>{v.icon}</div>
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#FFFFFF', marginBottom: '4px' }}>{v.type}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{v.desc}</div>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>{v.icon}</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#FFFFFF' }}>{v.type}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{v.desc}</div>
                 </div>
               ))}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={() => setStep(1)} className="btn-secondary">
-                <ArrowLeft size={18} /> Back to Service
+                <ArrowLeft size={18} /> Back: Service Selection
               </button>
 
-              <button
-                onClick={() => {
-                  setStep(3);
-                  setShowUpsellModal(true); // Offer smart upselling add-ons before booking slot
-                }}
-                className="btn-aqua"
-                style={{ padding: '14px 32px' }}
-              >
-                Next: Booking & Slot Selection <ArrowRight size={18} />
+              <button onClick={() => setStep(3)} className="btn-aqua" style={{ padding: '14px 32px' }}>
+                Next: Date & Slot <ArrowRight size={18} />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 3: BOOKING (DATE, SLOT & CONTACT DETAILS) */}
+        {/* STEP 3: DATE & TIME SLOT SELECTION */}
         {step === 3 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>3. Select Date, Time Slot & Contact Info</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Pick an open bay slot and provide your vehicle registration details</p>
+                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>3. Pick Preferred Date & Wash Bay Slot</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Select an open time slot for your appointment in Siliguri</p>
               </div>
               <span className="badge badge-aqua">Step 3 of 4</span>
             </div>
 
-            {/* Smart Addons Summary Pill Bar */}
-            <div style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="grid-2" style={{ gap: '24px', marginBottom: '32px' }}>
               <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)' }}>SELECTED ADD-ONS:</div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                  {selectedAddons.length > 0 ? selectedAddons.map(a => a.name).join(', ') : 'No extra add-ons added'}
-                </div>
-              </div>
-              <button onClick={() => setShowUpsellModal(true)} className="btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
-                <Sparkles size={14} color="var(--accent-aqua)" /> Add Smart Upgrades
-              </button>
-            </div>
-
-            <div className="grid-2" style={{ gap: '20px', marginBottom: '24px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Appointment Date</label>
+                <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+                  Select Wash Date:
+                </label>
                 <input
                   type="date"
                   value={selectedDate}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="input-field"
+                  style={{ fontSize: '1rem', padding: '12px' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Select Bay Time Slot</label>
-                <select
-                  value={selectedSlot}
-                  onChange={(e) => setSelectedSlot(e.target.value)}
-                  className="input-field"
-                >
-                  {slots.map((s, i) => (
-                    <option key={i} value={s.slotTime} disabled={!s.available}>
-                      {s.slotTime} {s.available ? `(${s.capacity - s.booked} bay slots available)` : '(SLOT FULL)'}
-                    </option>
+                <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px', display: 'block' }}>
+                  Select Available Time Slot:
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  {slots.map(s => (
+                    <button
+                      key={s.time}
+                      disabled={!s.available}
+                      onClick={() => setSelectedSlot(s.time)}
+                      style={{
+                        background: selectedSlot === s.time ? 'var(--accent-aqua)' : 'rgba(0,49,53,0.8)',
+                        color: selectedSlot === s.time ? '#003135' : 'var(--text-main)',
+                        border: selectedSlot === s.time ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                        borderRadius: '8px',
+                        padding: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: s.available ? 'pointer' : 'not-allowed',
+                        opacity: s.available ? 1 : 0.4
+                      }}
+                    >
+                      {s.time} {!s.available && '(Booked)'}
+                    </button>
                   ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid-2" style={{ gap: '20px', marginBottom: '28px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Full Customer Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Marcus Vance"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Phone Number *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. +1 555-0192"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Vehicle Reg. Number *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. KA-01-MJ-8821"
-                  value={vehicleNumber}
-                  onChange={(e) => setVehicleNumber(e.target.value)}
-                  className="input-field"
-                  style={{ textTransform: 'uppercase' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '6px' }}>Promo Coupon Code</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. WELCOME20"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="input-field"
-                    style={{ textTransform: 'uppercase' }}
-                  />
-                  <button type="button" onClick={handleApplyCoupon} className="btn-primary">Apply</button>
                 </div>
-                {couponStatus && (
-                  <div style={{ fontSize: '0.78rem', color: couponDiscount > 0 ? 'var(--accent-aqua)' : '#e0725a', marginTop: '4px', fontWeight: 700 }}>
-                    {couponStatus}
-                  </div>
-                )}
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={() => setStep(2)} className="btn-secondary">
-                <ArrowLeft size={18} /> Back to Vehicle
+                <ArrowLeft size={18} /> Back: Vehicle Category
               </button>
 
-              <button
-                onClick={() => {
-                  if (!customerName || !phone || !vehicleNumber) {
-                    alert('Please enter your name, phone number, and vehicle registration number.');
-                    return;
-                  }
-                  setStep(4);
-                }}
-                className="btn-aqua"
-                style={{ padding: '14px 32px' }}
-              >
-                Proceed to Online Payment <ArrowRight size={18} />
+              <button onClick={() => setStep(4)} className="btn-aqua" style={{ padding: '14px 32px' }}>
+                Next: Payment & Confirm <ArrowRight size={18} />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: ONLINE PAYMENT & DIGITAL INVOICE */}
+        {/* STEP 4: ONLINE PAYMENT & FINAL CONFIRMATION */}
         {step === 4 && (
-          <form onSubmit={handleFinalSubmit}>
+          <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>4. Online Payment & Order Finalization</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Select payment method to complete booking & generate printable digital invoice</p>
+                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>4. Customer Details & Online Payment</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Enter your contact info to receive digital receipt & SMS updates</p>
               </div>
-              <span className="badge badge-terracotta">Step 4 of 4</span>
+              <span className="badge badge-aqua">Step 4 of 4</span>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.88rem', color: 'var(--ice-tint)', marginBottom: '10px', fontWeight: 700 }}>
-                SELECT PAYMENT MODE:
-              </label>
-
-              <div className="grid-3" style={{ gap: '16px', marginBottom: '24px' }}>
-                {[
-                  { mode: 'Online', label: 'Online Card Payment', desc: 'Instant confirmation & digital invoice' },
-                  { mode: 'UPI', label: 'UPI / QR Code', desc: 'GPay, PhonePe, Paytm QR' },
-                  { mode: 'Cash', label: 'Pay at Wash Bay (Cash)', desc: 'Pay upon vehicle arrival' }
-                ].map(p => (
-                  <div
-                    key={p.mode}
-                    onClick={() => setPaymentMode(p.mode)}
-                    style={{
-                      background: paymentMode === p.mode ? 'rgba(15, 164, 175, 0.2)' : 'var(--bg-glass-card)',
-                      border: paymentMode === p.mode ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                      borderRadius: '12px',
-                      padding: '18px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF', marginBottom: '4px' }}>{p.label}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{p.desc}</div>
+            <form onSubmit={handleConfirmBookingSubmit}>
+              <div className="grid-2" style={{ gap: '24px', marginBottom: '32px' }}>
+                {/* Left Column: Form Inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Marcus Vance"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="input-field"
+                    />
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* ORDER SUMMARY BREAKDOWN */}
-            <div style={{
-              background: 'rgba(0, 49, 53, 0.95)',
-              border: '1px solid var(--accent-aqua)',
-              borderRadius: '14px',
-              padding: '24px',
-              marginBottom: '28px'
-            }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', marginBottom: '14px', color: '#FFFFFF' }}>Order Summary & Payable Total</div>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem' }}>
-                <span>Base Service ({selectedService?.name}):</span>
-                <span>₹{selectedService?.price || 0}</span>
-              </div>
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Mobile Number *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. +91 8609504186"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
 
-              {selectedAddons.map((a, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  <span>+ {a.name}</span>
-                  <span>+₹{a.price}</span>
+                  <div className="grid-2" style={{ gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Vehicle Reg Number *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. WB-74-AX-8821"
+                        value={vehicleNumber}
+                        onChange={(e) => setVehicleNumber(e.target.value)}
+                        className="input-field"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Car Model</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. BMW X5 / Creta"
+                        value={vehicleModel}
+                        onChange={(e) => setVehicleModel(e.target.value)}
+                        className="input-field"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Payment Method</label>
+                    <select
+                      value={paymentMode}
+                      onChange={(e) => setPaymentMode(e.target.value)}
+                      className="input-field"
+                    >
+                      <option value="Online">Instant Online UPI / QR Code</option>
+                      <option value="Card">Credit / Debit Card</option>
+                      <option value="Cash">Pay Cash at Bay Counter</option>
+                    </select>
+                  </div>
                 </div>
-              ))}
 
-              {couponDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e0725a', fontWeight: 700, marginTop: '8px', fontSize: '0.95rem' }}>
-                  <span>Promo Discount ({couponCode}):</span>
-                  <span>-₹{couponDiscount}</span>
+                {/* Right Column: Order Summary & Coupon */}
+                <div style={{ background: 'rgba(0, 49, 53, 0.85)', padding: '24px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#FFFFFF' }}>Order Summary</h4>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem' }}>
+                    <span>Selected Package ({selectedService?.title || selectedService?.name}):</span>
+                    <span>₹{selectedService?.price || 899}</span>
+                  </div>
+
+                  {selectedAddons.map((a, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                      <span>+ {a.name}</span>
+                      <span>+₹{a.price}</span>
+                    </div>
+                  ))}
+
+                  {/* Coupon Code Input */}
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)' }}>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Apply Promo Coupon Code:</label>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <input
+                        type="text"
+                        placeholder="e.g. WELCOME20 or FRESH50"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="input-field"
+                      />
+                      <button type="button" onClick={handleApplyCoupon} className="btn-secondary" style={{ padding: '0 16px' }}>
+                        Apply
+                      </button>
+                    </div>
+                    {couponStatus && (
+                      <div style={{ fontSize: '0.8rem', color: couponStatus.includes('Success') ? 'var(--accent-aqua)' : '#e0725a', marginTop: '4px', fontWeight: 700 }}>
+                        {couponStatus}
+                      </div>
+                    )}
+                  </div>
+
+                  {couponDiscount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e0725a', fontWeight: 700, marginTop: '8px', fontSize: '0.95rem' }}>
+                      <span>Promo Discount ({couponCode}):</span>
+                      <span>-₹{couponDiscount}</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-aqua)', borderTop: '2px solid var(--accent-aqua)', paddingTop: '14px', marginTop: '16px' }}>
+                    <span>Total Amount Payable:</span>
+                    <span>₹{calculateFinalTotal()}</span>
+                  </div>
                 </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '12px' }}>
-                <span>Total Amount Payable:</span>
-                <span>₹{calculateFinalTotal()}</span>
               </div>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button type="button" onClick={() => setStep(3)} className="btn-secondary">
-                <ArrowLeft size={18} /> Back to Details
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <button type="button" onClick={() => setStep(3)} className="btn-secondary">
+                  <ArrowLeft size={18} /> Back: Date & Slot
+                </button>
 
-              <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ padding: '16px 36px', fontSize: '1.05rem' }}>
-                {isSubmitting ? 'Processing Order...' : 'Pay Online & Confirm Booking'} <CheckCircle2 size={20} />
-              </button>
-            </div>
-          </form>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="btn-slot-hover"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
+                    color: '#003135',
+                    fontWeight: 800,
+                    fontSize: '1rem',
+                    border: 'none',
+                    padding: '14px 36px',
+                    borderRadius: '28px',
+                    cursor: 'pointer',
+                    boxShadow: '0 6px 25px rgba(15, 164, 175, 0.5)'
+                  }}
+                >
+                  {isSubmitting ? 'Confirming Appointment...' : `Pay ₹${calculateFinalTotal()} & Confirm Slot`}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
 
       </div>
 
-      {/* Smart Upsell Modal */}
-      <SmartUpsellModal
-        isOpen={showUpsellModal}
-        onClose={() => setShowUpsellModal(false)}
-        addons={allAddons}
-        selectedAddons={selectedAddons}
-        onToggleAddon={handleToggleAddon}
-        onProceed={() => {
-          setShowUpsellModal(false);
-        }}
-      />
+      {/* SMART UPSELL MODAL */}
+      {showUpsellModal && (
+        <SmartUpsellModal
+          onClose={handleUpsellModalClose}
+          onAddonsSelected={(addons) => {
+            setSelectedAddons(addons);
+            handleUpsellModalClose();
+          }}
+        />
+      )}
 
-      {/* Digital Receipt Invoice Modal */}
-      <DigitalInvoiceModal
-        booking={confirmedBooking}
-        isOpen={showInvoiceModal}
-        onClose={() => setShowInvoiceModal(false)}
-        onTrackLive={(code) => {
-          setShowInvoiceModal(false);
-          onTrackLive(code);
-        }}
-      />
+      {/* DIGITAL INVOICE MODAL */}
+      {showInvoiceModal && confirmedBooking && (
+        <DigitalInvoiceModal
+          booking={confirmedBooking}
+          onClose={() => {
+            setShowInvoiceModal(false);
+            if (onTrackLive) onTrackLive(confirmedBooking.trackingCode);
+          }}
+        />
+      )}
 
     </div>
   );

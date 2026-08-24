@@ -40,13 +40,16 @@ body {
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--bg-secondary);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-aqua);
 }
@@ -75,7 +78,12 @@ body {
 }
 
 /* Typography Utilities */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.02em;
@@ -288,16 +296,22 @@ select.input-field option {
 }
 
 @media (max-width: 900px) {
-  .grid-3, .grid-4 {
+
+  .grid-3,
+  .grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .grid-2 {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 600px) {
-  .grid-3, .grid-4, .grid-2 {
+
+  .grid-3,
+  .grid-4,
+  .grid-2 {
     grid-template-columns: 1fr;
   }
 }
