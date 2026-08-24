@@ -186,26 +186,6 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   return (
     <div style={{ paddingBottom: '60px', position: 'relative' }}>
       
-      {/* REAL LIVE SILIGURI WEATHER BANNER */}
-      <div style={{
-        background: 'linear-gradient(90deg, #003135 0%, #024950 50%, #964734 100%)',
-        borderBottom: '1px solid var(--accent-aqua)',
-        padding: '8px 24px',
-        textAlign: 'center',
-        fontSize: '0.85rem',
-        fontWeight: 700,
-        color: '#FFFFFF',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        flexWrap: 'wrap'
-      }}>
-        <Sun size={16} color="var(--accent-aqua)" />
-        <span>Live Siliguri Weather: <strong>{weatherData.condition} ({weatherData.temp}°C)</strong> • {weatherData.recommendation}</span>
-        <span className="badge badge-aqua" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>LIVE BAYS OPEN</span>
-      </div>
-
       {/* HERO SECTION WITH FULL IMAGE BACKGROUND & OVERLAY TEXT */}
       <section style={{
         position: 'relative',
@@ -218,24 +198,6 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ maxWidth: '640px' }}>
-            
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(15, 164, 175, 0.2)',
-              border: '1px solid var(--accent-aqua)',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '0.82rem',
-              color: 'var(--accent-aqua)',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              marginBottom: '18px'
-            }}>
-              <Sparkles size={14} /> CAR WASH • SILIGURI
-            </div>
             
             <h1 style={{
               fontSize: '3.8rem',
@@ -465,17 +427,18 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       </section>
 
       {/* MULTI-VEHICLE GARAGE & LOYALTY LOOKUP */}
-      <section className="container" style={{ marginTop: '90px' }}>
-        <div className="glass-panel" style={{ padding: '36px', border: '2px solid var(--accent-aqua)', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
+      <section className="container" style={{ marginTop: '50px' }}>
+        <div className="glass-panel" style={{ padding: '24px', border: '2px solid var(--accent-aqua)', background: 'linear-gradient(135deg, rgba(0,49,53,0.95) 0%, rgba(2,73,80,0.9) 100%)' }}>
           
-          <div style={{ textAlign: 'center', maxWidth: '650px', margin: '0 auto 28px auto' }}>
-            <span className="badge badge-aqua" style={{ marginBottom: '8px' }}>CUSTOMER PORTAL & MULTI-VEHICLE GARAGE</span>
-            <h2 style={{ fontSize: '2.2rem', fontWeight: 800 }}>My Garage & Rewards Lookup</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+          <div style={{ textAlign: 'center', maxWidth: '650px', margin: '0 auto 20px auto' }}>
+            <span className="badge badge-aqua" style={{ marginBottom: '6px' }}>CUSTOMER PORTAL & MULTI-VEHICLE GARAGE</span>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginTop: '2px' }}>My Garage & Rewards Lookup</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '2px' }}>
               Manage all your family vehicles in one place & check points balance for 1-click slot booking!
             </p>
 
-            <form onSubmit={handleLoyaltyLookup} style={{ display: 'flex', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
+            {/* SEARCH LOOKUP FORM WITH MATCHING HEIGHTS */}
+            <form onSubmit={handleLoyaltyLookup} style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
               <input
                 type="text"
                 required
@@ -483,10 +446,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 value={lookupInput}
                 onChange={(e) => setLookupInput(e.target.value)}
                 className="input-field"
-                style={{ flex: 1, minWidth: '280px' }}
+                style={{ flex: 1, minWidth: '260px', height: '44px', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
               />
-              <button type="submit" className="btn-primary" style={{ padding: '12px 28px' }}>
-                <Search size={18} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
+              <button type="submit" className="btn-primary" style={{ height: '44px', padding: '0 24px', fontSize: '0.88rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Search size={16} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
               </button>
             </form>
           </div>
@@ -495,43 +458,46 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           <div style={{
             background: 'rgba(0, 31, 35, 0.85)',
             border: '1px solid var(--border-light)',
-            borderRadius: '16px',
-            padding: '24px',
-            marginTop: '24px'
+            borderRadius: '14px',
+            padding: '18px',
+            marginTop: '16px'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Car size={20} color="var(--accent-aqua)" /> My Saved Vehicles Garage ({garageVehicles.length})
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Car size={18} color="var(--accent-aqua)" /> My Saved Vehicles Garage ({garageVehicles.length})
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>1-Click Select Vehicle to Book</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>1-Click Select Vehicle to Book</div>
             </div>
 
-            <div className="grid-2" style={{ gap: '16px', marginBottom: '20px' }}>
+            {/* VEHICLE CARDS GRID */}
+            <div className="grid-2" style={{ gap: '12px', marginBottom: '16px' }}>
               {garageVehicles.map((v, idx) => (
                 <div key={idx} style={{
                   background: 'rgba(2, 73, 80, 0.7)',
                   border: '1px solid var(--accent-aqua)',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
                   display: 'flex',
-                  justify: 'space-between',
-                  alignItems: 'center'
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '12px'
                 }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#FFFFFF' }}>{v.regNumber}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{v.model} • {v.type}</div>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1rem', color: '#FFFFFF', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{v.regNumber}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{v.model} • {v.type}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                     <button
                       onClick={() => onStartBooking(v.type)}
                       className="btn-aqua"
-                      style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                      style={{ padding: '6px 14px', fontSize: '0.78rem', height: '32px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center' }}
                     >
                       Book Slot
                     </button>
                     <button
                       onClick={() => handleRemoveGarageVehicle(idx)}
-                      style={{ background: 'transparent', border: 'none', color: '#e0725a', cursor: 'pointer' }}
+                      title="Remove Vehicle"
+                      style={{ background: 'transparent', border: 'none', color: '#e0725a', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -540,8 +506,15 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               ))}
             </div>
 
-            {/* Add New Vehicle to Garage Form */}
-            <form onSubmit={handleAddGarageVehicle} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+            {/* ADD NEW VEHICLE FORM WITH UNIFORM 42px HEIGHTS & ALIGNMENT */}
+            <form onSubmit={handleAddGarageVehicle} style={{
+              display: 'grid',
+              gridTemplateColumns: '1.2fr 1fr 120px 1.2fr',
+              gap: '10px',
+              alignItems: 'center',
+              borderTop: '1px solid var(--border-light)',
+              paddingTop: '14px'
+            }}>
               <input
                 type="text"
                 required
@@ -549,28 +522,31 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 value={newRegNo}
                 onChange={(e) => setNewRegNo(e.target.value.toUpperCase())}
                 className="input-field"
-                style={{ flex: 1, minWidth: '180px' }}
+                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
               />
+
               <input
                 type="text"
                 placeholder="Car Model (e.g. i20)"
                 value={newModel}
                 onChange={(e) => setNewModel(e.target.value)}
                 className="input-field"
-                style={{ flex: 1, minWidth: '140px' }}
+                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
               />
+
               <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
                 className="input-field"
-                style={{ width: '130px' }}
+                style={{ height: '42px', padding: '8px 12px', fontSize: '0.85rem', borderRadius: '8px' }}
               >
                 <option value="Hatchback">Hatchback</option>
                 <option value="Sedan">Sedan</option>
                 <option value="SUV">SUV</option>
                 <option value="Luxury">Luxury</option>
               </select>
-              <button type="submit" className="btn-secondary" style={{ padding: '10px 20px' }}>
+
+              <button type="submit" className="btn-secondary" style={{ height: '42px', padding: '0 16px', fontSize: '0.85rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Add Car to Garage
               </button>
             </form>

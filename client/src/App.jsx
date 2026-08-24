@@ -87,7 +87,7 @@ export default function App() {
         activeBookingCode={activeBookingCode}
       />
 
-      <main style={{ flex: 1, paddingTop: '76px' }}>
+      <main className="public-main-content" style={{ flex: 1, paddingTop: '76px' }}>
         {activeTab === 'home' && (
           <CustomerHome
             onStartBooking={handleStartBooking}

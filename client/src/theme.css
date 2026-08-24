@@ -248,6 +248,11 @@ select.input-field option {
   gap: 20px;
 }
 
+/* PUBLIC MAIN CONTENT TOP OFFSET FIX */
+main.public-main-content {
+  padding-top: 84px !important;
+}
+
 /* NAVBAR RESPONSIVE UTILITIES */
 .desktop-nav, .desktop-actions {
   display: flex;
@@ -292,29 +297,29 @@ select.input-field option {
   .drawer-close-btn {
     display: block !important;
   }
-
-  main {
-    padding: 16px !important;
-  }
 }
 
 /* FULL MOBILE RESPONSIVE MEDIA QUERIES */
 @media (max-width: 768px) {
+  main.public-main-content {
+    padding-top: 96px !important;
+  }
+
   .container {
     padding: 0 16px !important;
   }
 
   h1 {
-    font-size: 2.2rem !important;
+    font-size: 2.1rem !important;
     line-height: 1.18 !important;
   }
 
   h2 {
-    font-size: 1.6rem !important;
+    font-size: 1.5rem !important;
   }
 
   h3 {
-    font-size: 1.3rem !important;
+    font-size: 1.25rem !important;
   }
 
   .grid-2,
@@ -342,8 +347,12 @@ select.input-field option {
 }
 
 @media (max-width: 480px) {
+  main.public-main-content {
+    padding-top: 100px !important;
+  }
+
   h1 {
-    font-size: 1.8rem !important;
+    font-size: 1.75rem !important;
   }
 
   .badge {
