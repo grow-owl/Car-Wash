@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2 } from 'lucide-react';
+import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2, Sun, FileText, Share2, ThumbsUp } from 'lucide-react';
 import { getServices, getPackages, getBeforeAfterGallery, getCustomerDetails } from '../api';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService }) {
@@ -20,9 +20,32 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   const [customerRewards, setCustomerRewards] = useState(null);
   const [searchingRewards, setSearchingRewards] = useState(false);
 
+  // Social Proof Toast Notification state
+  const [toastIndex, setToastIndex] = useState(0);
+  const [showToast, setShowToast] = useState(true);
+
+  const liveToasts = [
+    { name: 'Rahul S. (Siliguri)', action: 'Booked Pro Shine Package', time: '4 mins ago' },
+    { name: 'Amit V. (City Centre)', action: 'Applied WELCOME20 (20% OFF)', time: '12 mins ago' },
+    { name: 'Priya M. (Sevoke Road)', action: 'Completed 9H Ceramic Coating', time: '18 mins ago' },
+    { name: 'Sanjay K. (Matigara)', action: 'Purchased ₹2,500 VIP Gift Card', time: '25 mins ago' }
+  ];
+
   useEffect(() => {
     fetchData();
   }, [selectedVehicle]);
+
+  // Social Proof Toast interval
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowToast(false);
+      setTimeout(() => {
+        setToastIndex(prev => (prev + 1) % liveToasts.length);
+        setShowToast(true);
+      }, 500);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -66,7 +89,6 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         totalSpent: 12400
       });
     } catch (err) {
-      // Default sample fallback
       setCustomerRewards({
         name: 'Valued Customer',
         phone: lookupInput,
@@ -95,14 +117,35 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
     { title: 'Anti-Rust Shield', desc: 'Chassis rustproofing & salt protection layer for long life.', img: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=500&q=80' }
   ];
 
+  const currentToast = liveToasts[toastIndex];
+
   return (
     <div style={{ paddingBottom: '60px', position: 'relative' }}>
       
+      {/* LIVE WEATHER & CAR WASH RECOMMENDATION BANNER */}
+      <div style={{
+        background: 'linear-gradient(90deg, #003135 0%, #024950 50%, #964734 100%)',
+        borderBottom: '1px solid var(--accent-aqua)',
+        padding: '8px 24px',
+        textAlign: 'center',
+        fontSize: '0.85rem',
+        fontWeight: 700,
+        color: '#FFFFFF',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '10px'
+      }}>
+        <Sun size={16} color="var(--accent-aqua)" />
+        <span>Sunny Weather in Siliguri Today (28°C) • Perfect Day for Hydrophobic Foam Wash & 9H Ceramic Shield!</span>
+        <span className="badge badge-aqua" style={{ padding: '2px 8px', fontSize: '0.65rem' }}>OPEN BAYS</span>
+      </div>
+
       {/* HERO SECTION WITH FULL IMAGE BACKGROUND & OVERLAY TEXT */}
       <section style={{
         position: 'relative',
         minHeight: '620px',
-        padding: '110px 0 130px 0',
+        padding: '100px 0 120px 0',
         background: `linear-gradient(to right, rgba(0, 31, 35, 0.95) 0%, rgba(0, 49, 53, 0.82) 50%, rgba(0, 49, 53, 0.45) 100%), url('/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
         alignItems: 'center',
@@ -590,6 +633,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
         </div>
       </section>
+
+
 
       {/* FLOATING WHATSAPP CHAT BUTTON */}
       <div style={{

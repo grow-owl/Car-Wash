@@ -137,22 +137,45 @@ export default function DigitalInvoiceModal({ booking, isOpen, onClose, onTrackL
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={handlePrint}
             className="btn-secondary"
-            style={{ flex: 1, justifyContent: 'center' }}
+            style={{ flex: 1, minWidth: '140px', justifyContent: 'center' }}
           >
             <Printer size={18} /> Print Invoice
           </button>
-          
+
+          <a
+            href={`https://wa.me/918609504186?text=${encodeURIComponent(`Hi CAR WASH Siliguri! Here is my booking confirmation:\nTracking Code: ${booking.trackingCode}\nCustomer: ${booking.customerName} (${booking.phone})\nVehicle: ${booking.vehicleNumber}\nService: ${booking.serviceName}\nSlot: ${booking.date} at ${booking.slotTime}\nTotal Paid: ₹${booking.totalAmount}`)}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              flex: 1,
+              minWidth: '160px',
+              background: '#25D366',
+              color: '#FFFFFF',
+              borderRadius: '8px',
+              padding: '12px',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <MessageSquare size={18} /> Send WhatsApp
+          </a>
+
           <button
             onClick={() => {
               onClose();
               onTrackLive(booking.trackingCode);
             }}
             className="btn-aqua"
-            style={{ flex: 1, justifyContent: 'center' }}
+            style={{ flex: 1, minWidth: '150px', justifyContent: 'center' }}
           >
             <ExternalLink size={18} /> Track Job Live
           </button>
