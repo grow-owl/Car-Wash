@@ -152,7 +152,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         position: 'relative',
         minHeight: '580px',
         padding: '90px 0 100px 0',
-        background: `linear-gradient(to right, rgba(1, 59, 64, 0.92) 0%, rgba(4, 94, 103, 0.78) 50%, rgba(4, 94, 103, 0.45) 100%), url('/hero-bg.jpg') center/cover no-repeat`,
+        background: `linear-gradient(to right, rgba(6, 20, 27, 0.96) 0%, rgba(17, 33, 45, 0.85) 50%, rgba(37, 55, 69, 0.5) 100%), url('/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
         alignItems: 'center',
         borderBottom: '1px solid var(--border-light)'
@@ -169,7 +169,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               textShadow: '0 4px 20px rgba(0,0,0,0.5)'
             }}>
               A showroom finish,<br />
-              every <span style={{ color: 'var(--accent-aqua)' }}>single visit.</span>
+              every <span style={{ color: 'var(--accent-gold)' }}>single visit.</span>
             </h1>
 
             <p style={{
@@ -185,17 +185,11 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '44px' }}>
               <button
                 onClick={() => onStartBooking(selectedVehicle)}
-                className="btn-slot-hover"
+                className="btn-primary"
                 style={{
-                  background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #26dbea 100%)',
-                  color: '#002d31',
-                  fontWeight: 800,
-                  fontSize: '1rem',
-                  border: 'none',
                   padding: '16px 36px',
                   borderRadius: '30px',
-                  cursor: 'pointer',
-                  boxShadow: '0 6px 25px rgba(20, 199, 212, 0.45)',
+                  fontSize: '1rem',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px'
@@ -216,28 +210,28 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               </button>
             </div>
 
-            {/* Stats Counter Glass Cards */}
+            {/* Stats Counter Glass Cards with Multi-color Distinction */}
             <div style={{ display: 'flex', gap: '20px' }}>
               <div style={{
-                background: 'rgba(4, 94, 103, 0.65)',
+                background: 'rgba(255, 195, 0, 0.12)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid var(--border-light)',
+                border: '1px solid var(--accent-gold)',
                 padding: '14px 24px',
                 borderRadius: '16px'
               }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>15+</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Years Experience</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-gold)' }}>15+</div>
+                <div style={{ fontSize: '0.78rem', color: '#CCD0CF' }}>Years Experience</div>
               </div>
 
               <div style={{
-                background: 'rgba(4, 94, 103, 0.65)',
+                background: 'rgba(0, 229, 255, 0.12)',
                 backdropFilter: 'blur(12px)',
-                border: '1px solid var(--border-light)',
+                border: '1px solid var(--accent-cyan)',
                 padding: '14px 24px',
                 borderRadius: '16px'
               }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>5.0 ★</div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Customer Rating</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>5.0 ★</div>
+                <div style={{ fontSize: '0.78rem', color: '#CCD0CF' }}>Customer Rating</div>
               </div>
             </div>
 
@@ -245,9 +239,9 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
-      {/* SECTION 2: INTERACTIVE BEFORE / AFTER SLIDER (BRIGHT TEAL BACKGROUND) */}
+      {/* SECTION 2: INTERACTIVE BEFORE / AFTER SLIDER (#11212D BACKGROUND) */}
       <section style={{
-        background: 'rgba(2, 60, 66, 0.75)',
+        background: '#11212D',
         padding: '50px 0',
         borderBottom: '1px solid var(--border-light)'
       }}>
@@ -256,9 +250,9 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
-      {/* SECTION 3: SERVICES WE PROVIDE (LIGHTER AQUA TINT BACKGROUND) */}
+      {/* SECTION 3: SERVICES WE PROVIDE (#06141B BACKGROUND) */}
       <section id="services-section" style={{
-        background: 'rgba(4, 94, 103, 0.35)',
+        background: '#06141B',
         padding: '60px 0',
         borderBottom: '1px solid var(--border-light)'
       }}>
@@ -286,9 +280,9 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               >
                 <div style={{ height: '150px', position: 'relative', overflow: 'hidden' }}>
                   <img src={sc.img} alt={sc.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(1,59,64,0.9) 0%, transparent 70%)' }} />
-                  <span className="badge badge-aqua" style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem' }}>
-                    PRO
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,20,27,0.95) 0%, transparent 70%)' }} />
+                  <span className={`badge ${idx % 4 === 0 ? 'badge-coral' : idx % 4 === 1 ? 'badge-cyan' : idx % 4 === 2 ? 'badge-gold' : 'badge-emerald'}`} style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem' }}>
+                    {idx === 0 ? 'HOT' : idx === 1 ? 'PRO' : idx === 2 ? 'VIP' : 'HYGIENE'}
                   </span>
                 </div>
                 <div style={{ padding: '16px' }}>
@@ -301,17 +295,17 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
-      {/* SECTION 4: PACKAGES COMPARISON & PRICING MATRIX (RICH GRADIENT BACKGROUND) */}
+      {/* SECTION 4: PACKAGES COMPARISON & PRICING MATRIX (#11212D GRADIENT BACKGROUND) */}
       <section id="pricing-section" style={{
-        background: 'linear-gradient(180deg, rgba(2, 73, 80, 0.6) 0%, rgba(4, 94, 103, 0.8) 50%, rgba(1, 59, 64, 0.9) 100%)',
+        background: 'linear-gradient(180deg, #11212D 0%, #253745 50%, #06141B 100%)',
         padding: '70px 0',
         borderBottom: '1px solid var(--border-light)'
       }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <span className="badge badge-terracotta">TRANSPARENT PRICING</span>
-            <h2 style={{ fontSize: '2.3rem', marginTop: '8px' }}>Wash & Detailing Packages</h2>
-            <p style={{ color: 'var(--ice-tint)' }}>Save up to 25% by bundling multiple maintenance services together</p>
+            <span className="badge badge-gold">TRANSPARENT PRICING</span>
+            <h2 style={{ fontSize: '2.3rem', marginTop: '8px', color: '#FFFFFF' }}>Wash & Detailing Packages</h2>
+            <p style={{ color: '#CCD0CF' }}>Save up to 25% by bundling multiple maintenance services together</p>
           </div>
 
           {(() => {
@@ -339,7 +333,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               }
             ];
 
-            const displayPackages = packages.length >= 3 ? packages : default3Packages;
+            const displayPackages = (packages.length >= 3 ? packages : default3Packages).slice().sort((a, b) => a.price - b.price);
 
             return (
               <div className="grid-3">
@@ -350,8 +344,9 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                     style={{
                       padding: '32px',
                       position: 'relative',
-                      border: pkg.isPopular ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                      background: pkg.isPopular ? 'rgba(4, 94, 103, 0.88)' : 'var(--bg-glass-card)'
+                      border: pkg.isPopular ? '2px solid #FFC300' : '1px solid var(--border-light)',
+                      background: pkg.isPopular ? 'linear-gradient(135deg, rgba(37,55,69,0.95) 0%, rgba(17,33,45,0.95) 100%)' : 'var(--bg-glass-card)',
+                      boxShadow: pkg.isPopular ? '0 12px 35px var(--accent-gold-glow)' : 'none'
                     }}
                   >
                     {pkg.isPopular && (
@@ -360,31 +355,31 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                         top: '-14px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        background: 'var(--accent-aqua)',
-                        color: '#002d31',
+                        background: 'linear-gradient(135deg, #FFC300 0%, #E0A800 100%)',
+                        color: '#06141B',
                         padding: '4px 16px',
                         borderRadius: '20px',
                         fontWeight: 800,
                         fontSize: '0.75rem'
                       }}>
-                        MOST POPULAR
+                        ⭐ MOST POPULAR
                       </div>
                     )}
 
                     <h3 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>{pkg.title}</h3>
                     <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginBottom: '20px' }}>{pkg.tagline}</p>
 
-                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent-aqua)', marginBottom: '20px' }}>
-                      ₹{pkg.price} <span style={{ fontSize: '0.9rem', color: 'var(--ice-tint)', fontWeight: 400 }}>/ wash</span>
+                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: pkg.isPopular ? 'var(--accent-gold)' : 'var(--accent-cyan)', marginBottom: '20px' }}>
+                      ₹{pkg.price} <span style={{ fontSize: '0.9rem', color: '#CCD0CF', fontWeight: 400 }}>/ wash</span>
                     </div>
 
                     <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '28px' }}>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '10px' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '10px' }}>
                         INCLUDED SERVICES:
                       </div>
                       {pkg.includedServices.map((inc, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '8px' }}>
-                          <Check size={16} color="var(--accent-aqua)" />
+                          <Check size={16} color={pkg.isPopular ? "var(--accent-gold)" : "var(--accent-cyan)"} />
                           <span>{inc}</span>
                         </div>
                       ))}
@@ -392,7 +387,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
                     <button
                       onClick={() => onSelectService(pkg)}
-                      className={pkg.isPopular ? "btn-aqua" : "btn-secondary"}
+                      className={pkg.isPopular ? "btn-gold" : "btn-cyan"}
                       style={{ width: '100%', justifyContent: 'center' }}
                     >
                       Book Package
@@ -432,7 +427,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   className="input-field"
                   style={{ flex: 1, minWidth: '260px', height: '44px', padding: '10px 16px', fontSize: '0.88rem', borderRadius: '8px' }}
                 />
-                <button type="submit" className="btn-primary" style={{ height: '44px', padding: '0 24px', fontSize: '0.88rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <button type="submit" className="btn-gold" style={{ height: '44px', padding: '0 24px', fontSize: '0.88rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                   <Search size={16} /> {searchingRewards ? 'Searching...' : 'Check My Garage'}
                 </button>
               </form>
@@ -473,7 +468,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                       <button
                         onClick={() => onStartBooking(v.type)}
-                        className="btn-aqua"
+                        className="btn-primary"
                         style={{ padding: '6px 14px', fontSize: '0.78rem', height: '32px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center' }}
                       >
                         Book Slot
@@ -570,28 +565,28 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   </div>
 
                   <div className="grid-3" style={{ gap: '14px' }}>
-                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '12px 16px', background: 'rgba(255,195,0,0.12)', border: '1px solid var(--accent-gold)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>WELCOME20</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>20% OFF 1st Detailing Wash</div>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-gold)' }}>WELCOME20</div>
+                        <div style={{ fontSize: '0.75rem', color: '#CCD0CF' }}>20% OFF 1st Detailing Wash</div>
                       </div>
-                      <span className="badge badge-aqua">READY TO USE</span>
+                      <span className="badge badge-gold">READY TO USE</span>
                     </div>
 
-                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '12px 16px', background: 'rgba(0,229,255,0.12)', border: '1px solid var(--accent-cyan)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>FRESH50</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>₹200 Flat Off Deep Interior Spa</div>
+                        <div style={{ fontWeight: 800, color: 'var(--accent-cyan)' }}>FRESH50</div>
+                        <div style={{ fontSize: '0.75rem', color: '#CCD0CF' }}>₹200 Flat Off Deep Interior Spa</div>
                       </div>
-                      <span className="badge badge-aqua">READY TO USE</span>
+                      <span className="badge badge-cyan">READY TO USE</span>
                     </div>
 
-                    <div style={{ padding: '12px 16px', background: 'rgba(4,94,103,0.85)', border: '1px solid var(--accent-aqua)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '12px 16px', background: 'rgba(255,89,100,0.12)', border: '1px solid #FF5964', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontWeight: 800, color: 'var(--accent-aqua)' }}>CARWASH-MARCUS88</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>Referral Code (Share for ₹150 Credit)</div>
+                        <div style={{ fontWeight: 800, color: '#FF5964' }}>CARWASH-MARCUS88</div>
+                        <div style={{ fontSize: '0.75rem', color: '#CCD0CF' }}>Referral Code (Share for ₹150 Credit)</div>
                       </div>
-                      <span className="badge badge-terracotta">MY REFERRAL</span>
+                      <span className="badge badge-coral">MY REFERRAL</span>
                     </div>
                   </div>
                 </div>
@@ -719,7 +714,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   style={{ padding: '8px 12px', fontSize: '0.85rem' }}
                 />
 
-                <button type="submit" className="btn-aqua" style={{ justifyContent: 'center', padding: '10px', fontSize: '0.88rem' }}>
+                <button type="submit" className="btn-gold" style={{ justifyContent: 'center', padding: '10px', fontSize: '0.88rem' }}>
                   <Send size={16} /> Submit Enquiry
                 </button>
               </form>

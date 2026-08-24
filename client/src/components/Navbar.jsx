@@ -29,10 +29,10 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode }) {
       right: 0,
       width: '100%',
       zIndex: 9999,
-      background: 'rgba(0, 31, 35, 0.96)',
+      background: 'rgba(6, 20, 27, 0.96)',
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
-      borderBottom: '1px solid rgba(15, 164, 175, 0.25)',
+      borderBottom: '1px solid rgba(74, 92, 106, 0.4)',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
       padding: '12px 24px',
       boxSizing: 'border-box'
@@ -56,18 +56,18 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode }) {
             width: '38px',
             height: '38px',
             borderRadius: '10px',
-            background: 'linear-gradient(135deg, #964734 0%, #0FA4AF 100%)',
+            background: 'linear-gradient(135deg, #FFC300 0%, #00E5FF 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 15px rgba(15, 164, 175, 0.4)',
-            border: '1px solid rgba(15, 164, 175, 0.4)'
+            boxShadow: '0 4px 15px rgba(0, 229, 255, 0.4)',
+            border: '1px solid rgba(0, 229, 255, 0.4)'
           }}>
-            <Car size={22} color="#FFFFFF" />
+            <Car size={22} color="#06141B" />
           </div>
           <div>
             <div style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#FFFFFF', lineHeight: 1.05 }}>
-              CAR<span style={{ color: 'var(--accent-aqua)' }}>WASH</span>
+              CAR<span style={{ color: 'var(--accent-cyan)' }}>WASH</span>
             </div>
             <div style={{ fontSize: '0.65rem', color: 'var(--ice-tint)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1px' }}>
               Auto Spa & Management
@@ -190,20 +190,12 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode }) {
 
           <button
             onClick={() => handleTabClick('booking')}
-            className="btn-slot-hover"
+            className="btn-primary"
             style={{
-              background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
-              color: '#003135',
               fontWeight: 800,
               fontSize: '0.88rem',
-              border: 'none',
               padding: '10px 22px',
-              borderRadius: '24px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 18px rgba(15, 164, 175, 0.45)'
+              borderRadius: '24px'
             }}
           >
             <Calendar size={16} /> Book Your Slot
@@ -342,18 +334,14 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode }) {
 
             <button
               onClick={() => handleTabClick('booking')}
-              className="btn-slot-hover"
+              className="btn-primary"
               style={{
-                background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
-                color: '#003135',
                 fontWeight: 800,
                 fontSize: '0.95rem',
-                border: 'none',
                 padding: '12px',
                 borderRadius: '24px',
-                cursor: 'pointer',
-                textAlign: 'center',
-                width: '100%'
+                width: '100%',
+                justifyContent: 'center'
               }}
             >
               Book Your Slot Now

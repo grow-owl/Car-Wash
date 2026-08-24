@@ -172,7 +172,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     { type: 'Truck', desc: 'Pickup / Off-road', icon: '🛻' }
   ];
 
-  const displayPackagesList = packages.length >= 3 ? packages : primary3Packages;
+  const displayPackagesList = (packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
 
   return (
     <div className="container" style={{ paddingTop: '40px', paddingBottom: '80px' }}>
@@ -610,17 +610,17 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-slot-hover"
+                  className="btn-primary"
                   style={{
-                    background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
-                    color: '#003135',
+                    background: '#DCD6C4',
+                    color: '#002d31',
                     fontWeight: 800,
                     fontSize: '1rem',
                     border: 'none',
                     padding: '14px 36px',
                     borderRadius: '28px',
                     cursor: 'pointer',
-                    boxShadow: '0 6px 25px rgba(15, 164, 175, 0.5)'
+                    boxShadow: '0 6px 25px rgba(220, 214, 196, 0.45)'
                   }}
                 >
                   {isSubmitting ? 'Confirming Appointment...' : `Pay ₹${calculateFinalTotal()} & Confirm Slot`}

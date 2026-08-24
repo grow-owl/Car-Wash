@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 router.get('/packages', async (req, res) => {
   try {
     const { vehicleType } = req.query;
-    let packages = await Package.find({});
+    let packages = await Package.find({}).sort({ price: 1 });
     
     // Adjust pricing multiplier based on vehicle size if vehicleType provided
     const multiplierMap = {
