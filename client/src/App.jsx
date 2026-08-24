@@ -51,7 +51,7 @@ export default function App() {
   // OWNER DASHBOARD LAYOUT (Dedicated Sidebar)
   if (activeTab === 'admin') {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
         {/* Left Owner Sidebar */}
         <AdminSidebar
           activeSubTab={adminSubTab}
