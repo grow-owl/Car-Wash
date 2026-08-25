@@ -229,13 +229,19 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                 <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>
                   Your Mobile Number *
                 </label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{
-                    position: 'absolute',
-                    left: '14px',
+                    background: 'rgba(0, 49, 53, 0.9)',
+                    border: '1px solid var(--border-light)',
                     color: 'var(--accent-cyan)',
                     fontWeight: 800,
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     +91
                   </div>
@@ -247,7 +253,7 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     className="input-field"
-                    style={{ paddingLeft: '56px', fontSize: '0.95rem', fontWeight: 700 }}
+                    style={{ fontSize: '0.95rem', fontWeight: 700, flex: 1 }}
                   />
                 </div>
               </div>
