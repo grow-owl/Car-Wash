@@ -40,6 +40,16 @@ export default function App() {
   // Read secret Owner Portal path from .env
   const OWNER_SECRET_PATH = import.meta.env.VITE_OWNER_PORTAL_SECRET_PATH || '#owner-sec89k7-wash-portal';
 
+  // Tab navigator that pushes to Browser History for Mobile Native Back Gesture/Button
+  const changeTab = (tabName, hashValue = null) => {
+    const targetHash = hashValue || `#${tabName}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+    }
+    setActiveTab(tabName);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Check URL hash for secret coded owner route or public customer routes (#login, #booking, #track, #services, #pricing, #contact)
   useEffect(() => {
     const handleUrlRoute = () => {
@@ -49,25 +59,29 @@ export default function App() {
 
       if (hash === OWNER_SECRET_PATH || cleanHash === secretClean) {
         setActiveTab('admin');
-      } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip') {
+      } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip' || hash === '#crm') {
         setActiveTab('crm');
       } else if (hash === '#booking') {
         setActiveTab('booking');
       } else if (hash === '#track') {
         setActiveTab('track');
-      } else if (hash === '#services' || hash === '#pricing' || hash === '#contact') {
+      } else {
         setActiveTab('home');
       }
     };
 
     handleUrlRoute();
     window.addEventListener('hashchange', handleUrlRoute);
-    return () => window.removeEventListener('hashchange', handleUrlRoute);
+    window.addEventListener('popstate', handleUrlRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlRoute);
+      window.removeEventListener('popstate', handleUrlRoute);
+    };
   }, []);
 
   const handleStartBooking = (vehType) => {
     if (vehType) setSelectedVehicle(vehType);
-    setActiveTab('booking');
+    changeTab('booking');
   };
 
   const handleBookingComplete = (code) => {
@@ -76,7 +90,7 @@ export default function App() {
 
   const handleTrackLive = (code) => {
     setActiveBookingCode(code);
-    setActiveTab('track');
+    changeTab('track');
   };
 
   // OWNER DASHBOARD LAYOUT (Dedicated Sidebar)
@@ -129,7 +143,7 @@ export default function App() {
         {activeTab !== 'home' && (
           <div className="container" style={{ paddingTop: '20px', paddingBottom: '10px' }}>
             <button
-              onClick={() => setActiveTab('home')}
+              onClick={() => changeTab('home')}
               style={{
                 background: 'rgba(0, 49, 53, 0.85)',
                 border: '1.5px solid var(--accent-cyan)',
@@ -157,11 +171,11 @@ export default function App() {
             onSelectVehicle={(veh) => setSelectedVehicle(veh)}
             onSelectService={(svc) => {
               setPreselectedItem(svc);
-              setActiveTab('booking');
+              changeTab('booking');
             }}
             onSelectPackage={(pkg) => {
               setPreselectedItem(pkg);
-              setActiveTab('booking');
+              changeTab('booking');
             }}
           />
         )}
@@ -172,14 +186,14 @@ export default function App() {
             preselectedItem={preselectedItem}
             onBookingComplete={handleBookingComplete}
             onTrackLive={handleTrackLive}
-            onBackToHome={() => setActiveTab('home')}
+            onBackToHome={() => changeTab('home')}
           />
         )}
 
         {activeTab === 'track' && (
           <TrackBooking
             activeCode={activeBookingCode}
-            onBackToHome={() => setActiveTab('home')}
+            onBackToHome={() => changeTab('home')}
           />
         )}
 
@@ -188,7 +202,7 @@ export default function App() {
             currentUser={currentUser}
             setCurrentUser={setCurrentUser}
             onSignOut={handleSignOut}
-            onBackToHome={() => setActiveTab('home')}
+            onBackToHome={() => changeTab('home')}
           />
         )}
       </main>
