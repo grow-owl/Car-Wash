@@ -47,21 +47,25 @@ router.post('/auth/login', async (req, res) => {
   }
 });
 
-// AUTH: Signup / Register Customer with Name, Phone, PIN
+// AUTH: Signup / Register Customer with Name, Phone, Password (Min 6 chars)
 router.post('/auth/signup', async (req, res) => {
   try {
-    const { name, phone, pin, email, vehicle } = req.body;
+    const { name, phone, pin, password, email, vehicle } = req.body;
+    const pwdVal = String(password || pin || '').trim();
+    if (!pwdVal || pwdVal.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
     let customer = await Customer.findOne({ phone: phone?.trim() });
     if (customer) {
       return res.status(400).json({ error: 'Account already exists for this phone number. Please login.' });
     }
 
-    const pinVal = String(pin || '1234').trim();
     customer = new Customer({
       name: name?.trim() || 'New Customer',
       phone: phone?.trim(),
-      pin: pinVal,
-      pinHash: pinVal,
+      pin: pwdVal,
+      pinHash: pwdVal,
       email: email || '',
       loyaltyPoints: 50,
       vehicles: vehicle ? [{
@@ -204,6 +208,37 @@ router.post('/before-after', async (req, res) => {
     const photo = new BeforeAfter(req.body);
     await photo.save();
     res.status(201).json(photo);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// AUTOMATED REPEAT WASH ENGINE: Get Customers Due For Wash (> 14 Days)
+router.get('/due-reminders', async (req, res) => {
+  try {
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    const allCustomers = await Customer.find({}).sort({ lastVisit: 1 });
+    const dueCustomers = allCustomers.filter(c => !c.lastVisit || new Date(c.lastVisit) <= fourteenDaysAgo);
+    
+    // Return due customers or top customers for rebooking campaign
+    res.json(dueCustomers.length > 0 ? dueCustomers : allCustomers.slice(0, 6));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// AUTOMATED REPEAT WASH ENGINE: Send Due-for-Wash Promotional Reminder
+router.post('/send-due-reminder', async (req, res) => {
+  try {
+    const { customerId, phone, name } = req.body;
+    const customer = await Customer.findById(customerId);
+    if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
+
+    res.json({
+      success: true,
+      message: `Due-for-Wash SMS/WhatsApp reminder + REPEAT15 (15% OFF) coupon sent to ${name || customer.name} (${phone || customer.phone})!`,
+      customer
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

@@ -99,6 +99,11 @@ export default function CustomerPortal() {
   // HANDLER: SIGN UP
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
+    if (!signUpPin || signUpPin.length < 6) {
+      setAuthError('Password must be at least 6 characters long.');
+      return;
+    }
+
     setAuthLoading(true);
     setAuthError('');
     try {
@@ -228,12 +233,13 @@ export default function CustomerPortal() {
 
                 <div>
                   <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                    4-Digit Security PIN *
+                    Password (Min 6 Characters) *
                   </label>
                   <input
                     type="password"
                     required
-                    placeholder="Enter 4-Digit PIN"
+                    minLength={6}
+                    placeholder="Enter Password (min 6 characters)"
                     value={loginPin}
                     onChange={(e) => setLoginPin(e.target.value)}
                     className="input-field"
@@ -291,11 +297,12 @@ export default function CustomerPortal() {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Create 4-Digit PIN *</label>
+                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Create Password (Min 6 Characters) *</label>
                   <input
                     type="password"
                     required
-                    placeholder="Enter 4-Digit PIN"
+                    minLength={6}
+                    placeholder="Enter Password (min 6 characters)"
                     value={signUpPin}
                     onChange={(e) => setSignUpPin(e.target.value)}
                     className="input-field"

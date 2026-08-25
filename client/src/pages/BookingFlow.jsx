@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Car, CheckCircle2, Calendar, Clock, CreditCard, Tag, ArrowRight, ArrowLeft, Sparkles, Shield, User, DollarSign, Check } from 'lucide-react';
-import { getServices, getPackages, getAddons, getSlotsAvailability, validateCoupon, createBooking } from '../api';
+import { getServices, getPackages, getAddons, getSlotsAvailability, validateCoupon, createBooking, checkPhoneExists, captureAbandonedBooking } from '../api';
 import SmartUpsellModal from '../components/SmartUpsellModal';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 
@@ -513,6 +513,18 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                               setIsExistingCustomer(false);
                             }
                           });
+
+                          // Capture abandoned lead draft
+                          captureAbandonedBooking({
+                            customerName: customerName || 'Lead User',
+                            phone: val,
+                            vehicleType,
+                            vehicleNumber,
+                            vehicleModel,
+                            serviceName: selectedService?.name || 'Pro Shine Package',
+                            subtotal: calculateFinalTotal(),
+                            stepReached: step
+                          }).catch(() => {});
                         }
                       }}
                       className="input-field"
@@ -542,12 +554,13 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
                   <div>
                     <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
-                      {isExistingCustomer ? 'Confirm Account PIN *' : 'Create 4-Digit Security PIN / Password *'}
+                      {isExistingCustomer ? 'Enter Account Password *' : 'Create Password (Min 6 Characters) *'}
                     </label>
                     <input
                       type="password"
                       required
-                      placeholder="e.g. 1234"
+                      minLength={6}
+                      placeholder="Enter Password (min 6 characters)"
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
                       className="input-field"

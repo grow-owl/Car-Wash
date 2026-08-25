@@ -175,6 +175,13 @@ router.post('/', async (req, res) => {
 
     await newBooking.save();
 
+    // Mark any abandoned lead for this phone as 'recovered'
+    const AbandonedBooking = require('../models/AbandonedBooking');
+    await AbandonedBooking.updateMany(
+      { phone: phone?.trim(), status: { $ne: 'recovered' } },
+      { status: 'recovered', lastActivityAt: new Date() }
+    );
+
     // Sync Customer CRM & Multi-Vehicle garage list
     let customer = await Customer.findOne({ phone });
     if (customer) {
@@ -322,6 +329,81 @@ router.patch('/:id/status', async (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
     res.json({ message: `Status updated to ${booking.status}`, booking });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ABANDONED BOOKING RECOVERY API: Capture Draft Lead
+router.post('/abandoned', async (req, res) => {
+  try {
+    const { customerName, phone, email, vehicleType, vehicleNumber, vehicleModel, serviceName, subtotal, stepReached } = req.body;
+    if (!phone || phone.replace(/\D/g, '').length < 10) {
+      return res.status(400).json({ error: 'Valid phone number required' });
+    }
+
+    const AbandonedBooking = require('../models/AbandonedBooking');
+    let lead = await AbandonedBooking.findOne({ phone: phone.trim(), status: 'abandoned' });
+
+    if (lead) {
+      if (customerName) lead.customerName = customerName;
+      if (vehicleType) lead.vehicleType = vehicleType;
+      if (vehicleNumber) lead.vehicleNumber = vehicleNumber;
+      if (vehicleModel) lead.vehicleModel = vehicleModel;
+      if (serviceName) lead.serviceName = serviceName;
+      if (subtotal) lead.subtotal = subtotal;
+      if (stepReached) lead.stepReached = stepReached;
+      lead.lastActivityAt = new Date();
+      await lead.save();
+    } else {
+      lead = new AbandonedBooking({
+        customerName: customerName || 'Lead User',
+        phone: phone.trim(),
+        email: email || '',
+        vehicleType: vehicleType || 'Sedan',
+        vehicleNumber: vehicleNumber || '',
+        vehicleModel: vehicleModel || '',
+        serviceName: serviceName || 'Pro Shine & Protection Package',
+        subtotal: subtotal || 499,
+        stepReached: stepReached || 2,
+        status: 'abandoned'
+      });
+      await lead.save();
+    }
+
+    res.json({ success: true, message: 'Draft lead captured', lead });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ABANDONED BOOKING RECOVERY API: Get All Leads for Owner Dashboard
+router.get('/abandoned', async (req, res) => {
+  try {
+    const AbandonedBooking = require('../models/AbandonedBooking');
+    const leads = await AbandonedBooking.find({}).sort({ lastActivityAt: -1 });
+    res.json(leads);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ABANDONED BOOKING RECOVERY API: Send Recovery Offer SMS/WhatsApp
+router.post('/abandoned/:id/send-offer', async (req, res) => {
+  try {
+    const AbandonedBooking = require('../models/AbandonedBooking');
+    const lead = await AbandonedBooking.findByIdAndUpdate(
+      req.params.id,
+      { recoveryOfferSent: true, status: 'contacted', lastActivityAt: new Date() },
+      { new: true }
+    );
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+    res.json({
+      success: true,
+      message: `Recovery offer code RECOVER150 (₹150 OFF) sent to ${lead.customerName} (${lead.phone})!`,
+      lead
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

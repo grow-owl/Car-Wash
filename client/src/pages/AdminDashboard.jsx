@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Calendar, Users, DollarSign, Wrench, Send, TrendingUp, AlertTriangle, CheckCircle2, Plus, RefreshCw, MessageSquare, Tag, ShieldCheck, Car, Trash2, Edit3, Eye, Search, Phone, Shield } from 'lucide-react';
 import {
   getAnalytics, getBookings, updateBookingStatus, createWalkInBooking, getCustomers, getStaff, getExpenses, addExpense, deleteExpense,
-  getAbandonedLeads, sendRecoveryOffer, getCoupons, getServices, createService, updateService, deleteService, getPackages, createPackage, updatePackage, deletePackage, getBays, updateBayStatus
+  getAbandonedBookings, sendAbandonedRecoveryOffer, getDueWashCustomers, sendDueWashReminder, getCoupons, getServices, createService, updateService, deleteService, getPackages, createPackage, updatePackage, deletePackage, getBays, updateBayStatus, resetCustomerPin
 } from '../api';
 
 export default function AdminDashboard({
@@ -21,6 +21,7 @@ export default function AdminDashboard({
   const [staff, setStaff] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [abandonedLeads, setAbandonedLeads] = useState([]);
+  const [dueCustomers, setDueCustomers] = useState([]);
   const [coupons, setCoupons] = useState([]);
 
   // Modals & Selectors
@@ -61,13 +62,14 @@ export default function AdminDashboard({
 
   const fetchAllAdminData = async () => {
     try {
-      const [anaRes, bookRes, custRes, stfRes, expRes, abndRes, cpnRes, svcRes, pkgRes, bayRes] = await Promise.all([
+      const [anaRes, bookRes, custRes, stfRes, expRes, abndRes, dueRes, cpnRes, svcRes, pkgRes, bayRes] = await Promise.all([
         getAnalytics(),
         getBookings({ search: searchTerm }),
         getCustomers(crmSearch),
         getStaff(),
         getExpenses(),
-        getAbandonedLeads(),
+        getAbandonedBookings(),
+        getDueWashCustomers(),
         getCoupons(),
         getServices(),
         getPackages(),
@@ -79,6 +81,7 @@ export default function AdminDashboard({
       setStaff(stfRes.data);
       setExpenses(expRes.data);
       setAbandonedLeads(abndRes.data);
+      setDueCustomers(dueRes.data);
       setCoupons(cpnRes.data);
       setServices(svcRes.data);
       setPackagesList(pkgRes.data);
@@ -525,20 +528,24 @@ export default function AdminDashboard({
                   </button>
                   <button
                     onClick={async () => {
-                      const newP = window.prompt(`Reset PIN for customer ${c.name} (${c.phone}):`, '1234');
+                      const newP = window.prompt(`Reset Password for customer ${c.name} (${c.phone}) [Min 6 chars]:`, '123456');
                       if (newP) {
+                        if (newP.length < 6) {
+                          alert('Password must be at least 6 characters long.');
+                          return;
+                        }
                         try {
                           await resetCustomerPin(c.phone, newP);
-                          alert(`PIN for ${c.name} successfully reset to: ${newP}`);
+                          alert(`Password for ${c.name} successfully reset to: '${newP}'`);
                           fetchAllAdminData();
                         } catch (err) {
-                          alert('Error resetting PIN');
+                          alert('Error resetting password');
                         }
                       }
                     }}
                     style={{ background: 'rgba(255, 195, 0, 0.2)', border: '1px solid var(--accent-gold)', color: 'var(--accent-gold)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}
                   >
-                    🔑 Reset PIN
+                    Reset Password
                   </button>
                 </div>
               </div>
@@ -634,29 +641,136 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* TAB 7: ABANDONED RECOVERY & MARKETING */}
+      {/* TAB 7: ABANDONED BOOKING RECOVERY & AUTOMATED REPEAT WASH ENGINE */}
       {activeSubTab === 'marketing' && (
-        <div className="grid-2" style={{ gap: '24px' }}>
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Abandoned Booking Recovery Leads ({abandonedLeads.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          
+          {/* FEATURE 7: ABANDONED BOOKING RECOVERY QUEUE */}
+          <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--accent-coral)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🛒 Abandoned Booking Recovery Queue ({abandonedLeads.length} Leads Detected)
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Detect incomplete booking drop-offs & send 1-click ₹150 OFF recovery offers</p>
+              </div>
+              <span className="badge badge-terracotta">Lost Revenue Recovery Active</span>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {abandonedLeads.map(lead => (
-                <div key={lead._id} style={{ padding: '14px', background: 'rgba(0,49,53,0.6)', border: '1px solid var(--border-light)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{lead.customerName} ({lead.phone})</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Vehicle: {lead.vehicleType} • {lead.selectedService}</div>
-                  </div>
-                  <button onClick={() => handleTriggerRecovery(lead._id)} className="btn-aqua" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
-                    Send WhatsApp Offer
-                  </button>
+              {abandonedLeads.length === 0 ? (
+                <div style={{ padding: '16px', textTransform: 'uppercase', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  No dropped booking leads detected right now.
                 </div>
-              ))}
+              ) : (
+                abandonedLeads.map(lead => {
+                  const isRecovered = lead.status === 'recovered';
+                  const isContacted = lead.status === 'contacted' || lead.recoveryOfferSent;
+                  return (
+                    <div key={lead._id} style={{ padding: '16px', background: 'rgba(0,49,53,0.7)', border: '1px solid var(--border-light)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF' }}>
+                          {lead.customerName || 'Lead User'} <span style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 600 }}>({lead.phone})</span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Dropped at: <strong>Step {lead.stepReached || 2}</strong> • Service: <strong>{lead.serviceName || 'Pro Shine'}</strong> • Vehicle: <strong>{lead.vehicleNumber || lead.vehicleModel || lead.vehicleType}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                          Subtotal: ₹{lead.subtotal || 499} • Activity: {new Date(lead.lastActivityAt || lead.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className={`badge ${isRecovered ? 'badge-aqua' : isContacted ? 'badge-terracotta' : 'badge-gold'}`}>
+                          {isRecovered ? 'Recovered ✓' : isContacted ? 'Offer Sent' : 'Abandoned'}
+                        </span>
+
+                        {!isRecovered && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await sendAbandonedRecoveryOffer(lead._id);
+                                alert(res.data.message || 'Recovery offer code RECOVER150 (₹150 OFF) sent!');
+                                fetchAllAdminData();
+                              } catch (err) {
+                                alert('Error sending recovery offer.');
+                              }
+                            }}
+                            className="btn-gold"
+                            style={{ padding: '8px 14px', fontSize: '0.8rem', fontWeight: 800 }}
+                          >
+                            📲 Send Recovery Offer (₹150 OFF)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Active Promotional Coupons</h3>
+          {/* FEATURE 6: AUTOMATED REPEAT WASH REMINDERS ENGINE */}
+          <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--accent-aqua)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🔔 Automated Repeat Wash Engine & Due Reminders ({dueCustomers.length} Due)
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Track last wash dates & send automated due-for-wash rebooking offers to repeat customers</p>
+              </div>
+              <span className="badge badge-aqua">⚡ Repeat Wash Engine Active</span>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {dueCustomers.length === 0 ? (
+                <div style={{ padding: '16px', textTransform: 'uppercase', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  All customers have washed recently!
+                </div>
+              ) : (
+                dueCustomers.slice(0, 10).map((c, i) => {
+                  const daysAgo = c.lastVisit ? Math.floor((Date.now() - new Date(c.lastVisit).getTime()) / (1000 * 60 * 60 * 24)) : 15;
+                  const veh = c.vehicles && c.vehicles[0] ? `${c.vehicles[0].brand} ${c.vehicles[0].model} (${c.vehicles[0].regNumber})` : 'Vehicle';
+                  return (
+                    <div key={i} style={{ padding: '16px', background: 'rgba(0,49,53,0.7)', border: '1px solid var(--border-light)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF' }}>
+                          {c.name} <span style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 600 }}>({c.phone})</span>
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Saved Car: <strong>{veh}</strong> • Total Visits: <strong>{c.totalBookings || 1}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginTop: '2px', fontWeight: 700 }}>
+                          Last washed: {daysAgo} days ago (Due for Wash!)
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await sendDueWashReminder({ customerId: c._id, phone: c.phone, name: c.name });
+                            alert(res.data.message || 'Due-for-Wash SMS/WhatsApp reminder sent!');
+                            fetchAllAdminData();
+                          } catch (err) {
+                            alert('Error sending due reminder.');
+                          }
+                        }}
+                        className="btn-primary"
+                        style={{ padding: '8px 16px', fontSize: '0.82rem', fontWeight: 800 }}
+                      >
+                        📲 Send Wash Due Reminder (15% OFF)
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* ACTIVE PROMOTIONAL COUPONS LIST */}
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', fontWeight: 800 }}>Active Promotional Coupons</h3>
+            <div className="grid-3" style={{ gap: '12px' }}>
               {coupons.map(cpn => (
                 <div key={cpn._id} style={{ padding: '14px', background: 'rgba(0,49,53,0.6)', border: '1px solid var(--border-light)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -668,6 +782,7 @@ export default function AdminDashboard({
               ))}
             </div>
           </div>
+
         </div>
       )}
 
