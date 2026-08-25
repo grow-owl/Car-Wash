@@ -1374,21 +1374,21 @@ export default function AdminDashboard({
                     const val = e.target.value;
                     setWalkInService(val);
                     if (val === 'Basic Refresh') setWalkInAmount(499);
-                    else if (val === '🥈 Premium Shine ⭐') setWalkInAmount(799);
-                    else if (val === '🥇 Ultimate Detail') setWalkInAmount(1499);
+                    else if (val === 'Premium Shine' || val.includes('Premium Shine')) setWalkInAmount(799);
+                    else if (val === 'Ultimate Detail' || val.includes('Ultimate Detail')) setWalkInAmount(1499);
                     else if (val === 'Express Exterior Wash') setWalkInAmount(299);
                     else if (val === 'Foam Wash') setWalkInAmount(349);
-                    else if (val === 'Interior Deep Cleaning ⭐') setWalkInAmount(1499);
+                    else if (val === 'Interior Deep Cleaning' || val.includes('Interior Deep Cleaning')) setWalkInAmount(1499);
                     else if (val === '9H Nano Ceramic Coating') setWalkInAmount(4999);
                   }}
                   className="input-field"
                 >
                   <option value="Basic Refresh">Basic Refresh Package (₹499)</option>
-                  <option value="🥈 Premium Shine ⭐">🥈 Premium Shine ⭐ Package (₹799)</option>
-                  <option value="🥇 Ultimate Detail">🥇 Ultimate Detail Package (₹1,499)</option>
+                  <option value="Premium Shine">Premium Shine Package (₹799)</option>
+                  <option value="Ultimate Detail">Ultimate Detail Package (₹1,499)</option>
                   <option value="Express Exterior Wash">Express Exterior Wash (₹299)</option>
                   <option value="Foam Wash">Foam Wash (₹349)</option>
-                  <option value="Interior Deep Cleaning ⭐">Interior Deep Cleaning ⭐ (₹1,499)</option>
+                  <option value="Interior Deep Cleaning">Interior Deep Cleaning (₹1,499)</option>
                   <option value="9H Nano Ceramic Coating">9H Nano Ceramic Coating (₹4,999)</option>
                 </select>
               </div>

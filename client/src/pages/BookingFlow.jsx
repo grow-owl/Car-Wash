@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Car, CheckCircle2, Calendar, Clock, CreditCard, Tag, ArrowRight, ArrowLeft, Sparkles, Shield, User, DollarSign, Check } from 'lucide-react';
 import { getServices, getPackages, getAddons, getSlotsAvailability, validateCoupon, createBooking, checkPhoneExists, captureAbandonedBooking, createLead } from '../api';
 import SmartUpsellModal from '../components/SmartUpsellModal';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
@@ -41,6 +40,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const stripEmojis = (str) => typeof str === 'string' ? str.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|🥈|🥇|⭐|📦|🛠️|⏱️|🟢|🔴|✨|🚗|🚘|🚙|🏎️|🛻|✓|🛠/gu, '').trim() : str;
+
   const primary3Packages = [
     {
       _id: 'pkg-1',
@@ -55,8 +56,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     },
     {
       _id: 'pkg-2',
-      name: '🥈 Premium Shine ⭐',
-      title: '🥈 Premium Shine ⭐',
+      name: 'Premium Shine',
+      title: 'Premium Shine',
       price: 799,
       originalPrice: 1099,
       durationMins: 60,
@@ -66,8 +67,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     },
     {
       _id: 'pkg-3',
-      name: '🥇 Ultimate Detail',
-      title: '🥇 Ultimate Detail',
+      name: 'Ultimate Detail',
+      title: 'Ultimate Detail',
       price: 1499,
       originalPrice: 1999,
       durationMins: 120,
@@ -205,11 +206,11 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   };
 
   const vehiclesList = [
-    { type: 'Hatchback', desc: 'Compact 4-Seater', icon: '🚗' },
-    { type: 'Sedan', desc: 'Executive Midsize', icon: '🚘' },
-    { type: 'SUV', desc: 'Full-Size / Crossover', icon: '🚙' },
-    { type: 'Luxury', desc: 'Premium / Sports Car', icon: '🏎️' },
-    { type: 'Truck', desc: 'Pickup / Off-road', icon: '🛻' }
+    { type: 'Hatchback', desc: 'Compact 4-Seater' },
+    { type: 'Sedan', desc: 'Executive Midsize' },
+    { type: 'SUV', desc: 'Full-Size / Crossover' },
+    { type: 'Luxury', desc: 'Premium / Sports Car' },
+    { type: 'Truck', desc: 'Pickup / Off-road' }
   ];
 
   const displayPackagesList = (packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
@@ -306,7 +307,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                   transition: 'all 0.2s ease'
                 }}
               >
-                📦 Pre-Made Full Packages
+                Pre-Made Full Packages
               </button>
 
               <button
@@ -324,7 +325,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                   transition: 'all 0.2s ease'
                 }}
               >
-                🛠️ Custom Service Combo (Pick Individual Services)
+                Custom Service Combo (Pick Individual Services)
               </button>
             </div>
 
@@ -332,7 +333,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
             {bookingMode === 'packages' && (
               <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
                 {displayPackagesList.map((pkg, idx) => {
-                  const pkgName = pkg.title || pkg.name;
+                  const pkgName = stripEmojis(pkg.title || pkg.name);
                   const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
 
                   return (
@@ -381,17 +382,16 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                         </div>
                         {pkg.includedServices && pkg.includedServices.map((inc, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px' }}>
-                            <Check size={14} color="var(--accent-aqua)" />
-                            <span>{inc}</span>
+                            <span>• {inc}</span>
                           </div>
                         ))}
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '16px' }}>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>⏱️ Duration: ~{pkg.durationMins || 50} mins</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Duration: ~{pkg.durationMins || 50} mins</span>
                         {isSelected && (
                           <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <CheckCircle2 size={16} /> Selected
+                            Selected
                           </span>
                         )}
                       </div>
@@ -454,23 +454,23 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 {/* DYNAMIC 25+ CUSTOM SERVICES GRID */}
                 {(() => {
                   const masterServicesList = [
-                    // 🚿 1. REGULAR WASH SERVICES
+                    // 1. REGULAR WASH SERVICES
                     { category: 'wash', name: 'Express Exterior Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, duration: '25 mins', desc: 'High-pressure foam wash, wheel scrub & blow dry' },
                     { category: 'wash', name: 'Foam Wash', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Thick snow foam lifting dirt and grime without scratches' },
                     { category: 'wash', name: 'Basic Interior + Exterior Wash', prices: { Hatchback: 499, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: 'Full foam wash + cabin vacuuming & footmat cleaning' },
-                    { category: 'wash', name: 'Premium Car Wash ⭐', prices: { Hatchback: 699, Sedan: 799, SUV: 899 }, origPrices: { Hatchback: 999, Sedan: 1199, SUV: 1399 }, duration: '50 mins', desc: 'Foam wash, exterior clean, interior vacuum, dash polish, door panels, tyre shine & air freshener' },
+                    { category: 'wash', name: 'Premium Car Wash', prices: { Hatchback: 699, Sedan: 799, SUV: 899 }, origPrices: { Hatchback: 999, Sedan: 1199, SUV: 1399 }, duration: '50 mins', desc: 'Foam wash, exterior clean, interior vacuum, dash polish, door panels, tyre shine & air freshener' },
                     { category: 'wash', name: 'Underbody Wash', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'High-pressure underbody mud extraction & chassis rinse' },
 
-                    // 🧹 2. INTERIOR CLEANING SERVICES
+                    // 2. INTERIOR CLEANING SERVICES
                     { category: 'interior', name: 'Interior Vacuum & Dusting', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '30 mins', desc: 'Deep cabin vacuuming & dust extraction from seats & footmats' },
                     { category: 'interior', name: 'Dashboard & Door Panel Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'UV protective non-greasy dashboard polish & door panel scrub' },
                     { category: 'interior', name: 'Seat Cleaning & Fabric Scrub', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Deep upholstery stain extraction & fabric/leather hydration' },
-                    { category: 'interior', name: 'Interior Deep Cleaning ⭐', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, duration: '90 mins', desc: 'Complete interior steam extraction, carpet shampooing & sanitization' },
+                    { category: 'interior', name: 'Interior Deep Cleaning', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, duration: '90 mins', desc: 'Complete interior steam extraction, carpet shampooing & sanitization' },
                     { category: 'interior', name: 'Roof & Carpet Cleaning', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Fabric headliner stain removal & carpet steam extraction' },
                     { category: 'interior', name: 'AC Vent Cleaning & Steam Sanitize', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'Ozone steam sanitization inside AC ducts eliminating vent mold' },
                     { category: 'interior', name: 'Odour Removal & Sanitisation', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Permanent smoke & pet odor elimination with anti-bacterial fogging' },
 
-                    // ✨ 3. EXTERIOR CARE & SHINE
+                    // 3. EXTERIOR CARE & SHINE
                     { category: 'exterior', name: 'Tyre & Alloy Deep Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: 'Brake dust acid wash & alloy rim polishing' },
                     { category: 'exterior', name: 'Tyre Dressing & Shine', prices: { Hatchback: 99, Sedan: 149, SUV: 199 }, origPrices: { Hatchback: 199, Sedan: 249, SUV: 299 }, duration: '15 mins', desc: 'Long-lasting deep wet look tire dressing' },
                     { category: 'exterior', name: 'Exterior Wax Polish', prices: { Hatchback: 799, Sedan: 999, SUV: 1199 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, duration: '50 mins', desc: 'Hand wax application for smooth paint shine & UV protection' },
@@ -478,16 +478,16 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                     { category: 'exterior', name: 'Scratch Removal – Minor', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '35 mins', desc: 'Spot compounding & buffing to eliminate minor surface scratches' },
                     { category: 'exterior', name: 'Headlight Restoration', prices: { Hatchback: 499, Sedan: 499, SUV: 499 }, origPrices: { Hatchback: 799, Sedan: 799, SUV: 799 }, duration: '30 mins', desc: 'Yellow oxidation removal & clear UV acrylic sealant' },
 
-                    // ⚙️ 4. ENGINE & UNDERBODY CARE
+                    // 4. ENGINE & UNDERBODY CARE
                     { category: 'engine', name: 'Engine Bay Cleaning', prices: { Hatchback: 499, Sedan: 549, SUV: 599 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: '300°F steam degreasing of engine block & plastic covers' },
                     { category: 'engine', name: 'Engine Bay Dressing', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'Protective hose & rubber wire conditioning' },
                     { category: 'engine', name: 'Underbody Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: '360° pressure underbody mud removal' },
                     { category: 'engine', name: 'Anti-Rust Treatment', prices: { Hatchback: 1499, Sedan: 1799, SUV: 2199 }, origPrices: { Hatchback: 2199, Sedan: 2499, SUV: 2999 }, duration: '60 mins', desc: 'Heavy-duty rubberized anti-corrosion chassis coating' },
 
-                    // 🛋️ 5. PREMIUM DETAILING
+                    // 5. PREMIUM DETAILING
                     { category: 'premium', name: 'Complete Interior Detailing', prices: { Hatchback: 1999, Sedan: 1999, SUV: 1999 }, origPrices: { Hatchback: 2999, Sedan: 2999, SUV: 2999 }, duration: '120 mins', desc: 'Deep steam sanitization, leather spa, carpet extraction & AC vent cleaning' },
                     { category: 'premium', name: 'Exterior Detailing & Polish', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3499, Sedan: 3499, SUV: 3499 }, duration: '150 mins', desc: 'Multi-stage paint correction, clay bar treatment & synthetic wax polish' },
-                    { category: 'premium', name: 'Complete Car Detailing ⭐', prices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, origPrices: { Hatchback: 5999, Sedan: 5999, SUV: 5999 }, duration: '180 mins', desc: 'Full interior + exterior showroom transformation with engine bay & tire dressing' },
+                    { category: 'premium', name: 'Complete Car Detailing', prices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, origPrices: { Hatchback: 5999, Sedan: 5999, SUV: 5999 }, duration: '180 mins', desc: 'Full interior + exterior showroom transformation with engine bay & tire dressing' },
                     { category: 'premium', name: 'Teflon / Paint Protection', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, duration: '120 mins', desc: 'Hydrophobic paint barrier enhancing color depth & swirl masking' },
                     { category: 'premium', name: 'Nano Ceramic Protection', prices: { Hatchback: 4999, Sedan: 4999, SUV: 4999 }, origPrices: { Hatchback: 6999, Sedan: 6999, SUV: 6999 }, duration: '240 mins', desc: '9H Nano ceramic paint shield with 1-year gloss guarantee' },
                     { category: 'premium', name: '1-Year Ceramic Coating', prices: { Hatchback: 7999, Sedan: 7999, SUV: 7999 }, origPrices: { Hatchback: 10999, Sedan: 10999, SUV: 10999 }, duration: '360 mins', desc: 'Professional multi-layer 9H ceramic coating with warranty card' },
@@ -560,7 +560,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 className="btn-aqua"
                 style={{ padding: '14px 32px' }}
               >
-                Next: Vehicle Selection <ArrowRight size={18} />
+                Next: Vehicle Selection
               </button>
             </div>
           </div>
@@ -592,7 +592,6 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                     transition: 'all 0.25s ease'
                   }}
                 >
-                  <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>{v.icon}</div>
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#FFFFFF' }}>{v.type}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{v.desc}</div>
                 </div>
@@ -601,11 +600,11 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={() => setStep(1)} className="btn-secondary">
-                <ArrowLeft size={18} /> Back: Service Selection
+                Back: Service Selection
               </button>
 
               <button onClick={() => setStep(3)} className="btn-aqua" style={{ padding: '14px 32px' }}>
-                Next: Date & Slot <ArrowRight size={18} />
+                Next: Date & Slot
               </button>
             </div>
           </div>
@@ -686,11 +685,10 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Clock size={15} color={isSelected ? '#06141B' : 'var(--accent-aqua)'} />
                               <span>{timeLabel}</span>
                             </div>
                             <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isSelected ? '#06141B' : 'var(--text-muted)' }}>
-                              {isAvailable ? `🟢 ${remaining} Bays Open` : '🔴 Fully Booked'}
+                              {isAvailable ? `${remaining} Bays Open` : 'Fully Booked'}
                             </div>
                           </button>
                         );
@@ -703,11 +701,11 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={() => setStep(2)} className="btn-secondary">
-                <ArrowLeft size={18} /> Back: Vehicle Category
+                Back: Vehicle Category
               </button>
 
               <button onClick={() => setStep(4)} className="btn-aqua" style={{ padding: '14px 32px' }}>
-                Next: Payment & Confirm <ArrowRight size={18} />
+                Next: Payment & Confirm
               </button>
             </div>
           </div>
@@ -773,7 +771,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                     />
                     {isExistingCustomer && (
                       <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '4px', fontWeight: 700 }}>
-                        ✓ Welcome back, {customerName}! Existing customer account found.
+                        Welcome back, {customerName}! Existing customer account found.
                       </div>
                     )}
                   </div>
@@ -825,7 +823,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                             className="btn-secondary"
                             style={{ fontSize: '0.75rem', padding: '4px 10px' }}
                           >
-                            🚘 {v.regNumber} ({v.model})
+                            {v.regNumber} ({v.model})
                           </button>
                         ))}
                       </div>
@@ -877,8 +875,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                   {/* 🔥 SMART UPSELLING SYSTEM: ENHANCE YOUR WASH */}
                   <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <Sparkles size={18} color="var(--accent-gold)" />
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-gold)' }}>Enhance Your Wash ✨ (Add-ons)</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-gold)' }}>Enhance Your Wash (Add-ons)</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '8px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
@@ -985,7 +982,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button type="button" onClick={() => setStep(3)} className="btn-secondary">
-                  <ArrowLeft size={18} /> Back: Date & Slot
+                  Back: Date & Slot
                 </button>
 
                 <button

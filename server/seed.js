@@ -163,8 +163,8 @@ const seedData = async () => {
         isPopular: false
       },
       {
-        title: '🥈 Premium Shine ⭐',
-        name: '🥈 Premium Shine ⭐',
+        title: 'Premium Shine',
+        name: 'Premium Shine',
         price: 799,
         originalPrice: 1099,
         vehicleType: 'Sedan',
@@ -174,8 +174,8 @@ const seedData = async () => {
         isPopular: true
       },
       {
-        title: '🥇 Ultimate Detail',
-        name: '🥇 Ultimate Detail',
+        title: 'Ultimate Detail',
+        name: 'Ultimate Detail',
         price: 1499,
         originalPrice: 1999,
         vehicleType: 'SUV',

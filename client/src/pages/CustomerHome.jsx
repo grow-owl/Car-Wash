@@ -482,11 +482,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               className="btn-primary"
               style={{ padding: '10px 24px', borderRadius: '24px', fontSize: '0.9rem', fontWeight: 800 }}
             >
-              📦 Full Detailing Packages (Save up to 25%)
+              Full Detailing Packages (Save up to 25%)
             </button>
           </div>
 
           {(() => {
+            const stripEmojis = (str) => typeof str === 'string' ? str.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|🥈|🥇|⭐|📦|🛠️|⏱️|🟢|🔴|✨|🚗|🚘|🚙|🏎️|🛻|✓|🛠/gu, '').trim() : str;
+
             const default3Packages = [
               {
                 title: 'Basic Refresh',
@@ -498,8 +500,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 isPopular: false
               },
               {
-                title: '🥈 Premium Shine ⭐',
-                name: '🥈 Premium Shine ⭐',
+                title: 'Premium Shine',
+                name: 'Premium Shine',
                 price: 799,
                 originalPrice: 1099,
                 tagline: 'Best for: Complete regular cleaning',
@@ -507,8 +509,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 isPopular: true
               },
               {
-                title: '🥇 Ultimate Detail',
-                name: '🥇 Ultimate Detail',
+                title: 'Ultimate Detail',
+                name: 'Ultimate Detail',
                 price: 1499,
                 originalPrice: 1999,
                 tagline: 'Best for: Deep cleaning',
@@ -550,12 +552,12 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                         fontWeight: 800,
                         fontSize: '0.75rem'
                       }}>
-                        ⭐ MOST POPULAR
+                        MOST POPULAR
                       </div>
                     )}
 
                     <div>
-                      <h3 style={{ fontSize: '1.4rem', marginBottom: '6px', fontWeight: 800 }}>{pkg.title || pkg.name}</h3>
+                      <h3 style={{ fontSize: '1.4rem', marginBottom: '6px', fontWeight: 800 }}>{stripEmojis(pkg.title || pkg.name)}</h3>
                       <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginBottom: '20px' }}>{pkg.tagline}</p>
 
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '20px' }}>
