@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle2, Sun, Plus, Trash2 } from 'lucide-react';
+import { Shield, Sparkles, Car, Check, ArrowRight, Star, Gift, Users, Award, Clock, Phone, MapPin, Send, MessageCircle, Search, Tag, Copy, CheckCircle, CheckCircle2, Sun, Plus, Trash2 } from 'lucide-react';
 import { getServices, getPackages, getBeforeAfterGallery, getCustomerDetails } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 
-export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService }) {
+export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService, onSelectPackage }) {
   const [services, setServices] = useState([]);
   const [packages, setPackages] = useState([]);
   const [gallery, setGallery] = useState([]);
@@ -29,6 +29,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   const [newRegNo, setNewRegNo] = useState('');
   const [newModel, setNewModel] = useState('');
   const [newType, setNewType] = useState('Sedan');
+
+  // Category & Vehicle Size Filters
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [vehicleSize, setVehicleSize] = useState('Sedan');
 
   // Customer Reviews List
   const [reviewsList] = useState([
@@ -130,18 +134,44 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   };
 
   const serviceCategoriesList = [
-    { title: 'Car Washing', desc: 'High pressure hydrophobic foam wash & underbody scrub.', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Under Coating', desc: 'Anti-rust protective sealant for underbody chassis.', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Car Polish', desc: 'High-gloss dual action machine buffing & wax shine.', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Foam Wash', desc: 'Thick snow foam lifting dirt and grime without scratches.', img: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Ceramic Coating', desc: '9H Nano-ceramic shield protecting paint from UV & scratches.', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Teflon Coating', desc: 'Hydrophobic paint barrier enhancing depth and color vibrancy.', img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Bike Detailing', desc: 'Complete motorcycle chain lube, chrome polish & foam wash.', img: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=500&q=80' },
-    { title: 'AC Disinfection', desc: 'Ozone steam sanitization eliminating mold & odor from vents.', img: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Glass Coating', desc: 'Rain repellent windshield treatment for crystal clear visibility.', img: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Steam Detailing', desc: '300°F deep thermal steam sanitization for interior upholstery.', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Interior Spa', desc: 'Leather conditioning, carpet extraction & dashboard UV polish.', img: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Anti-Rust Shield', desc: 'Chassis rustproofing & salt protection layer for long life.', img: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=500&q=80' }
+    // 🚿 1. REGULAR WASH SERVICES
+    { category: 'wash', title: 'Express Exterior Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, desc: 'High-pressure foam wash, wheel scrub & blow dry.', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=500&q=80', badge: 'QUICK WASH' },
+    { category: 'wash', title: 'Foam Wash', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, desc: 'Thick snow foam lifting dirt and grime without scratches.', img: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=500&q=80', badge: 'SNOW FOAM' },
+    { category: 'wash', title: 'Basic Interior + Exterior Wash', prices: { Hatchback: 499, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, desc: 'Full foam wash + cabin vacuuming & footmat cleaning.', img: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=500&q=80', badge: 'COMBO WASH' },
+    { category: 'wash', title: 'Premium Car Wash ⭐', prices: { Hatchback: 699, Sedan: 799, SUV: 899 }, origPrices: { Hatchback: 999, Sedan: 1199, SUV: 1399 }, desc: 'Foam wash, exterior clean, interior vacuum, dash polish, door panels, tyre shine & air freshener.', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=500&q=80', badge: '⭐ BEST VALUE' },
+    { category: 'wash', title: 'Underbody Wash', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, desc: 'High-pressure underbody mud extraction & chassis rinse.', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=500&q=80', badge: 'CHASSIS CARE' },
+
+    // 🧹 2. INTERIOR CLEANING SERVICES
+    { category: 'interior', title: 'Interior Vacuum & Dusting', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, desc: 'Deep cabin vacuuming & dust extraction from seats & footmats.', img: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=500&q=80', badge: 'CABIN DUSTING' },
+    { category: 'interior', title: 'Dashboard & Door Panel Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, desc: 'UV protective non-greasy dashboard polish & door panel scrub.', img: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=500&q=80', badge: 'UV POLISH' },
+    { category: 'interior', title: 'Seat Cleaning & Fabric Scrub', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, desc: 'Deep upholstery stain extraction & fabric/leather hydration.', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=500&q=80', badge: 'SEAT SPA' },
+    { category: 'interior', title: 'Interior Deep Cleaning ⭐', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, desc: 'Complete interior steam extraction, carpet shampooing & sanitization.', img: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=500&q=80', badge: '⭐ DEEP CLEAN' },
+    { category: 'interior', title: 'Roof & Carpet Cleaning', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, desc: 'Fabric headliner stain removal & carpet steam extraction.', img: 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=500&q=80', badge: 'CARPET SPA' },
+    { category: 'interior', title: 'AC Vent Cleaning & Steam Sanitize', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, desc: 'Ozone steam sanitization inside AC ducts eliminating vent mold.', img: 'https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=500&q=80', badge: 'VENT SANITIZE' },
+    { category: 'interior', title: 'Odour Removal & Sanitisation', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, desc: 'Permanent smoke & pet odor elimination with anti-bacterial fogging.', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=500&q=80', badge: 'FRESH CABIN' },
+
+    // ✨ 3. EXTERIOR CARE & SHINE
+    { category: 'exterior', title: 'Tyre & Alloy Deep Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, desc: 'Brake dust acid wash & alloy rim polishing.', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=500&q=80', badge: 'ALLOY SHINE' },
+    { category: 'exterior', title: 'Tyre Dressing & Shine', prices: { Hatchback: 99, Sedan: 149, SUV: 199 }, origPrices: { Hatchback: 199, Sedan: 249, SUV: 299 }, desc: 'Long-lasting deep wet look tire dressing.', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=500&q=80', badge: 'TIRE DRESS' },
+    { category: 'exterior', title: 'Exterior Wax Polish', prices: { Hatchback: 799, Sedan: 999, SUV: 1199 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, desc: 'Hand wax application for smooth paint shine & UV protection.', img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=500&q=80', badge: 'HAND WAX' },
+    { category: 'exterior', title: 'Machine Polish / Paint Enhancement', prices: { Hatchback: 1999, Sedan: 2499, SUV: 2999 }, origPrices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, desc: 'Dual action machine buffing to remove swirl marks & restore gloss.', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=500&q=80', badge: 'MACHINE BUFF' },
+    { category: 'exterior', title: 'Scratch Removal – Minor', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, desc: 'Spot compounding & buffing to eliminate minor surface scratches.', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=500&q=80', badge: 'SCRATCH FIX' },
+    { category: 'exterior', title: 'Headlight Restoration', prices: { Hatchback: 499, Sedan: 499, SUV: 499 }, origPrices: { Hatchback: 799, Sedan: 799, SUV: 799 }, desc: 'Yellow oxidation removal & clear UV acrylic sealant.', img: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=500&q=80', badge: 'LIGHT RESTORE' },
+
+    // ⚙️ 4. ENGINE & UNDERBODY CARE
+    { category: 'engine', title: 'Engine Bay Cleaning', prices: { Hatchback: 499, Sedan: 549, SUV: 599 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, desc: '300°F steam degreasing of engine block & plastic covers.', img: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=500&q=80', badge: 'ENGINE STEAM' },
+    { category: 'engine', title: 'Engine Bay Dressing', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, desc: 'Protective hose & rubber wire conditioning.', img: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=500&q=80', badge: 'HOSE CARE' },
+    { category: 'engine', title: 'Underbody Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, desc: '360° pressure underbody mud removal.', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=500&q=80', badge: 'MUD EXTRACTION' },
+    { category: 'engine', title: 'Anti-Rust Treatment', prices: { Hatchback: 1499, Sedan: 1799, SUV: 2199 }, origPrices: { Hatchback: 2199, Sedan: 2499, SUV: 2999 }, desc: 'Heavy-duty rubberized anti-corrosion chassis coating.', img: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=500&q=80', badge: 'ANTI-RUST' },
+
+    // 🛋️ 5. PREMIUM DETAILING
+    { category: 'premium', title: 'Complete Interior Detailing', isStartingPrice: true, prices: { Hatchback: 1999, Sedan: 1999, SUV: 1999 }, origPrices: { Hatchback: 2999, Sedan: 2999, SUV: 2999 }, desc: 'Deep steam sanitization, leather spa, carpet extraction & AC vent cleaning.', img: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=500&q=80', badge: 'FULL INTERIOR' },
+    { category: 'premium', title: 'Exterior Detailing & Polish', isStartingPrice: true, prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3499, Sedan: 3499, SUV: 3499 }, desc: 'Multi-stage paint correction, clay bar treatment & synthetic wax polish.', img: 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&w=500&q=80', badge: 'PAINT CORRECTION' },
+    { category: 'premium', title: 'Complete Car Detailing ⭐', isStartingPrice: true, prices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, origPrices: { Hatchback: 5999, Sedan: 5999, SUV: 5999 }, desc: 'Full interior + exterior showroom transformation with engine bay & tire dressing.', img: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=500&q=80', badge: '⭐ SHOWROOM FLAGSHIP' },
+    { category: 'premium', title: 'Teflon / Paint Protection', isStartingPrice: true, prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, desc: 'Hydrophobic paint barrier enhancing color depth & swirl masking.', img: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=500&q=80', badge: 'TEFLON SHIELD' },
+    { category: 'premium', title: 'Nano Ceramic Protection', isStartingPrice: true, prices: { Hatchback: 4999, Sedan: 4999, SUV: 4999 }, origPrices: { Hatchback: 6999, Sedan: 6999, SUV: 6999 }, desc: '9H Nano ceramic paint shield with 1-year gloss guarantee.', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=500&q=80', badge: 'NANO CERAMIC' },
+    { category: 'premium', title: '1-Year Ceramic Coating', isStartingPrice: true, prices: { Hatchback: 7999, Sedan: 7999, SUV: 7999 }, origPrices: { Hatchback: 10999, Sedan: 10999, SUV: 10999 }, desc: 'Professional multi-layer 9H ceramic coating with warranty card.', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=500&q=80', badge: '1-YEAR WARRANTY' },
+    { category: 'premium', title: 'PPF – Partial Protection Film', isStartingPrice: true, prices: { Hatchback: 25000, Sedan: 25000, SUV: 25000 }, origPrices: { Hatchback: 35000, Sedan: 35000, SUV: 35000 }, desc: 'Self-healing Paint Protection Film for high-impact front bumper & bonnet.', img: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=500&q=80', badge: 'PPF ARMOR' }
   ];
 
   return (
@@ -257,78 +287,205 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         borderBottom: '1px solid var(--border-light)'
       }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 800, marginBottom: '6px' }}>
-              OVER 1000+ VEHICLES DETAILED IN SILIGURI
+              RECOMMENDED CAR WASH SERVICE PRICE LIST
             </div>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 800 }}>Services We Provide</h2>
-            <p style={{ color: 'var(--ice-tint)' }}>Professional vehicle restoration & hygiene packages tailored to your car</p>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 800 }}>Services & Transparent Pricing</h2>
+            <p style={{ color: 'var(--ice-tint)' }}>Professional vehicle restoration & hygiene packages tailored to your vehicle size</p>
           </div>
 
-          <div className="grid-4" style={{ gap: '20px' }}>
-            {serviceCategoriesList.map((sc, idx) => (
-              <div
-                key={idx}
-                className="glass-card"
-                onClick={() => onStartBooking(selectedVehicle)}
-                style={{
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-light)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <div style={{ height: '150px', position: 'relative', overflow: 'hidden' }}>
-                  <img src={sc.img} alt={sc.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,20,27,0.95) 0%, transparent 70%)' }} />
-                  <span className={`badge ${idx % 4 === 0 ? 'badge-coral' : idx % 4 === 1 ? 'badge-cyan' : idx % 4 === 2 ? 'badge-gold' : 'badge-emerald'}`} style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem' }}>
-                    {idx === 0 ? 'HOT' : idx === 1 ? 'PRO' : idx === 2 ? 'VIP' : 'HYGIENE'}
-                  </span>
-                </div>
-                <div style={{ padding: '16px' }}>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '4px', color: '#FFFFFF' }}>{sc.title}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', lineHeight: '1.4' }}>{sc.desc}</p>
-                </div>
-              </div>
-            ))}
+          {/* INTERACTIVE VEHICLE SIZE SWITCHER & CATEGORY FILTER BARS */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginBottom: '36px' }}>
+            
+            {/* 1. VEHICLE SIZE SWITCHER */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(17, 33, 45, 0.95)', padding: '6px 14px', borderRadius: '30px', border: '1px solid var(--accent-gold)' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                SELECT VEHICLE SIZE:
+              </span>
+              {[
+                { type: 'Hatchback', label: '🚗 Hatchback' },
+                { type: 'Sedan', label: '🚘 Sedan' },
+                { type: 'SUV', label: '🚙 SUV / MUV' }
+              ].map((v) => (
+                <button
+                  key={v.type}
+                  type="button"
+                  onClick={() => setVehicleSize(v.type)}
+                  style={{
+                    background: vehicleSize === v.type ? 'var(--accent-gold)' : 'transparent',
+                    color: vehicleSize === v.type ? '#06141B' : '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    border: 'none',
+                    padding: '6px 16px',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+
+            {/* 2. CATEGORY TABS */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[
+                { id: 'all', label: 'All Services' },
+                { id: 'wash', label: '🚿 Regular Wash' },
+                { id: 'interior', label: '🧹 Interior Care' },
+                { id: 'exterior', label: '✨ Exterior & Polish' },
+                { id: 'engine', label: '⚙️ Engine & Chassis' },
+                { id: 'premium', label: '🛋️ Premium Detailing' }
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  style={{
+                    background: selectedCategory === cat.id ? 'var(--accent-cyan)' : 'rgba(0, 49, 53, 0.6)',
+                    color: selectedCategory === cat.id ? '#003135' : '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    border: selectedCategory === cat.id ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                    padding: '8px 18px',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
           </div>
+
+          {/* DYNAMIC SERVICE CARDS GRID */}
+          {(() => {
+            const filteredServices = selectedCategory === 'all' 
+              ? serviceCategoriesList 
+              : serviceCategoriesList.filter(s => s.category === selectedCategory);
+
+            return (
+              <div className="grid-3" style={{ gap: '20px' }}>
+                {filteredServices.map((sc, idx) => {
+                  const currentPrice = sc.prices[vehicleSize] || sc.prices['Sedan'];
+                  const currentOrigPrice = sc.origPrices[vehicleSize] || sc.origPrices['Sedan'];
+
+                  return (
+                    <div
+                      key={idx}
+                      className="glass-card service-zoom-card"
+                      onClick={() => {
+                        const itemToBook = {
+                          ...sc,
+                          name: sc.title,
+                          price: currentPrice,
+                          originalPrice: currentOrigPrice
+                        };
+                        if (onSelectService) onSelectService(itemToBook);
+                        else onStartBooking(vehicleSize);
+                      }}
+                      style={{
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        border: '1px solid var(--border-light)',
+                        background: 'rgba(17, 33, 45, 0.85)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        height: '100%'
+                      }}
+                    >
+                      <div style={{ height: '160px', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                        <img src={sc.img} alt={sc.title} className="zoom-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,20,27,0.95) 0%, transparent 65%)' }} />
+                        <span className="badge badge-cyan" style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '0.65rem', fontWeight: 800 }}>
+                          {sc.badge || 'PRO'}
+                        </span>
+                      </div>
+
+                      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+                        <div style={{ marginBottom: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                            <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', flex: 1, minWidth: '150px' }}>{sc.title}</h4>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexShrink: 0 }}>
+                              {sc.isStartingPrice && <span style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', fontWeight: 600 }}>From </span>}
+                              <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.78rem', opacity: 0.75 }}>₹{currentOrigPrice}</span>
+                              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-gold)' }}>₹{currentPrice}</span>
+                            </div>
+                          </div>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', lineHeight: '1.4' }}>{sc.desc}</p>
+                        </div>
+                        
+                        <button
+                          className="btn-gold"
+                          style={{ width: '100%', padding: '10px', fontSize: '0.85rem', fontWeight: 800, borderRadius: '8px', justifyContent: 'center' }}
+                        >
+                          Book Service (₹{currentPrice})
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       </section>
 
-      {/* SECTION 4: PACKAGES COMPARISON & PRICING MATRIX (#11212D GRADIENT BACKGROUND) */}
+      {/* SECTION 4: PACKAGES & INDIVIDUAL STANDALONE SERVICES MATRIX (#11212D GRADIENT BACKGROUND) */}
       <section id="pricing-section" style={{
         background: 'linear-gradient(180deg, #11212D 0%, #253745 50%, #06141B 100%)',
         padding: '70px 0',
         borderBottom: '1px solid var(--border-light)'
       }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-            <span className="badge badge-gold">TRANSPARENT PRICING</span>
-            <h2 style={{ fontSize: '2.3rem', marginTop: '8px', color: '#FFFFFF' }}>Wash & Detailing Packages</h2>
-            <p style={{ color: '#CCD0CF' }}>Save up to 25% by bundling multiple maintenance services together</p>
+          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <span className="badge badge-gold">TRANSPARENT PRICING & CUSTOM MENU</span>
+            <h2 style={{ fontSize: '2.3rem', marginTop: '8px', color: '#FFFFFF' }}>Wash Packages & Individual Services</h2>
+            <p style={{ color: '#CCD0CF' }}>Select a complete full package or pick individual single services according to your budget</p>
+          </div>
+
+          {/* VIEW MODE TOGGLE BUTTONS */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
+            <button
+              className="btn-primary"
+              style={{ padding: '10px 24px', borderRadius: '24px', fontSize: '0.9rem', fontWeight: 800 }}
+            >
+              📦 Full Detailing Packages (Save up to 25%)
+            </button>
           </div>
 
           {(() => {
             const default3Packages = [
               {
-                title: 'Basic Refresh Package',
-                price: 899,
-                tagline: 'Ideal for bi-weekly maintenance wash',
-                includedServices: ['Express High Pressure Foam Wash', 'Wheel & Tire Scrubbing', 'Light Interior Vacuum & Glass Shine'],
+                title: 'Basic Refresh',
+                name: 'Basic Refresh',
+                price: 499,
+                originalPrice: 699,
+                tagline: 'Best for: Regular maintenance',
+                includedServices: ['Exterior Foam Wash', 'Interior Vacuum', 'Dashboard Dusting', 'Tyre Cleaning', 'Glass Cleaning'],
                 isPopular: false
               },
               {
-                title: 'Pro Shine & Protection Package',
-                price: 1799,
-                tagline: 'Complete internal & external restoration',
-                includedServices: ['Ultimate Hydro-Polishing Wash', '300°F Deep Interior Steam Sanitize', 'Underbody Chassis Wash', 'Ceramic Tire Armor & Wheel Polish'],
+                title: '🥈 Premium Shine ⭐',
+                name: '🥈 Premium Shine ⭐',
+                price: 799,
+                originalPrice: 1099,
+                tagline: 'Best for: Complete regular cleaning',
+                includedServices: ['Premium Foam Wash', 'Interior Vacuum', 'Dashboard Polish', 'Door Panel Cleaning', 'Tyre & Rim Cleaning', 'Tyre Shine', 'Underbody Wash', 'Air Freshener'],
                 isPopular: true
               },
               {
-                title: 'VIP Platinum Showroom Package',
-                price: 3999,
-                tagline: 'For car enthusiasts & luxury vehicle owners',
-                includedServices: ['Ultimate Hydro-Polishing & Detailing', 'Deep Interior Spa & Leather Conditioning', 'Nano Ceramic Shield Wax Layer', 'Headlight Restoration & Windshield Hydrophobic Shield', 'Priority Bay Slot Access'],
+                title: '🥇 Ultimate Detail',
+                name: '🥇 Ultimate Detail',
+                price: 1499,
+                originalPrice: 1999,
+                tagline: 'Best for: Deep cleaning',
+                includedServices: ['Premium Foam Wash', 'Full Interior Cleaning', 'Deep Vacuum', 'Dashboard & Door Panel Polish', 'Seat Surface Cleaning', 'Roof & Carpet Cleaning', 'AC Vent Cleaning', 'Tyre Shine', 'Exterior Wax Protection'],
                 isPopular: false
               }
             ];
@@ -336,7 +493,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             const displayPackages = (packages.length >= 3 ? packages : default3Packages).slice().sort((a, b) => a.price - b.price);
 
             return (
-              <div className="grid-3">
+              <div className="grid-3" style={{ marginBottom: '50px' }}>
                 {displayPackages.map((pkg, idx) => (
                   <div
                     key={idx}
@@ -344,6 +501,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                     style={{
                       padding: '32px',
                       position: 'relative',
+                      borderRadius: '18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
                       border: pkg.isPopular ? '2px solid #FFC300' : '1px solid var(--border-light)',
                       background: pkg.isPopular ? 'linear-gradient(135deg, rgba(37,55,69,0.95) 0%, rgba(17,33,45,0.95) 100%)' : 'var(--bg-glass-card)',
                       boxShadow: pkg.isPopular ? '0 12px 35px var(--accent-gold-glow)' : 'none'
@@ -366,37 +527,48 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                       </div>
                     )}
 
-                    <h3 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>{pkg.title}</h3>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginBottom: '20px' }}>{pkg.tagline}</p>
+                    <div>
+                      <h3 style={{ fontSize: '1.4rem', marginBottom: '6px', fontWeight: 800 }}>{pkg.title || pkg.name}</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginBottom: '20px' }}>{pkg.tagline}</p>
 
-                    <div style={{ fontSize: '2.5rem', fontWeight: 800, color: pkg.isPopular ? 'var(--accent-gold)' : 'var(--accent-cyan)', marginBottom: '20px' }}>
-                      ₹{pkg.price} <span style={{ fontSize: '0.9rem', color: '#CCD0CF', fontWeight: 400 }}>/ wash</span>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '28px' }}>
-                      <div style={{ fontSize: '0.82rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '10px' }}>
-                        INCLUDED SERVICES:
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '20px' }}>
+                        <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '1.1rem', opacity: 0.75 }}>
+                          ₹{pkg.originalPrice || (pkg.price === 499 ? 699 : pkg.price === 799 ? 1099 : 1999)}
+                        </span>
+                        <span style={{ fontSize: '2.5rem', fontWeight: 800, color: pkg.isPopular ? 'var(--accent-gold)' : 'var(--accent-cyan)' }}>
+                          ₹{pkg.price}
+                        </span>
+                        <span style={{ fontSize: '0.85rem', color: '#CCD0CF' }}>/ wash</span>
                       </div>
-                      {pkg.includedServices.map((inc, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', marginBottom: '8px' }}>
-                          <Check size={16} color={pkg.isPopular ? "var(--accent-gold)" : "var(--accent-cyan)"} />
-                          <span>{inc}</span>
+
+                      <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginBottom: '28px' }}>
+                        <div style={{ fontSize: '0.82rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '12px' }}>
+                          INCLUDED SERVICES:
                         </div>
-                      ))}
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {(pkg.includedServices || []).map((service, sIdx) => (
+                            <li key={sIdx} style={{ fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#FFFFFF' }}>
+                              <CheckCircle size={16} color={pkg.isPopular ? 'var(--accent-gold)' : 'var(--accent-cyan)'} />
+                              {service}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
 
                     <button
-                      onClick={() => onSelectService(pkg)}
+                      onClick={() => onSelectPackage(pkg)}
                       className={pkg.isPopular ? "btn-gold" : "btn-cyan"}
-                      style={{ width: '100%', justifyContent: 'center' }}
+                      style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '0.9rem', fontWeight: 800 }}
                     >
-                      Book Package
+                      Book Package (₹{pkg.price})
                     </button>
                   </div>
                 ))}
               </div>
             );
           })()}
+
         </div>
       </section>
 

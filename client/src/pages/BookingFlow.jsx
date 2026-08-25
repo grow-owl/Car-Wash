@@ -4,7 +4,7 @@ import { getServices, getPackages, getAddons, getSlotsAvailability, validateCoup
 import SmartUpsellModal from '../components/SmartUpsellModal';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 
-export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1, onBookingComplete, onTrackLive }) {
+export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1, preselectedItem = null, onBookingComplete, onTrackLive }) {
   const [step, setStep] = useState(initialStep);
   const [vehicleType, setVehicleType] = useState(initialVehicle);
 
@@ -13,7 +13,11 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const [allAddons, setAllAddons] = useState([]);
   const [slots, setSlots] = useState([]);
 
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedService, setSelectedService] = useState(preselectedItem);
+  const [bookingMode, setBookingMode] = useState('packages'); // 'packages' | 'custom'
+  const [selectedCustomServices, setSelectedCustomServices] = useState([]);
+  const [customCategoryFilter, setCustomCategoryFilter] = useState('all');
+
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedSlot, setSelectedSlot] = useState('10:00 AM');
@@ -37,42 +41,51 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [vehicleType, selectedDate]);
-
   const primary3Packages = [
     {
       _id: 'pkg-1',
-      name: 'Basic Refresh Package',
-      title: 'Basic Refresh Package',
-      price: 899,
+      name: 'Basic Refresh',
+      title: 'Basic Refresh',
+      price: 499,
+      originalPrice: 699,
       durationMins: 35,
-      description: 'Express high-pressure foam wash, wheel scrub, tire dressing & light interior vacuum.',
-      includedServices: ['Express High Pressure Foam Wash', 'Wheel & Tire Scrubbing', 'Light Interior Vacuum & Glass Shine'],
+      description: 'Exterior Foam Wash, Interior Vacuum, Dashboard Dusting, Tyre Cleaning & Glass Cleaning.',
+      includedServices: ['Exterior Foam Wash', 'Interior Vacuum', 'Dashboard Dusting', 'Tyre Cleaning', 'Glass Cleaning'],
       isPopular: false
     },
     {
       _id: 'pkg-2',
-      name: 'Pro Shine & Protection Package',
-      title: 'Pro Shine & Protection Package',
-      price: 1799,
+      name: '🥈 Premium Shine ⭐',
+      title: '🥈 Premium Shine ⭐',
+      price: 799,
+      originalPrice: 1099,
       durationMins: 60,
-      description: 'Complete interior deep steam sanitization, underbody wash & dual action wax polish.',
-      includedServices: ['Ultimate Hydro-Polishing Wash', '300°F Deep Interior Steam Sanitize', 'Underbody Chassis Wash', 'Ceramic Tire Armor & Wheel Polish'],
+      description: 'Premium Foam Wash, Interior Vacuum, Dashboard Polish, Door Panel Cleaning, Tyre & Rim Cleaning, Tyre Shine, Underbody Wash & Air Freshener.',
+      includedServices: ['Premium Foam Wash', 'Interior Vacuum', 'Dashboard Polish', 'Door Panel Cleaning', 'Tyre & Rim Cleaning', 'Tyre Shine', 'Underbody Wash', 'Air Freshener'],
       isPopular: true
     },
     {
       _id: 'pkg-3',
-      name: 'VIP Platinum Showroom Package',
-      title: 'VIP Platinum Showroom Package',
-      price: 3999,
+      name: '🥇 Ultimate Detail',
+      title: '🥇 Ultimate Detail',
+      price: 1499,
+      originalPrice: 1999,
       durationMins: 120,
-      description: '9H nano ceramic wax layer, leather spa, headlight restoration & priority bay slot.',
-      includedServices: ['Ultimate Hydro-Polishing & Detailing', 'Deep Interior Spa & Leather Conditioning', 'Nano Ceramic Shield Wax Layer', 'Headlight Restoration & Windshield Hydrophobic Shield', 'Priority Bay Slot Access'],
+      description: 'Full interior deep clean, dashboard & door panel polish, seat surface cleaning, roof & carpet clean, AC vent clean & exterior wax.',
+      includedServices: ['Premium Foam Wash', 'Full Interior Cleaning', 'Deep Vacuum', 'Dashboard & Door Panel Polish', 'Seat Surface Cleaning', 'Roof & Carpet Cleaning', 'AC Vent Cleaning', 'Tyre Shine', 'Exterior Wax Protection'],
       isPopular: false
     }
   ];
+
+  useEffect(() => {
+    if (preselectedItem) {
+      setSelectedService(preselectedItem);
+    }
+  }, [preselectedItem]);
+
+  useEffect(() => {
+    fetchData();
+  }, [vehicleType, selectedDate]);
 
   const fetchData = async () => {
     try {
@@ -86,12 +99,12 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       setPackages(pkgRes.data.length >= 3 ? pkgRes.data : primary3Packages);
       setAllAddons(addRes.data);
       setSlots(slotRes.data);
-      if (!selectedService) {
+      if (!selectedService && !preselectedItem) {
         setSelectedService(primary3Packages[1]);
       }
     } catch (err) {
       console.error('Error loading booking data:', err);
-      if (!selectedService) setSelectedService(primary3Packages[1]);
+      if (!selectedService && !preselectedItem) setSelectedService(primary3Packages[1]);
     }
   };
 
@@ -109,8 +122,26 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     }
   };
 
+  const toggleCustomService = (svc) => {
+    setSelectedCustomServices(prev => {
+      const exists = prev.some(s => s.name === svc.name);
+      if (exists) {
+        return prev.filter(s => s.name !== svc.name);
+      } else {
+        return [...prev, svc];
+      }
+    });
+  };
+
+  const calculateBaseTotal = () => {
+    if (bookingMode === 'custom') {
+      return selectedCustomServices.reduce((sum, s) => sum + (s.price || 0), 0);
+    }
+    return selectedService?.price || 799;
+  };
+
   const calculateFinalTotal = () => {
-    const base = selectedService?.price || 0;
+    const base = calculateBaseTotal();
     const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price || 0), 0);
     const total = base + addonsTotal - couponDiscount;
     return total > 0 ? total : 0;
@@ -123,8 +154,17 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       return;
     }
 
+    if (bookingMode === 'custom' && selectedCustomServices.length === 0) {
+      alert('Please select at least 1 custom service.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      const serviceNameVal = bookingMode === 'custom'
+        ? (selectedCustomServices.map(s => s.name).join(' + ') || 'Custom Wash Combo')
+        : (selectedService?.name || 'Pro Shine & Protection Package');
+
       const payload = {
         customerName,
         phone,
@@ -132,8 +172,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
         vehicleType,
         vehicleNumber,
         vehicleModel: vehicleModel || vehicleType,
-        serviceName: selectedService?.name || 'Pro Shine & Protection Package',
-        packageName: selectedService?.title || selectedService?.name,
+        serviceName: serviceNameVal,
+        packageName: bookingMode === 'custom' ? 'Custom Service Combo' : (selectedService?.title || selectedService?.name),
         addons: selectedAddons.map(a => ({ name: a.name, price: a.price })),
         date: selectedDate,
         slotTime: selectedSlot,
@@ -238,86 +278,281 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       {/* MAIN STEP CONTENT CONTAINER */}
       <div className="glass-panel" style={{ padding: '36px', border: '1px solid var(--accent-aqua)' }}>
         
-        {/* STEP 1: SERVICE PACKAGE SELECTION (₹899, ₹1,799, ₹3,999) */}
+        {/* STEP 1: SERVICE PACKAGE OR CUSTOM STANDALONE SELECTION */}
         {step === 1 && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>1. Select Desired Wash or Detailing Package</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Choose from our 3 primary flagship detailing packages</p>
+                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>1. Choose Package or Custom Service Combo</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Select a pre-made package bundle or manually pick individual standalone services</p>
               </div>
               <span className="badge badge-aqua">Step 1 of 4</span>
             </div>
 
-            <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
-              {displayPackagesList.map((pkg, idx) => {
-                const pkgName = pkg.title || pkg.name;
-                const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
+            {/* BOOKING MODE SWITCHER TABS */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '28px', background: 'rgba(0,49,53,0.6)', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid var(--border-light)' }}>
+              <button
+                type="button"
+                onClick={() => setBookingMode('packages')}
+                style={{
+                  background: bookingMode === 'packages' ? 'var(--accent-aqua)' : 'transparent',
+                  color: bookingMode === 'packages' ? '#003135' : '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                📦 Pre-Made Full Packages
+              </button>
 
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => setSelectedService(pkg)}
-                    style={{
-                      background: isSelected ? 'rgba(15, 164, 175, 0.2)' : 'var(--bg-glass-card)',
-                      border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      transition: 'all 0.25s ease'
-                    }}
-                  >
-                    {pkg.isPopular && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-12px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        background: 'var(--accent-aqua)',
-                        color: '#003135',
-                        padding: '3px 12px',
-                        borderRadius: '20px',
-                        fontWeight: 800,
-                        fontSize: '0.7rem'
-                      }}>
-                        MOST POPULAR
-                      </div>
-                    )}
+              <button
+                type="button"
+                onClick={() => setBookingMode('custom')}
+                style={{
+                  background: bookingMode === 'custom' ? 'var(--accent-gold)' : 'transparent',
+                  color: bookingMode === 'custom' ? '#06141B' : '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                🛠️ Custom Service Combo (Pick Individual Services)
+              </button>
+            </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>{pkgName}</h4>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>₹{pkg.price}</div>
-                    </div>
+            {/* MODE 1: PRE-MADE PACKAGES */}
+            {bookingMode === 'packages' && (
+              <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
+                {displayPackagesList.map((pkg, idx) => {
+                  const pkgName = pkg.title || pkg.name;
+                  const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
 
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-                      {pkg.description || pkg.tagline}
-                    </p>
-
-                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px', marginTop: '14px' }}>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px' }}>
-                        INCLUDED SERVICES:
-                      </div>
-                      {pkg.includedServices && pkg.includedServices.map((inc, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px' }}>
-                          <Check size={14} color="var(--accent-aqua)" />
-                          <span>{inc}</span>
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedService(pkg)}
+                      style={{
+                        background: isSelected ? 'rgba(15, 164, 175, 0.2)' : 'var(--bg-glass-card)',
+                        border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        transition: 'all 0.25s ease'
+                      }}
+                    >
+                      {pkg.isPopular && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '-12px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'var(--accent-aqua)',
+                          color: '#003135',
+                          padding: '3px 12px',
+                          borderRadius: '20px',
+                          fontWeight: 800,
+                          fontSize: '0.7rem'
+                        }}>
+                          MOST POPULAR
                         </div>
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '16px' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>⏱️ Duration: ~{pkg.durationMins || 50} mins</span>
-                      {isSelected && (
-                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <CheckCircle2 size={16} /> Selected
-                        </span>
                       )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>{pkgName}</h4>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>₹{pkg.price}</div>
+                      </div>
+
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
+                        {pkg.description || pkg.tagline}
+                      </p>
+
+                      <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px', marginTop: '14px' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px' }}>
+                          INCLUDED SERVICES:
+                        </div>
+                        {pkg.includedServices && pkg.includedServices.map((inc, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px' }}>
+                            <Check size={14} color="var(--accent-aqua)" />
+                            <span>{inc}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '12px', marginTop: '16px' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>⏱️ Duration: ~{pkg.durationMins || 50} mins</span>
+                        {isSelected && (
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={16} /> Selected
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* MODE 2: CUSTOM STANDALONE INDIVIDUAL SERVICES SELECTOR */}
+            {bookingMode === 'custom' && (
+              <div style={{ marginBottom: '32px' }}>
+                
+                {/* COMBO SUMMARY BAR */}
+                <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '14px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'var(--accent-gold)', fontSize: '0.95rem' }}>
+                      Selected Custom Services ({selectedCustomServices.length})
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                      {selectedCustomServices.length > 0 ? selectedCustomServices.map(s => s.name).join(' • ') : 'No service selected yet (Check boxes below to build your combo)'}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                    Combo Total: ₹{calculateBaseTotal()}
+                  </div>
+                </div>
+
+                {/* CATEGORY FILTER TABS FOR CUSTOM SERVICES */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                  {[
+                    { id: 'all', label: 'All Services' },
+                    { id: 'wash', label: '🚿 Regular Wash' },
+                    { id: 'interior', label: '🧹 Interior Care' },
+                    { id: 'exterior', label: '✨ Exterior & Polish' },
+                    { id: 'engine', label: '⚙️ Engine & Chassis' },
+                    { id: 'premium', label: '🛋️ Premium Detailing' }
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCustomCategoryFilter(cat.id)}
+                      style={{
+                        background: customCategoryFilter === cat.id ? 'var(--accent-cyan)' : 'rgba(0, 49, 53, 0.6)',
+                        color: customCategoryFilter === cat.id ? '#003135' : '#FFFFFF',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        border: customCategoryFilter === cat.id ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                        padding: '6px 14px',
+                        borderRadius: '18px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* DYNAMIC 25+ CUSTOM SERVICES GRID */}
+                {(() => {
+                  const masterServicesList = [
+                    // 🚿 1. REGULAR WASH SERVICES
+                    { category: 'wash', name: 'Express Exterior Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, duration: '25 mins', desc: 'High-pressure foam wash, wheel scrub & blow dry' },
+                    { category: 'wash', name: 'Foam Wash', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Thick snow foam lifting dirt and grime without scratches' },
+                    { category: 'wash', name: 'Basic Interior + Exterior Wash', prices: { Hatchback: 499, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: 'Full foam wash + cabin vacuuming & footmat cleaning' },
+                    { category: 'wash', name: 'Premium Car Wash ⭐', prices: { Hatchback: 699, Sedan: 799, SUV: 899 }, origPrices: { Hatchback: 999, Sedan: 1199, SUV: 1399 }, duration: '50 mins', desc: 'Foam wash, exterior clean, interior vacuum, dash polish, door panels, tyre shine & air freshener' },
+                    { category: 'wash', name: 'Underbody Wash', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'High-pressure underbody mud extraction & chassis rinse' },
+
+                    // 🧹 2. INTERIOR CLEANING SERVICES
+                    { category: 'interior', name: 'Interior Vacuum & Dusting', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '30 mins', desc: 'Deep cabin vacuuming & dust extraction from seats & footmats' },
+                    { category: 'interior', name: 'Dashboard & Door Panel Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'UV protective non-greasy dashboard polish & door panel scrub' },
+                    { category: 'interior', name: 'Seat Cleaning & Fabric Scrub', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Deep upholstery stain extraction & fabric/leather hydration' },
+                    { category: 'interior', name: 'Interior Deep Cleaning ⭐', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, duration: '90 mins', desc: 'Complete interior steam extraction, carpet shampooing & sanitization' },
+                    { category: 'interior', name: 'Roof & Carpet Cleaning', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Fabric headliner stain removal & carpet steam extraction' },
+                    { category: 'interior', name: 'AC Vent Cleaning & Steam Sanitize', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'Ozone steam sanitization inside AC ducts eliminating vent mold' },
+                    { category: 'interior', name: 'Odour Removal & Sanitisation', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Permanent smoke & pet odor elimination with anti-bacterial fogging' },
+
+                    // ✨ 3. EXTERIOR CARE & SHINE
+                    { category: 'exterior', name: 'Tyre & Alloy Deep Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: 'Brake dust acid wash & alloy rim polishing' },
+                    { category: 'exterior', name: 'Tyre Dressing & Shine', prices: { Hatchback: 99, Sedan: 149, SUV: 199 }, origPrices: { Hatchback: 199, Sedan: 249, SUV: 299 }, duration: '15 mins', desc: 'Long-lasting deep wet look tire dressing' },
+                    { category: 'exterior', name: 'Exterior Wax Polish', prices: { Hatchback: 799, Sedan: 999, SUV: 1199 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, duration: '50 mins', desc: 'Hand wax application for smooth paint shine & UV protection' },
+                    { category: 'exterior', name: 'Machine Polish / Paint Enhancement', prices: { Hatchback: 1999, Sedan: 2499, SUV: 2999 }, origPrices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, duration: '90 mins', desc: 'Dual action machine buffing to remove swirl marks & restore gloss' },
+                    { category: 'exterior', name: 'Scratch Removal – Minor', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '35 mins', desc: 'Spot compounding & buffing to eliminate minor surface scratches' },
+                    { category: 'exterior', name: 'Headlight Restoration', prices: { Hatchback: 499, Sedan: 499, SUV: 499 }, origPrices: { Hatchback: 799, Sedan: 799, SUV: 799 }, duration: '30 mins', desc: 'Yellow oxidation removal & clear UV acrylic sealant' },
+
+                    // ⚙️ 4. ENGINE & UNDERBODY CARE
+                    { category: 'engine', name: 'Engine Bay Cleaning', prices: { Hatchback: 499, Sedan: 549, SUV: 599 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: '300°F steam degreasing of engine block & plastic covers' },
+                    { category: 'engine', name: 'Engine Bay Dressing', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'Protective hose & rubber wire conditioning' },
+                    { category: 'engine', name: 'Underbody Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: '360° pressure underbody mud removal' },
+                    { category: 'engine', name: 'Anti-Rust Treatment', prices: { Hatchback: 1499, Sedan: 1799, SUV: 2199 }, origPrices: { Hatchback: 2199, Sedan: 2499, SUV: 2999 }, duration: '60 mins', desc: 'Heavy-duty rubberized anti-corrosion chassis coating' },
+
+                    // 🛋️ 5. PREMIUM DETAILING
+                    { category: 'premium', name: 'Complete Interior Detailing', prices: { Hatchback: 1999, Sedan: 1999, SUV: 1999 }, origPrices: { Hatchback: 2999, Sedan: 2999, SUV: 2999 }, duration: '120 mins', desc: 'Deep steam sanitization, leather spa, carpet extraction & AC vent cleaning' },
+                    { category: 'premium', name: 'Exterior Detailing & Polish', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3499, Sedan: 3499, SUV: 3499 }, duration: '150 mins', desc: 'Multi-stage paint correction, clay bar treatment & synthetic wax polish' },
+                    { category: 'premium', name: 'Complete Car Detailing ⭐', prices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, origPrices: { Hatchback: 5999, Sedan: 5999, SUV: 5999 }, duration: '180 mins', desc: 'Full interior + exterior showroom transformation with engine bay & tire dressing' },
+                    { category: 'premium', name: 'Teflon / Paint Protection', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, duration: '120 mins', desc: 'Hydrophobic paint barrier enhancing color depth & swirl masking' },
+                    { category: 'premium', name: 'Nano Ceramic Protection', prices: { Hatchback: 4999, Sedan: 4999, SUV: 4999 }, origPrices: { Hatchback: 6999, Sedan: 6999, SUV: 6999 }, duration: '240 mins', desc: '9H Nano ceramic paint shield with 1-year gloss guarantee' },
+                    { category: 'premium', name: '1-Year Ceramic Coating', prices: { Hatchback: 7999, Sedan: 7999, SUV: 7999 }, origPrices: { Hatchback: 10999, Sedan: 10999, SUV: 10999 }, duration: '360 mins', desc: 'Professional multi-layer 9H ceramic coating with warranty card' },
+                    { category: 'premium', name: 'PPF – Partial Protection Film', prices: { Hatchback: 25000, Sedan: 25000, SUV: 25000 }, origPrices: { Hatchback: 35000, Sedan: 35000, SUV: 35000 }, duration: '480 mins', desc: 'Self-healing Paint Protection Film for high-impact front bumper & bonnet' }
+                  ];
+
+                  const filteredList = customCategoryFilter === 'all'
+                    ? masterServicesList
+                    : masterServicesList.filter(s => s.category === customCategoryFilter);
+
+                  const activeVeh = vehicleType || 'Sedan';
+
+                  return (
+                    <div className="grid-2" style={{ gap: '14px' }}>
+                      {filteredList.map((s, idx) => {
+                        const calculatedPrice = s.prices[activeVeh] || s.prices['Sedan'];
+                        const calculatedOrigPrice = s.origPrices[activeVeh] || s.origPrices['Sedan'];
+                        const itemToToggle = { ...s, price: calculatedPrice, originalPrice: calculatedOrigPrice };
+                        const isChecked = selectedCustomServices.some(cs => cs.name === s.name);
+
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => toggleCustomService(itemToToggle)}
+                            style={{
+                              background: isChecked ? 'rgba(0, 229, 255, 0.15)' : 'rgba(0,49,53,0.6)',
+                              border: isChecked ? '2px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                              borderRadius: '12px',
+                              padding: '16px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '14px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}}
+                                style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                              />
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.98rem', color: '#FFFFFF' }}>{s.name}</span>
+                                  <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.78rem', opacity: 0.75 }}>₹{calculatedOrigPrice}</span>
+                                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--accent-gold)' }}>₹{calculatedPrice}</span>
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{s.desc}</div>
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>{s.duration}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div style={{ textAlign: 'right' }}>
               <button
@@ -629,13 +864,73 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                   </div>
                 </div>
 
-                {/* Right Column: Order Summary & Coupon */}
+                {/* Right Column: Order Summary, Enhance Your Wash & Coupon */}
                 <div style={{ background: 'rgba(0, 49, 53, 0.85)', padding: '24px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', color: '#FFFFFF' }}>Order Summary</h4>
+                  
+                  {/* 🔥 SMART UPSELLING SYSTEM: ENHANCE YOUR WASH */}
+                  <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                      <Sparkles size={18} color="var(--accent-gold)" />
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-gold)' }}>Enhance Your Wash ✨ (Add-ons)</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '8px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {[
+                        { name: 'Tyre Shine', price: 99 },
+                        { name: 'Dashboard Polish', price: 149 },
+                        { name: 'Interior Vacuum', price: 199 },
+                        { name: 'Engine Bay Cleaning', price: 499 },
+                        { name: 'Underbody Wash', price: 249 },
+                        { name: 'AC Vent Cleaning', price: 199 },
+                        { name: 'Air Freshener', price: 99 },
+                        { name: 'Headlight Restoration', price: 499 },
+                        { name: 'Rain Repellent Coating', price: 299 },
+                        { name: 'Seat Cleaning', price: 499 }
+                      ].map((addon, idx) => {
+                        const isChecked = selectedAddons.some(a => a.name === addon.name);
+                        return (
+                          <label
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              background: isChecked ? 'rgba(0, 229, 255, 0.18)' : 'rgba(17, 33, 45, 0.7)',
+                              border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                              borderRadius: '8px',
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              fontSize: '0.82rem',
+                              color: '#FFFFFF'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  if (isChecked) {
+                                    setSelectedAddons(prev => prev.filter(a => a.name !== addon.name));
+                                  } else {
+                                    setSelectedAddons(prev => [...prev, addon]);
+                                  }
+                                }}
+                                style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                              />
+                              <span>{addon.name}</span>
+                            </div>
+                            <span style={{ fontWeight: 800, color: 'var(--accent-gold)' }}>+₹{addon.price}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <h4 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#FFFFFF' }}>Order Summary</h4>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem' }}>
-                    <span>Selected Package ({selectedService?.title || selectedService?.name}):</span>
-                    <span>₹{selectedService?.price || 899}</span>
+                    <span>Base Service ({selectedService?.title || selectedService?.name || 'Selected Wash'}):</span>
+                    <span>₹{calculateBaseTotal()}</span>
                   </div>
 
                   {selectedAddons.map((a, i) => (

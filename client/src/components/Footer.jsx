@@ -9,22 +9,12 @@ export default function Footer({ onOpenOwnerPortal }) {
       padding: '48px 0 24px 0',
       marginTop: '80px'
     }}>
-      <div className="container grid-4" style={{ marginBottom: '32px' }}>
+      <div className="container grid-3" style={{ marginBottom: '32px' }}>
         <div>
           <h3 style={{ fontSize: '1.2rem', marginBottom: '12px' }}>CAR<span className="text-aqua">WASH</span></h3>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
             Next-Generation Auto Detailing & Car Wash Business Management System in Siliguri. Engineered for maximum shine and customer satisfaction.
           </p>
-        </div>
-
-        <div>
-          <h4 style={{ fontSize: '1rem', color: 'var(--ice-tint)', marginBottom: '12px' }}>Services</h4>
-          <ul style={{ listStyle: 'none', fontSize: '0.88rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <li>• Express Exterior Wash</li>
-            <li>• Hydrophobic Foam & Polishing</li>
-            <li>• 300°F Interior Steam Sanitize</li>
-            <li>• 9H Nano Ceramic Coating</li>
-          </ul>
         </div>
 
         <div>

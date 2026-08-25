@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Sparkles, ArrowLeftRight, Shield } from 'lucide-react';
 
 export default function BeforeAfterSlider({ 
-  beforeImage = "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?auto=format&fit=crop&w=900&q=80",
-  afterImage = "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+  beforeImage = "/before-wash.jpg",
+  afterImage = "/after-wash.jpg",
   title = "Hydrophobic Foam & 9H Ceramic Shield" 
 }) {
   const [sliderPos, setSliderPos] = useState(50);
@@ -89,10 +89,13 @@ export default function BeforeAfterSlider({
             src={beforeImage} 
             alt="Before Muddy State"
             style={{ 
-              width: '860px', 
+              width: '100%', 
               height: '100%', 
               objectFit: 'cover',
-              maxWidth: 'none'
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              minWidth: '860px'
             }}
           />
 

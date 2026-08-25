@@ -35,119 +35,169 @@ const seedData = async () => {
     await BeforeAfter.deleteMany({});
     await AbandonedLead.deleteMany({});
 
-    // 1. Services (INR Pricing)
+    // 1. Standalone Individual Services (Genuine INR Pricing)
     await Service.insertMany([
       {
-        name: 'Express Exterior Wash',
+        name: 'Express Exterior Foam Wash',
         category: 'Wash',
-        price: 499,
+        price: 299,
         vehicleType: 'Sedan',
-        durationMins: 30,
+        durationMins: 25,
         description: 'High-pressure foam wash, tire shine, exterior glass cleaning and blow dry.',
         features: ['High Pressure Foam Wash', 'Wheel & Tire Scrub', 'Exterior Glass Shine', 'Air Dryer Finish'],
-        badge: 'Quick Wash',
-        isPopular: false
-      },
-      {
-        name: 'Ultimate Hydro-Polishing & Wash',
-        category: 'Wash',
-        price: 1299,
-        vehicleType: 'Sedan',
-        durationMins: 50,
-        description: 'Full interior vacuum, dashboard UV polish, exterior wax shine, hydrophobic window treatment.',
-        features: ['Full Interior Vacuum', 'UV Protectant Dash Polish', 'Tire Dressing & Rim Shine', 'Hydrophobic Paint Sealant'],
-        badge: 'Best Seller',
+        badge: 'Popular Wash',
         isPopular: true
       },
       {
-        name: 'Deep Interior Spa & Steam Sanitize',
+        name: 'Interior Vacuum & Dusting',
         category: 'Interior',
-        price: 2499,
-        vehicleType: 'SUV',
-        durationMins: 75,
-        description: 'High-temperature steam extraction, leather conditioning, stain removal and AC vent disinfection.',
-        features: ['300°F Steam Sanitize', 'Leather Conditioning Spa', 'Carpet Shampooing', 'Odor Elimination Treatment'],
-        badge: 'Hygiene Protection',
+        price: 349,
+        vehicleType: 'Sedan',
+        durationMins: 30,
+        description: 'Deep cabin vacuuming, mat cleaning, and dust extraction from dashboard & seats.',
+        features: ['Deep Cabin Vacuuming', 'Footmat Washing & Drying', 'Dashboard Dusting', 'Boot Space Cleaning'],
+        badge: 'Interior Care',
         isPopular: false
       },
       {
-        name: '9H Ceramic Coating & Paint Restoration',
+        name: 'Underbody Anti-Rust Hydro-Wash',
+        category: 'Wash',
+        price: 499,
+        vehicleType: 'SUV',
+        durationMins: 35,
+        description: 'High-pressure underbody mud extraction and anti-corrosion rinse treatment.',
+        features: ['360° Underbody Pressure Wash', 'Mud & Dirt Extraction', 'Chassis Anti-Rust Rinse'],
+        badge: 'Chassis Protect',
+        isPopular: false
+      },
+      {
+        name: 'Engine Bay Steam & Degreasing',
+        category: 'Detailing',
+        price: 599,
+        vehicleType: 'Sedan',
+        durationMins: 40,
+        description: 'High-temperature steam degreasing of engine block, rubber hoses, and plastic covers.',
+        features: ['300°F Steam Degreasing', 'Hose & Cable Protection', 'Plastics Conditioning'],
+        badge: 'Engine Care',
+        isPopular: false
+      },
+      {
+        name: 'Hydrophobic Glass & Windshield Shield',
+        category: 'Glass',
+        price: 349,
+        vehicleType: 'Sedan',
+        durationMins: 20,
+        description: 'Rain-repellent nano coating for crystal clear driving visibility during monsoon.',
+        features: ['Rain Repellent Layer', 'Water Spot Removal', 'Night Glare Reduction'],
+        badge: 'Monsoon Ready',
+        isPopular: true
+      },
+      {
+        name: 'Ceramic Hydro-Polish & Paint Sealant',
         category: 'Ceramic',
-        price: 7999,
+        price: 1299,
+        vehicleType: 'Sedan',
+        durationMins: 60,
+        description: 'Hand polish with synthetic ceramic wax for high gloss paint shine and water repellency.',
+        features: ['Hand Wax & Polish', '6-Month Hydrophobic Barrier', 'Swirl Masking Treatment'],
+        badge: 'Best Value Polish',
+        isPopular: true
+      },
+      {
+        name: '9H Nano-Ceramic Paint Coating',
+        category: 'Ceramic',
+        price: 3999,
         vehicleType: 'Luxury',
         durationMins: 120,
         description: 'Multi-stage paint correction to remove swirl marks, followed by a 2-year hydrophobic 9H ceramic shield.',
-        features: ['2-Stage Paint Correction', '9H Nano-Ceramic Layer', '5-Year Hydrophobic Guarantee', 'Engine Bay Detailing'],
-        badge: 'Premium Flagship',
+        features: ['2-Stage Paint Correction', '9H Nano-Ceramic Layer', '2-Year Hydrophobic Guarantee', 'UV Protection'],
+        badge: 'Premium Coating',
         isPopular: true
+      },
+      {
+        name: 'AC Vent Steam Sanitize & Odor Spa',
+        category: 'Sanitization',
+        price: 449,
+        vehicleType: 'Sedan',
+        durationMins: 30,
+        description: 'Kills 99.9% bacteria inside AC ducts and permanently eliminates smoke and pet odors.',
+        features: ['Ozone Air Purification', 'AC Vent Steam Treatment', 'Germ & Odor Elimination'],
+        badge: 'Hygiene Spa',
+        isPopular: false
+      },
+      {
+        name: 'Leather Seat Conditioning & Spa',
+        category: 'Interior',
+        price: 699,
+        vehicleType: 'SUV',
+        durationMins: 45,
+        description: 'Deep leather cleaning, hydration, and UV protectant cream application for crack prevention.',
+        features: ['Deep Leather Scrub', 'Moisture Replenish Cream', 'UV Damage Shield'],
+        badge: 'Leather Care',
+        isPopular: false
+      },
+      {
+        name: 'Alloy Wheel Polish & Tire Dressing',
+        category: 'Wheels',
+        price: 249,
+        vehicleType: 'Sedan',
+        durationMins: 25,
+        description: 'Brake dust removal, alloy wheel polishing, and high-gloss wet look tire dressing.',
+        features: ['Brake Dust Acid Wash', 'Alloy Rim Polish', 'Deep Wet Look Tire Dressing'],
+        badge: 'Wheel Shine',
+        isPopular: false
       }
     ]);
 
-    // 2. Packages (INR Pricing)
+    // 2. Packages (INR Pricing & Requested Bundles)
     await Package.insertMany([
       {
-        title: 'Basic Refresh Package',
-        price: 899,
+        title: 'Basic Refresh',
+        name: 'Basic Refresh',
+        price: 499,
+        originalPrice: 699,
         vehicleType: 'Sedan',
-        includedServices: ['Express Exterior Wash', 'Tire Dressing', 'Light Interior Vacuum'],
-        discountPct: 10,
-        tagline: 'Ideal for bi-weekly maintenance',
+        includedServices: ['Exterior Foam Wash', 'Interior Vacuum', 'Dashboard Dusting', 'Tyre Cleaning', 'Glass Cleaning'],
+        discountPct: 28,
+        tagline: 'Best for: Regular maintenance',
         isPopular: false
       },
       {
-        title: 'Pro Shine & Protection Package',
-        price: 1799,
+        title: '🥈 Premium Shine ⭐',
+        name: '🥈 Premium Shine ⭐',
+        price: 799,
+        originalPrice: 1099,
         vehicleType: 'Sedan',
-        includedServices: ['Ultimate Hydro-Polishing', 'Interior Deep Steam', 'Underbody Wash', 'Engine Bay Wipe'],
-        discountPct: 20,
-        tagline: 'Complete internal & external restoration',
+        includedServices: ['Premium Foam Wash', 'Interior Vacuum', 'Dashboard Polish', 'Door Panel Cleaning', 'Tyre & Rim Cleaning', 'Tyre Shine', 'Underbody Wash', 'Air Freshener'],
+        discountPct: 27,
+        tagline: 'Best for: Complete regular cleaning',
         isPopular: true
       },
       {
-        title: 'VIP Platinum Showroom Package',
-        price: 3999,
+        title: '🥇 Ultimate Detail',
+        name: '🥇 Ultimate Detail',
+        price: 1499,
+        originalPrice: 1999,
         vehicleType: 'SUV',
-        includedServices: ['Ultimate Hydro-Polishing', 'Deep Interior Spa', 'Ceramic Shield Wax', 'Headlight Restoration', 'Priority Bay Slot'],
+        includedServices: ['Premium Foam Wash', 'Full Interior Cleaning', 'Deep Vacuum', 'Dashboard & Door Panel Polish', 'Seat Surface Cleaning', 'Roof & Carpet Cleaning', 'AC Vent Cleaning', 'Tyre Shine', 'Exterior Wax Protection'],
         discountPct: 25,
-        tagline: 'For car enthusiasts & luxury vehicle owners',
+        tagline: 'Best for: Deep cleaning',
         isPopular: false
       }
     ]);
 
-    // 3. Addons (INR Pricing)
+    // 3. Addons - Enhance Your Wash (Smart Upselling System)
     await Addon.insertMany([
-      {
-        name: 'Windshield Hydrophobic Shield',
-        price: 299,
-        icon: 'Droplets',
-        description: 'Repels rainwater instantly for crystal clear driving vision during monsoon.',
-        highConverting: true,
-        recommendationReason: '88% of customers add this during rain!'
-      },
-      {
-        name: 'Ozone Sanitization & Odor Eliminator',
-        price: 499,
-        icon: 'Sparkles',
-        description: 'Kills 99.9% bacteria and permanently eliminates smoke and pet odors.',
-        highConverting: true,
-        recommendationReason: 'Recommended for fresh, germ-free cabin air.'
-      },
-      {
-        name: 'Engine Bay Detailing & Dressing',
-        price: 699,
-        icon: 'Cpu',
-        description: 'Degreases engine block and protects rubber hoses from dry rot.',
-        highConverting: false,
-        recommendationReason: 'Extends hose lifespan and keeps engine looking new.'
-      },
-      {
-        name: 'Ceramic Tire Armor & Wheel Polish',
-        price: 349,
-        icon: 'Disc',
-        description: 'Long-lasting wet look tire shine that repels brake dust for 30 days.',
-        highConverting: true,
-        recommendationReason: 'Pairs perfectly with your exterior wash package.'
-      }
+      { name: 'Tyre Shine', price: 99, icon: 'Disc', description: 'Long-lasting deep wet look tire dressing.', highConverting: true, recommendationReason: '89% customers add this!' },
+      { name: 'Dashboard Polish', price: 149, icon: 'Sparkles', description: 'UV protective non-greasy dashboard shine.', highConverting: true, recommendationReason: 'Protects dash from sun cracks.' },
+      { name: 'Interior Vacuum', price: 199, icon: 'Wind', description: 'High-power cabin & footmat dust extraction.', highConverting: true, recommendationReason: 'Popular add-on for clean cabin air.' },
+      { name: 'Engine Bay Cleaning', price: 499, icon: 'Cpu', description: '300°F steam degreasing of engine block & hoses.', highConverting: true, recommendationReason: 'Extends hose lifespan.' },
+      { name: 'Underbody Wash', price: 249, icon: 'Shield', description: '360° pressure underbody mud removal & anti-rust rinse.', highConverting: true, recommendationReason: 'Essential for monsoon protection.' },
+      { name: 'AC Vent Cleaning', price: 199, icon: 'Thermometer', description: 'Ozone steam sanitization inside AC ducts.', highConverting: true, recommendationReason: 'Kills 99.9% vent bacteria & odors.' },
+      { name: 'Air Freshener', price: 99, icon: 'Smile', description: 'Long-lasting premium organic scent card.', highConverting: true, recommendationReason: 'Keeps car smelling fresh for 30 days.' },
+      { name: 'Headlight Restoration', price: 499, icon: 'Sun', description: 'Yellow oxidation removal & clear UV acrylic sealant.', highConverting: true, recommendationReason: 'Restores 100% night driving vision.' },
+      { name: 'Rain Repellent Coating', price: 299, icon: 'Droplets', description: 'Hydrophobic windshield coating for crystal clear driving.', highConverting: true, recommendationReason: 'Must-have for rainy season.' },
+      { name: 'Seat Cleaning', price: 499, icon: 'Check', description: 'Deep upholstery stain extraction & fabric scrub.', highConverting: true, recommendationReason: 'Removes deep seat stains.' }
     ]);
 
     // 4. Sample Bookings (High Completed Revenue for Positive Net Profit)

@@ -12,6 +12,7 @@ import './theme.css';
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedVehicle, setSelectedVehicle] = useState('Sedan');
+  const [preselectedItem, setPreselectedItem] = useState(null);
   const [activeBookingCode, setActiveBookingCode] = useState('');
   const [adminSubTab, setAdminSubTab] = useState('analytics');
 
@@ -129,13 +130,21 @@ export default function App() {
           <CustomerHome
             onStartBooking={handleStartBooking}
             onSelectVehicle={(veh) => setSelectedVehicle(veh)}
-            onSelectService={() => setActiveTab('booking')}
+            onSelectService={(svc) => {
+              setPreselectedItem(svc);
+              setActiveTab('booking');
+            }}
+            onSelectPackage={(pkg) => {
+              setPreselectedItem(pkg);
+              setActiveTab('booking');
+            }}
           />
         )}
 
         {activeTab === 'booking' && (
           <BookingFlow
             initialVehicle={selectedVehicle}
+            preselectedItem={preselectedItem}
             onBookingComplete={handleBookingComplete}
             onTrackLive={handleTrackLive}
           />
