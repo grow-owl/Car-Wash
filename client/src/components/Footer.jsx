@@ -11,7 +11,17 @@ export default function Footer({ onOpenOwnerPortal }) {
     }}>
       <div className="container grid-3" style={{ marginBottom: '32px' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '12px' }}>CAR<span className="text-aqua">WASH</span></h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '38px', objectFit: 'contain' }} />
+            <div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.05 }}>
+                CAR<span style={{ color: 'var(--accent-aqua)' }}>WASH</span>
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--ice-tint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                AUTO SPA & MANAGEMENT
+              </div>
+            </div>
+          </div>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
             Next-Generation Auto Detailing & Car Wash Business Management System in Siliguri. Engineered for maximum shine and customer satisfaction.
           </p>

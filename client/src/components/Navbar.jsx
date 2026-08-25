@@ -111,30 +111,26 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
         position: 'relative'
       }}>
 
-        {/* TOP LEFT: CAR WASH Logo */}
+        {/* TOP LEFT: CAR WASH Logo Image + Text Branding */}
         <div
           onClick={() => handleTabClick('home')}
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}
         >
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #FFC300 0%, #00E5FF 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 15px rgba(0, 229, 255, 0.4)',
-            border: '1px solid rgba(0, 229, 255, 0.4)'
-          }}>
-            <Car size={20} color="#06141B" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="CAR WASH Logo"
+            style={{
+              height: '42px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 2px 10px rgba(0, 229, 255, 0.35))'
+            }}
+          />
           <div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#FFFFFF', lineHeight: 1.05 }}>
               CAR<span style={{ color: 'var(--accent-cyan)' }}>WASH</span>
             </div>
             <div style={{ fontSize: '0.62rem', color: 'var(--ice-tint)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1px' }}>
-              Auto Spa & Management
+              AUTO SPA & MANAGEMENT
             </div>
           </div>
         </div>

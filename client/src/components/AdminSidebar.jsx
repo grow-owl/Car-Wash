@@ -56,12 +56,7 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
             <Menu size={20} /> Menu
           </button>
 
-          <div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1 }}>
-              CAR<span style={{ color: 'var(--accent-aqua)' }}>WASH</span>
-            </div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--ice-tint)', textTransform: 'uppercase' }}>OWNER PANEL</div>
-          </div>
+          <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '36px', objectFit: 'contain' }} />
         </div>
 
         <button
@@ -120,28 +115,11 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
         <div>
           {/* SIDEBAR LOGO */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', paddingLeft: '4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #964734 0%, #b8543f 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 15px rgba(150, 71, 52, 0.5)',
-                border: '1px solid var(--accent-terracotta)'
-              }}>
-                <LayoutDashboard size={20} color="#FFFFFF" />
-              </div>
-              <div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF', lineHeight: 1.1 }}>
-                  CAR<span style={{ color: 'var(--accent-aqua)' }}>WASH</span>
-                </div>
-                <span className="badge badge-terracotta" style={{ fontSize: '0.58rem', padding: '1px 6px', marginTop: '2px', display: 'inline-block' }}>
-                  OWNER PANEL
-                </span>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '38px', objectFit: 'contain' }} />
+              <span className="badge badge-terracotta" style={{ fontSize: '0.58rem', padding: '2px 6px' }}>
+                OWNER PANEL
+              </span>
             </div>
 
             {/* DRAWER CLOSE BUTTON (MOBILE ONLY) */}
