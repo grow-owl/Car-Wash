@@ -134,39 +134,39 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
         {submittedOffer ? (
           <div style={{ textAlign: 'center', padding: '12px 0' }}>
             <div style={{
-              width: '64px',
-              height: '64px',
+              width: '60px',
+              height: '60px',
               borderRadius: '50%',
-              background: 'rgba(0, 229, 255, 0.18)',
+              background: 'rgba(0, 229, 255, 0.15)',
               border: '2px solid var(--accent-aqua)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 16px'
             }}>
-              <CheckCircle2 size={36} color="var(--accent-aqua)" />
+              <CheckCircle2 size={32} color="var(--accent-aqua)" />
             </div>
 
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
-              🎉 Offer Code Unlocked!
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
+              Offer Code Unlocked
             </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '18px' }}>
-              Your exclusive code has been activated for mobile <strong>+91 {phone}</strong>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '18px' }}>
+              Your code is active for <strong>+91 {phone}</strong>
             </p>
 
             <div style={{
               background: 'rgba(0, 49, 53, 0.8)',
-              border: '2px dashed var(--accent-gold)',
+              border: '1.5px dashed var(--accent-gold)',
               borderRadius: '12px',
               padding: '14px',
               marginBottom: '20px'
             }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 800, textTransform: 'uppercase' }}>PROMO CODE</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.08em', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--accent-gold)', fontWeight: 800, textTransform: 'uppercase' }}>PROMO CODE</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.08em', marginTop: '2px' }}>
                 {submittedOffer}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#CCD0CF', marginTop: '4px' }}>
-                {submittedOffer === 'VACUUMFREE' ? '🎁 Complimentary Interior Vacuum Included' : '💸 ₹100 Flat Discount Applied'}
+                {submittedOffer === 'VACUUMFREE' ? 'Complimentary Interior Vacuum Included' : '₹100 Flat Discount Applied'}
               </div>
             </div>
 
@@ -181,30 +181,29 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                 background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
                 color: '#003135',
                 fontWeight: 900,
-                fontSize: '1rem',
+                fontSize: '0.95rem',
                 padding: '12px 20px',
-                borderRadius: '14px',
+                borderRadius: '12px',
                 border: 'none',
-                cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(0, 229, 255, 0.3)'
+                cursor: 'pointer'
               }}
             >
-              Book Car Wash Now with Offer ➔
+              Book Wash Now
             </button>
           </div>
         ) : (
           /* LEAD CAPTURE FORM STATE */
           <div>
             {/* HEADER BADGE */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 195, 0, 0.18)', border: '1px solid var(--accent-gold)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 800, marginBottom: '14px' }}>
-              <Sparkles size={14} /> EXCLUSIVE FIRST-TIME OFFER
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.72rem', color: 'var(--accent-gold)', fontWeight: 800, marginBottom: '14px' }}>
+              FIRST-TIME WELCOME OFFER
             </div>
 
-            <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.2, marginBottom: '8px' }}>
-              {triggerSource === 'exit_intent' ? '🛑 Wait! Before You Leave...' : '🚗 Claim Your Free Welcome Offer!'}
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, marginBottom: '8px' }}>
+              {triggerSource === 'exit_intent' ? 'Before You Leave' : 'Unlock Your Welcome Offer'}
             </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginBottom: '20px' }}>
-              Enter your phone number to instantly unlock your complimentary car spa reward.
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
+              Enter your phone number to receive your complimentary wash reward.
             </p>
 
             {/* OFFER SELECTOR PILLS */}
@@ -215,17 +214,17 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                 style={{
                   flex: 1,
                   padding: '10px 8px',
-                  borderRadius: '12px',
-                  border: offerType === 'vacuum' ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                  background: offerType === 'vacuum' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(0, 49, 53, 0.4)',
+                  borderRadius: '10px',
+                  border: offerType === 'vacuum' ? '1.5px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                  background: offerType === 'vacuum' ? 'rgba(0, 229, 255, 0.12)' : 'rgba(0, 49, 53, 0.4)',
                   color: offerType === 'vacuum' ? 'var(--accent-aqua)' : 'var(--text-muted)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: '0.82rem',
                   cursor: 'pointer',
                   textAlign: 'center'
                 }}
               >
-                ⭐ FREE Interior Vacuum
+                Free Interior Vacuum
               </button>
 
               <button
@@ -234,17 +233,17 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                 style={{
                   flex: 1,
                   padding: '10px 8px',
-                  borderRadius: '12px',
-                  border: offerType === 'discount' ? '2px solid var(--accent-gold)' : '1px solid var(--border-light)',
-                  background: offerType === 'discount' ? 'rgba(255, 195, 0, 0.15)' : 'rgba(0, 49, 53, 0.4)',
+                  borderRadius: '10px',
+                  border: offerType === 'discount' ? '1.5px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                  background: offerType === 'discount' ? 'rgba(255, 195, 0, 0.12)' : 'rgba(0, 49, 53, 0.4)',
                   color: offerType === 'discount' ? 'var(--accent-gold)' : 'var(--text-muted)',
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: '0.82rem',
                   cursor: 'pointer',
                   textAlign: 'center'
                 }}
               >
-                💸 ₹100 Flat OFF
+                ₹100 Flat OFF
               </button>
             </div>
 
@@ -257,15 +256,12 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <div style={{
                     position: 'absolute',
-                    left: '12px',
+                    left: '14px',
                     color: 'var(--accent-cyan)',
                     fontWeight: 800,
-                    fontSize: '0.9rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
+                    fontSize: '0.9rem'
                   }}>
-                    <span>🇮🇳 +91</span>
+                    +91
                   </div>
                   <input
                     type="tel"
@@ -275,7 +271,7 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     className="input-field"
-                    style={{ paddingLeft: '72px', fontSize: '0.95rem', fontWeight: 700 }}
+                    style={{ paddingLeft: '56px', fontSize: '0.95rem', fontWeight: 700 }}
                   />
                 </div>
               </div>
@@ -321,20 +317,15 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
                   background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
                   color: '#003135',
                   fontWeight: 900,
-                  fontSize: '0.98rem',
+                  fontSize: '0.95rem',
                   padding: '12px 18px',
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   border: 'none',
                   cursor: 'pointer',
-                  marginTop: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 6px 20px rgba(0, 229, 255, 0.3)'
+                  marginTop: '6px'
                 }}
               >
-                {loading ? 'Unlocking Offer...' : 'Unlock My Exclusive Offer 🎁'}
+                {loading ? 'Unlocking Offer...' : 'Unlock Offer'}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
