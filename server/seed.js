@@ -20,7 +20,8 @@ const seedData = async () => {
     });
     console.log('Connected to MongoDB for seeding positive profit data...');
 
-    // Clear existing data
+    // Clear existing data & indexes
+    try { await Booking.collection.dropIndexes(); } catch(e){}
     await Service.deleteMany({});
     await Package.deleteMany({});
     await Addon.deleteMany({});
@@ -279,8 +280,23 @@ const seedData = async () => {
     // 5. Customer CRM Data
     await Customer.insertMany([
       {
-        name: 'Marcus Vance',
+        name: 'Dhiraj Kumar',
         phone: '+91 8609504186',
+        email: 'dhiraj@example.com',
+        totalBookings: 8,
+        totalSpent: 12450,
+        lastVisit: todayStr,
+        favoriteService: 'Pro Shine & Protection Package',
+        membershipStatus: 'VIP Member',
+        loyaltyPoints: 420,
+        vehicles: [
+          { regNumber: 'WB-74-AY-1200', brand: 'Hyundai', model: 'Creta', type: 'SUV' },
+          { regNumber: 'WB-74-BY-1100', brand: 'Tata', model: 'Nexon', type: 'SUV' }
+        ]
+      },
+      {
+        name: 'Marcus Vance',
+        phone: '+91 9800112244',
         email: 'marcus@example.com',
         totalBookings: 6,
         totalSpent: 12400,
@@ -288,7 +304,7 @@ const seedData = async () => {
         favoriteService: 'Pro Shine & Protection Package',
         membershipStatus: 'Gold Detailer',
         loyaltyPoints: 320,
-        vehicles: [{ number: 'WB-74-AX-8821', model: 'BMW X5 xDrive', vehicleType: 'SUV' }]
+        vehicles: [{ regNumber: 'WB-74-AX-8821', brand: 'BMW', model: 'X5 xDrive', type: 'SUV' }]
       },
       {
         name: 'Rajesh Sharma',
@@ -300,7 +316,7 @@ const seedData = async () => {
         favoriteService: '9H Ceramic Coating',
         membershipStatus: 'Platinum VIP',
         loyaltyPoints: 850,
-        vehicles: [{ number: 'WB-74-LX-9999', model: 'Mercedes Benz E-Class', vehicleType: 'Luxury' }]
+        vehicles: [{ regNumber: 'WB-74-LX-9999', brand: 'Mercedes', model: 'E-Class', type: 'Luxury' }]
       }
     ]);
 

@@ -182,7 +182,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
               High-pressure hydrophobic foam, 300°F steam sanitization & 9H ceramic coatings engineered for maximum gloss & long-term paint protection in Siliguri.
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '44px' }}>
+            <div className="hero-cta-group" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '44px' }}>
               <button
                 onClick={() => onStartBooking(selectedVehicle)}
                 className="btn-primary"
@@ -211,7 +211,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             </div>
 
             {/* Stats Counter Glass Cards with Multi-color Distinction */}
-            <div style={{ display: 'flex', gap: '20px' }}>
+            <div className="hero-stats-grid" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{
                 background: 'rgba(255, 195, 0, 0.12)',
                 backdropFilter: 'blur(12px)',

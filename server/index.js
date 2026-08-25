@@ -16,7 +16,7 @@ app.use(express.json());
 // Routes
 app.use('/api/services', require('./routes/services'));
 app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/crm', require('./routes/crm'));
+app.use('/api/crm', require('./routes/crm')); // Customer CRM & Auth Routes (/api/crm/auth/signup, /api/crm/auth/login)
 app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/staff', require('./routes/staff'));
 app.use('/api/analytics', require('./routes/analytics'));

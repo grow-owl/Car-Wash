@@ -185,9 +185,9 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       </div>
 
       {/* 4-STEP WIZARD PROGRESS BAR */}
-      <div style={{
+      <div className="wizard-step-bar" style={{
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         marginBottom: '40px',
         background: 'var(--bg-glass-card)',
         padding: '16px 24px',
@@ -424,6 +424,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                       {slotsToRender.map((s, idx) => {
                         const timeLabel = typeof s === 'string' ? s : (s.slotTime || s.time || '10:00 AM');
                         const isAvailable = typeof s === 'object' ? (s.available !== false) : true;
+                        const remaining = typeof s === 'object' ? (s.remainingCapacity ?? (isAvailable ? 3 : 0)) : 3;
                         const isSelected = selectedSlot === timeLabel;
 
                         return (
@@ -433,8 +434,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                             disabled={!isAvailable}
                             onClick={() => setSelectedSlot(timeLabel)}
                             style={{
-                              background: isSelected ? 'var(--accent-aqua)' : 'rgba(0,49,53,0.85)',
-                              color: isSelected ? '#003135' : '#FFFFFF',
+                              background: isSelected ? 'var(--accent-aqua)' : 'rgba(17, 33, 45, 0.85)',
+                              color: isSelected ? '#06141B' : '#FFFFFF',
                               border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
                               borderRadius: '8px',
                               padding: '12px',
@@ -443,14 +444,19 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                               cursor: isAvailable ? 'pointer' : 'not-allowed',
                               opacity: isAvailable ? 1 : 0.45,
                               display: 'flex',
+                              flexDirection: 'column',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '6px'
+                              gap: '4px'
                             }}
                           >
-                            <Clock size={15} color={isSelected ? '#003135' : 'var(--accent-aqua)'} />
-                            <span>{timeLabel}</span>
-                            {!isAvailable && <span style={{ fontSize: '0.7rem' }}>(Booked)</span>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Clock size={15} color={isSelected ? '#06141B' : 'var(--accent-aqua)'} />
+                              <span>{timeLabel}</span>
+                            </div>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isSelected ? '#06141B' : 'var(--text-muted)' }}>
+                              {isAvailable ? `🟢 ${remaining} Bays Open` : '🔴 Fully Booked'}
+                            </div>
                           </button>
                         );
                       })}
@@ -488,28 +494,88 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 {/* Left Column: Form Inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Full Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Marcus Vance"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-
-                  <div>
                     <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Mobile Number *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. +91 8609504186"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPhone(val);
+                        if (val.replace(/\D/g, '').length >= 10) {
+                          checkPhoneExists(val).then(res => {
+                            if (res.data.exists) {
+                              setIsExistingCustomer(true);
+                              if (res.data.name) setCustomerName(res.data.name);
+                              if (res.data.vehicles) setExistingVehicles(res.data.vehicles);
+                            } else {
+                              setIsExistingCustomer(false);
+                            }
+                          });
+                        }
+                      }}
+                      className="input-field"
+                    />
+                    {isExistingCustomer && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '4px', fontWeight: 700 }}>
+                        ✓ Welcome back, {customerName}! Existing customer account found.
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
+                      {isExistingCustomer ? 'Enter Your Account PIN / Password *' : 'Full Name *'}
+                    </label>
+                    {!isExistingCustomer ? (
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Dhiraj Kumar"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="input-field"
+                      />
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
+                      {isExistingCustomer ? 'Confirm Account PIN *' : 'Create 4-Digit Security PIN / Password *'}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="e.g. 1234"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
                       className="input-field"
                     />
                   </div>
+
+                  {/* SAVED VEHICLES SELECTION FOR EXISTING CUSTOMERS */}
+                  {isExistingCustomer && existingVehicles.length > 0 && (
+                    <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-aqua)' }}>
+                      <label style={{ fontSize: '0.78rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>1-Click Select Saved Vehicle:</label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                        {existingVehicles.map((v, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              setVehicleNumber(v.regNumber);
+                              setVehicleModel(v.model);
+                            }}
+                            className="btn-secondary"
+                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                          >
+                            🚘 {v.regNumber} ({v.model})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid-2" style={{ gap: '12px' }}>
                     <div>
@@ -517,7 +583,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                       <input
                         type="text"
                         required
-                        placeholder="e.g. WB-74-AX-8821"
+                        placeholder="e.g. WB-74-AY-1200"
                         value={vehicleNumber}
                         onChange={(e) => setVehicleNumber(e.target.value)}
                         className="input-field"
@@ -528,7 +594,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                       <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Car Model</label>
                       <input
                         type="text"
-                        placeholder="e.g. BMW X5 / Creta"
+                        placeholder="e.g. Creta / Nexon"
                         value={vehicleModel}
                         onChange={(e) => setVehicleModel(e.target.value)}
                         className="input-field"

@@ -28,7 +28,6 @@ router.get('/packages', async (req, res) => {
     const { vehicleType } = req.query;
     let packages = await Package.find({}).sort({ price: 1 });
     
-    // Adjust pricing multiplier based on vehicle size if vehicleType provided
     const multiplierMap = {
       Hatchback: 0.9,
       Sedan: 1.0,
@@ -59,10 +58,13 @@ router.get('/addons', async (req, res) => {
   }
 });
 
-// ADMIN: Create service
+// ADMIN SERVICE CRUD: Create service
 router.post('/', async (req, res) => {
   try {
-    const service = new Service(req.body);
+    const service = new Service({
+      ...req.body,
+      basePrice: req.body.basePrice || req.body.price || 499
+    });
     await service.save();
     res.status(201).json(service);
   } catch (err) {
@@ -70,7 +72,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ADMIN: Update service
+// ADMIN SERVICE CRUD: Update service
 router.put('/:id', async (req, res) => {
   try {
     const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -80,11 +82,42 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// ADMIN: Delete service
+// ADMIN SERVICE CRUD: Delete service
 router.delete('/:id', async (req, res) => {
   try {
     await Service.findByIdAndDelete(req.params.id);
     res.json({ message: 'Service deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ADMIN PACKAGE CRUD: Create package
+router.post('/packages', async (req, res) => {
+  try {
+    const pkg = new Package(req.body);
+    await pkg.save();
+    res.status(201).json(pkg);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ADMIN PACKAGE CRUD: Update package
+router.put('/packages/:id', async (req, res) => {
+  try {
+    const pkg = await Package.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(pkg);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ADMIN PACKAGE CRUD: Delete package
+router.delete('/packages/:id', async (req, res) => {
+  try {
+    await Package.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Package deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

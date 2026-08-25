@@ -19,13 +19,15 @@ export default function App() {
   const [adminRefreshTrigger, setAdminRefreshTrigger] = useState(0);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
 
-  // Check URL hash/query parameter for private owner route (#admin or ?owner=true)
+  // Check URL hash/query parameter for private owner route (#admin) or customer portal (#login, #portal, #garage)
   useEffect(() => {
     const handleUrlRoute = () => {
       const hash = window.location.hash;
       const search = window.location.search;
       if (hash === '#admin' || hash === '#owner' || search.includes('owner=true') || search.includes('admin=true')) {
         setActiveTab('admin');
+      } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip' || search.includes('login=true')) {
+        setActiveTab('crm');
       }
     };
 
@@ -87,7 +89,7 @@ export default function App() {
         activeBookingCode={activeBookingCode}
       />
 
-      <main className="public-main-content" style={{ flex: 1, paddingTop: '76px' }}>
+      <main className="public-main-content" style={{ flex: 1, paddingTop: '72px' }}>
         {activeTab === 'home' && (
           <CustomerHome
             onStartBooking={handleStartBooking}

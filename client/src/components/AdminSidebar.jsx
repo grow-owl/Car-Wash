@@ -7,6 +7,7 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
   const menuItems = [
     { id: 'analytics', label: 'Analytics & Net Profit', icon: TrendingUp },
     { id: 'bookings', label: 'Live Bay Control', icon: Calendar },
+    { id: 'services', label: 'Service Management', icon: Car },
     { id: 'crm', label: 'Customer CRM', icon: Users },
     { id: 'staff', label: 'Staff Workload', icon: Wrench },
     { id: 'expenses', label: 'Expense Log', icon: DollarSign },
