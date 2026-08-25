@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, TrendingUp, Calendar, Users, Wrench, DollarSign, Send, Plus, RefreshCw, LogOut, Car, Menu, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Calendar, Users, Wrench, DollarSign, Send, Plus, RefreshCw, LogOut, Car, Tag, ShieldCheck, Menu, X } from 'lucide-react';
 
 export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh, onRegisterWalkIn, onExitToCustomerSite }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const menuItems = [
-    { id: 'analytics', label: 'Analytics & Net Profit', icon: TrendingUp },
-    { id: 'bookings', label: 'Live Bay Control', icon: Calendar },
-    { id: 'services', label: 'Service Management', icon: Car },
+    { id: 'analytics', label: 'Revenue & Net Profit', icon: TrendingUp },
+    { id: 'bookings', label: 'Booking & Bay Control', icon: Calendar },
     { id: 'crm', label: 'Customer CRM', icon: Users },
-    { id: 'staff', label: 'Staff Workload', icon: Wrench },
-    { id: 'expenses', label: 'Expense Log', icon: DollarSign },
-    { id: 'marketing', label: 'Abandoned Recovery', icon: Send }
+    { id: 'vehicles', label: 'Vehicle Management', icon: Car },
+    { id: 'services', label: 'Services & Packages', icon: Wrench },
+    { id: 'memberships', label: 'VIP Memberships', icon: ShieldCheck },
+    { id: 'coupons', label: 'Coupon Management', icon: Tag },
+    { id: 'staff', label: 'Staff Roster', icon: Users },
+    { id: 'expenses', label: 'Expense Tracking', icon: DollarSign },
+    { id: 'marketing', label: 'Follow-up Automation', icon: Send }
   ];
 
   const handleSelectModule = (id) => {
@@ -97,27 +100,38 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
 
       {/* SIDEBAR CONTAINER (DESKTOP STICKY SIDEBAR + MOBILE SLIDE-OUT LEFT DRAWER) */}
       <aside className={`admin-sidebar ${mobileDrawerOpen ? 'mobile-drawer-open' : ''}`} style={{
-        width: '270px',
-        minHeight: '100vh',
+        width: '260px',
+        maxHeight: '100vh',
         background: 'rgba(0, 25, 28, 0.98)',
         backdropFilter: 'blur(24px)',
         borderRight: '1px solid rgba(15, 164, 175, 0.2)',
         boxShadow: '4px 0 25px rgba(0, 0, 0, 0.4)',
-        padding: '24px 18px',
+        padding: '18px 14px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         position: 'sticky',
         top: 0,
         height: '100vh',
-        flexShrink: 0
+        boxSizing: 'border-box',
+        flexShrink: 0,
+        zIndex: 999
       }}>
-        <div>
+        
+        {/* SCROLLABLE NAV CONTENT WRAPPER */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          overflowY: 'auto',
+          paddingRight: '2px',
+          marginBottom: '8px'
+        }}>
           {/* SIDEBAR LOGO */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', paddingLeft: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', paddingLeft: '4px', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '38px', objectFit: 'contain' }} />
-              <span className="badge badge-terracotta" style={{ fontSize: '0.58rem', padding: '2px 6px' }}>
+              <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '34px', objectFit: 'contain' }} />
+              <span className="badge badge-terracotta" style={{ fontSize: '0.55rem', padding: '2px 6px' }}>
                 OWNER PANEL
               </span>
             </div>
@@ -134,16 +148,16 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
                 display: 'none'
               }}
             >
-              <X size={22} />
+              <X size={20} />
             </button>
           </div>
 
           {/* SIDEBAR NAVIGATION ITEMS */}
-          <div style={{ fontSize: '0.7rem', color: 'var(--ice-tint)', fontWeight: 800, letterSpacing: '0.1em', paddingLeft: '8px', marginBottom: '10px' }}>
+          <div style={{ fontSize: '0.66rem', color: 'var(--ice-tint)', fontWeight: 800, letterSpacing: '0.08em', paddingLeft: '6px', marginBottom: '8px', flexShrink: 0 }}>
             ENTERPRISE MODULES
           </div>
 
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {menuItems.map(item => {
               const Icon = item.icon;
               const isActive = activeSubTab === item.id;
@@ -154,30 +168,38 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
+                    gap: '10px',
                     width: '100%',
-                    padding: '12px 14px',
-                    borderRadius: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
                     border: isActive ? '1px solid var(--accent-aqua)' : '1px solid transparent',
                     background: isActive ? 'linear-gradient(135deg, rgba(15, 164, 175, 0.25) 0%, rgba(2, 73, 80, 0.4) 100%)' : 'transparent',
                     color: isActive ? 'var(--accent-aqua)' : 'var(--text-muted)',
                     fontWeight: isActive ? 800 : 600,
-                    fontSize: '0.9rem',
+                    fontSize: '0.84rem',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     textAlign: 'left'
                   }}
                 >
-                  <Icon size={18} color={isActive ? 'var(--accent-aqua)' : 'var(--text-muted)'} />
-                  <span>{item.label}</span>
+                  <Icon size={16} color={isActive ? 'var(--accent-aqua)' : 'var(--text-muted)'} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* QUICK ACTIONS & EXIT TO CUSTOMER SITE */}
-        <div style={{ borderTop: '1px solid rgba(175, 221, 229, 0.15)', paddingTop: '16px', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* QUICK ACTIONS & EXIT TO CUSTOMER SITE (PINNED AT BOTTOM) */}
+        <div style={{
+          borderTop: '1px solid rgba(175, 221, 229, 0.15)',
+          paddingTop: '10px',
+          marginTop: '6px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          flexShrink: 0
+        }}>
           <button
             onClick={() => {
               onRegisterWalkIn();
@@ -189,10 +211,10 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
               background: 'linear-gradient(135deg, var(--accent-aqua) 0%, #14c7d4 100%)',
               color: '#003135',
               fontWeight: 800,
-              fontSize: '0.85rem',
+              fontSize: '0.82rem',
               border: 'none',
-              padding: '10px 14px',
-              borderRadius: '10px',
+              padding: '9px 12px',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -200,7 +222,7 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
               gap: '6px'
             }}
           >
-            <Plus size={16} /> + Walk-In Ticket
+            <Plus size={15} /> + Walk-In Ticket
           </button>
 
           <button
@@ -212,12 +234,12 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
             style={{
               width: '100%',
               justifyContent: 'center',
-              padding: '10px 14px',
-              fontSize: '0.82rem',
-              borderRadius: '10px'
+              padding: '8px 12px',
+              fontSize: '0.8rem',
+              borderRadius: '8px'
             }}
           >
-            <RefreshCw size={14} /> Refresh Data
+            <RefreshCw size={13} /> Refresh Data
           </button>
 
           <button
@@ -231,18 +253,18 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
               border: '1px solid var(--accent-terracotta)',
               color: '#e0725a',
               fontWeight: 700,
-              fontSize: '0.82rem',
-              padding: '10px 14px',
-              borderRadius: '10px',
+              fontSize: '0.8rem',
+              padding: '8px 12px',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              marginTop: '4px'
+              marginTop: '2px'
             }}
           >
-            <LogOut size={14} /> Exit Owner Panel
+            <LogOut size={13} /> Exit Owner Panel
           </button>
         </div>
 

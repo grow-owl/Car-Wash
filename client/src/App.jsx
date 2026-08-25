@@ -16,6 +16,14 @@ export default function App() {
   const [activeBookingCode, setActiveBookingCode] = useState('');
   const [adminSubTab, setAdminSubTab] = useState('analytics');
 
+  // Change Admin Sub-Tab with History pushState for Mobile Phone Edge Swipe Back Gesture
+  const changeAdminSubTab = (newSubTab) => {
+    if (newSubTab === adminSubTab) return;
+    const targetHash = `#admin/${newSubTab}`;
+    window.history.pushState({ tab: 'admin', subTab: newSubTab }, '', targetHash);
+    setAdminSubTab(newSubTab);
+  };
+
   // Logged-In Customer State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -44,21 +52,39 @@ export default function App() {
   const changeTab = (tabName, hashValue = null) => {
     const targetHash = hashValue || `#${tabName}`;
     if (window.location.hash !== targetHash) {
-      window.location.hash = targetHash;
+      window.history.pushState({ tab: tabName }, '', targetHash);
     }
     setActiveTab(tabName);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Check URL hash for secret coded owner route or public customer routes (#login, #booking, #track, #services, #pricing, #contact)
+  // Check URL hash & history state for mobile gesture swipe back & navigation
   useEffect(() => {
-    const handleUrlRoute = () => {
+    const handleUrlRoute = (event) => {
+      // Check event state from popstate if present
+      if (event && event.state) {
+        if (event.state.tab === 'admin') {
+          setActiveTab('admin');
+          if (event.state.subTab) {
+            setAdminSubTab(event.state.subTab);
+          }
+          return;
+        } else if (event.state.tab) {
+          setActiveTab(event.state.tab);
+          return;
+        }
+      }
+
       const hash = window.location.hash;
       const cleanHash = hash.replace('#', '');
       const secretClean = OWNER_SECRET_PATH.replace('#', '');
 
-      if (hash === OWNER_SECRET_PATH || cleanHash === secretClean) {
+      if (hash.startsWith('#admin') || hash === OWNER_SECRET_PATH || cleanHash === secretClean || hash === '#owner') {
         setActiveTab('admin');
+        const parts = hash.split('/');
+        if (parts.length > 1 && parts[1]) {
+          setAdminSubTab(parts[1]);
+        }
       } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip' || hash === '#crm') {
         setActiveTab('crm');
       } else if (hash === '#booking') {
@@ -97,28 +123,30 @@ export default function App() {
   if (activeTab === 'admin') {
     return (
       <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0a1b27' }}>
-        {/* Left Owner Sidebar (Kept as requested) */}
+        {/* Left Owner Sidebar */}
         <AdminSidebar
           activeSubTab={adminSubTab}
-          setActiveSubTab={setAdminSubTab}
+          setActiveSubTab={changeAdminSubTab}
           onRefresh={() => setAdminRefreshTrigger(prev => prev + 1)}
           onRegisterWalkIn={() => setShowWalkInModal(true)}
           onExitToCustomerSite={() => {
-            window.location.hash = '';
+            window.location.hash = '#home';
             setActiveTab('home');
           }}
         />
 
-        {/* Right Owner Content Dashboard Area with Lighter Slate Navy Background */}
-        <main style={{
+        {/* Right Owner Content Dashboard Area with Responsive Scrollable Layout */}
+        <main className="admin-main-area" style={{
           flex: 1,
-          padding: '24px 36px',
+          minWidth: 0,
+          padding: '20px 24px',
           overflowY: 'auto',
+          overflowX: 'hidden',
           background: 'linear-gradient(145deg, #18384d 0%, #112a3b 100%)'
         }}>
           <AdminDashboard
             activeSubTab={adminSubTab}
-            setActiveSubTab={setAdminSubTab}
+            setActiveSubTab={changeAdminSubTab}
             refreshTrigger={adminRefreshTrigger}
             showWalkInModal={showWalkInModal}
             setShowWalkInModal={setShowWalkInModal}

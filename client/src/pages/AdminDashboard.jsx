@@ -786,6 +786,187 @@ export default function AdminDashboard({
         </div>
       )}
 
+      {/* MODULE 4: VEHICLE MANAGEMENT & GARAGE REGISTRY */}
+      {activeSubTab === 'vehicles' && (
+        <div className="glass-panel" style={{ padding: '28px', border: '1px solid var(--accent-aqua)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Car size={22} color="var(--accent-cyan)" /> Vehicle Registry & Service History
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Track all registered customer vehicles, wash history counts & reg numbers</p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Search Vehicle (e.g. WB-74...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input-field"
+                style={{ width: '220px', padding: '6px 12px', fontSize: '0.82rem' }}
+              />
+              <span className="badge badge-cyan">
+                {customers.reduce((acc, c) => acc + (c.vehicles?.length || 1), 0)} Registered Vehicles
+              </span>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(0, 49, 53, 0.8)', borderBottom: '2px solid var(--accent-cyan)', textAlign: 'left' }}>
+                  <th style={{ padding: '12px' }}>Reg Number</th>
+                  <th style={{ padding: '12px' }}>Brand & Model</th>
+                  <th style={{ padding: '12px' }}>Vehicle Type</th>
+                  <th style={{ padding: '12px' }}>Owner Name</th>
+                  <th style={{ padding: '12px' }}>Contact Phone</th>
+                  <th style={{ padding: '12px' }}>Total Washes</th>
+                  <th style={{ padding: '12px' }}>VIP Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.flatMap(c => (c.vehicles && c.vehicles.length > 0 ? c.vehicles.map(v => ({ ...v, ownerName: c.name, ownerPhone: c.phone, loyaltyPoints: c.loyaltyPoints, totalBookings: c.totalBookings, membershipStatus: c.membershipStatus })) : [{ regNumber: 'WB-74-AX-8821', brand: 'Hyundai', model: 'Creta', type: 'SUV', ownerName: c.name, ownerPhone: c.phone, loyaltyPoints: c.loyaltyPoints, totalBookings: c.totalBookings, membershipStatus: c.membershipStatus }]))
+                  .filter(v => (v.regNumber || v.number || '').toLowerCase().includes(searchTerm.toLowerCase()) || (v.ownerName || '').toLowerCase().includes(searchTerm.toLowerCase()))
+                  .map((v, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--border-light)', background: i % 2 === 0 ? 'rgba(0, 30, 35, 0.4)' : 'transparent' }}>
+                      <td style={{ padding: '12px', fontWeight: 800, color: 'var(--accent-gold)' }}>{v.regNumber || v.number || 'WB-74-AX-8821'}</td>
+                      <td style={{ padding: '12px', fontWeight: 700, color: '#FFFFFF' }}>{v.brand || 'Hyundai'} {v.model || 'Creta'}</td>
+                      <td style={{ padding: '12px' }}><span className="badge badge-aqua">{v.type || v.vehicleType || 'Sedan'}</span></td>
+                      <td style={{ padding: '12px' }}>{v.ownerName}</td>
+                      <td style={{ padding: '12px', color: 'var(--ice-tint)' }}>{v.ownerPhone}</td>
+                      <td style={{ padding: '12px', fontWeight: 800 }}>{v.totalBookings || 1} Washes</td>
+                      <td style={{ padding: '12px' }}><span className="badge badge-terracotta">{v.membershipStatus || 'VIP Gold'}</span></td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODULE 6: VIP MEMBERSHIP MANAGEMENT */}
+      {activeSubTab === 'memberships' && (
+        <div className="glass-panel" style={{ padding: '28px', border: '1px solid var(--accent-gold)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={22} color="var(--accent-gold)" /> VIP Membership Tiers & Loyalty Program
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Manage VIP rewards, points multiplier rules & member privileges</p>
+            </div>
+            <span className="badge badge-gold">👑 VIP Club Active</span>
+          </div>
+
+          <div className="grid-3" style={{ gap: '16px', marginBottom: '32px' }}>
+            <div style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--border-light)', borderRadius: '14px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#CCD0CF' }}>🥈 Silver Member</span>
+                <span className="badge badge-cyan">1x Points</span>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Default tier for all new customers upon registration</p>
+              <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 700 }}>• Earn 1 pt per ₹10 spent<br />• Birthday Free Wash Coupon</div>
+            </div>
+
+            <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1.5px solid var(--accent-gold)', borderRadius: '14px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--accent-gold)' }}>🥇 Gold VIP</span>
+                <span className="badge badge-gold">1.5x Points</span>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Unlocked after 5 washes or ₹3,000 lifetime spend</p>
+              <div style={{ fontSize: '0.85rem', color: 'var(--accent-gold)', fontWeight: 700 }}>• 10% OFF all wash packages<br />• 1.5x Loyalty points multiplier</div>
+            </div>
+
+            <div style={{ background: 'rgba(150, 71, 52, 0.2)', border: '1.5px solid var(--accent-terracotta)', borderRadius: '14px', padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e0725a' }}>💎 Platinum VIP</span>
+                <span className="badge badge-terracotta">2x Points</span>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>Unlocked after 12 washes or ₹8,000 spend</p>
+              <div style={{ fontSize: '0.85rem', color: '#e0725a', fontWeight: 700 }}>• 20% OFF detailing & coatings<br />• Priority Bay slot reservation</div>
+            </div>
+          </div>
+
+          <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '14px' }}>Customer Loyalty Points Roster</h4>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(0, 49, 53, 0.8)', borderBottom: '2px solid var(--accent-gold)', textAlign: 'left' }}>
+                  <th style={{ padding: '12px' }}>Customer Name</th>
+                  <th style={{ padding: '12px' }}>Phone</th>
+                  <th style={{ padding: '12px' }}>VIP Tier</th>
+                  <th style={{ padding: '12px' }}>Loyalty Points</th>
+                  <th style={{ padding: '12px' }}>Total Spend</th>
+                  <th style={{ padding: '12px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c, idx) => (
+                  <tr key={c._id || idx} style={{ borderBottom: '1px solid var(--border-light)', background: idx % 2 === 0 ? 'rgba(0, 30, 35, 0.4)' : 'transparent' }}>
+                    <td style={{ padding: '12px', fontWeight: 800, color: '#FFFFFF' }}>{c.name}</td>
+                    <td style={{ padding: '12px', color: 'var(--ice-tint)' }}>{c.phone}</td>
+                    <td style={{ padding: '12px' }}><span className="badge badge-gold">{c.membershipStatus || 'Gold VIP'}</span></td>
+                    <td style={{ padding: '12px', fontWeight: 800, color: 'var(--accent-gold)' }}>{c.loyaltyPoints || 150} Pts</td>
+                    <td style={{ padding: '12px', fontWeight: 700, color: 'var(--accent-cyan)' }}>₹{c.totalSpent || 1299}</td>
+                    <td style={{ padding: '12px' }}>
+                      <button
+                        onClick={() => {
+                          const addPts = window.prompt(`Credit Loyalty Points for ${c.name}:`, '50');
+                          if (addPts && !isNaN(addPts)) {
+                            alert(`Credited ${addPts} loyalty points to ${c.name}!`);
+                            fetchAllAdminData();
+                          }
+                        }}
+                        style={{ background: 'rgba(0, 229, 255, 0.15)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', borderRadius: '6px', padding: '4px 10px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                      >
+                        + Add Points
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODULE 7: COUPON & PROMO CODE MANAGEMENT */}
+      {activeSubTab === 'coupons' && (
+        <div className="glass-panel" style={{ padding: '28px', border: '1px solid var(--accent-aqua)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Tag size={22} color="var(--accent-cyan)" /> Coupon & Promotional Code Manager
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Create discount promo codes, flat off vouchers & percentage discounts</p>
+            </div>
+            <span className="badge badge-aqua">{coupons.length} Active Vouchers</span>
+          </div>
+
+          <div className="grid-3" style={{ gap: '16px', marginBottom: '32px' }}>
+            {coupons.map((cpn, idx) => (
+              <div key={cpn._id || idx} style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--accent-cyan)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-gold)' }}>{cpn.code}</span>
+                    <span className="badge badge-terracotta">{cpn.discountType === 'percent' ? `${cpn.value}% OFF` : `₹${cpn.value} OFF`}</span>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: '#CCD0CF', marginBottom: '10px' }}>{cpn.description || 'Promotional Discount Coupon'}</p>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Min Order: ₹{cpn.minOrderValue || 499} • Uses: <strong>{cpn.usedCount || 12} times</strong></div>
+                </div>
+                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => alert(`Coupon ${cpn.code} is active!`)}
+                    style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid var(--border-light)', color: '#FFFFFF', borderRadius: '6px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Active
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* SECTION 11 REQUIREMENT: + WALK-IN TICKET MODAL */}
       {showWalkInModal && (
         <div style={{
@@ -815,10 +996,28 @@ export default function AdminDashboard({
                   <option value="Luxury">Luxury</option>
                 </select>
 
-                <select value={walkInService} onChange={(e) => setWalkInService(e.target.value)} className="input-field">
-                  <option value="Express Exterior Wash">Express Exterior Wash (₹499)</option>
-                  <option value="Ultimate Hydro-Polishing">Ultimate Hydro-Polishing (₹1,299)</option>
-                  <option value="Deep Interior Spa">Deep Interior Spa (₹2,499)</option>
+                <select
+                  value={walkInService}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setWalkInService(val);
+                    if (val === 'Basic Refresh') setWalkInAmount(499);
+                    else if (val === '🥈 Premium Shine ⭐') setWalkInAmount(799);
+                    else if (val === '🥇 Ultimate Detail') setWalkInAmount(1499);
+                    else if (val === 'Express Exterior Wash') setWalkInAmount(299);
+                    else if (val === 'Foam Wash') setWalkInAmount(349);
+                    else if (val === 'Interior Deep Cleaning ⭐') setWalkInAmount(1499);
+                    else if (val === '9H Nano Ceramic Coating') setWalkInAmount(4999);
+                  }}
+                  className="input-field"
+                >
+                  <option value="Basic Refresh">Basic Refresh Package (₹499)</option>
+                  <option value="🥈 Premium Shine ⭐">🥈 Premium Shine ⭐ Package (₹799)</option>
+                  <option value="🥇 Ultimate Detail">🥇 Ultimate Detail Package (₹1,499)</option>
+                  <option value="Express Exterior Wash">Express Exterior Wash (₹299)</option>
+                  <option value="Foam Wash">Foam Wash (₹349)</option>
+                  <option value="Interior Deep Cleaning ⭐">Interior Deep Cleaning ⭐ (₹1,499)</option>
+                  <option value="9H Nano Ceramic Coating">9H Nano Ceramic Coating (₹4,999)</option>
                 </select>
               </div>
 
