@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Lock, Car, Plus, Key } from 'lucide-react';
 import { getMemberships, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle } from '../api';
 
-export default function CustomerPortal() {
+export default function CustomerPortal({ currentUser: propUser, setCurrentUser: propSetUser, onSignOut: propSignOut }) {
   const [memberships, setMemberships] = useState([]);
   
   // Auth state
-  const [currentUser, setCurrentUser] = useState(null);
+  const [localUser, setLocalUser] = useState(propUser || null);
+  const currentUser = propUser !== undefined ? propUser : localUser;
+
+  const updateCustomerState = (user) => {
+    setLocalUser(user);
+    if (propSetUser) propSetUser(user);
+  };
+
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
@@ -86,7 +93,7 @@ export default function CustomerPortal() {
     try {
       const res = await loginCustomer(loginPhone, loginPin);
       if (res.data?.customer) {
-        setCurrentUser(res.data.customer);
+        updateCustomerState(res.data.customer);
         localStorage.setItem('carwash_customer', JSON.stringify(res.data.customer));
       }
     } catch (err) {
@@ -118,7 +125,7 @@ export default function CustomerPortal() {
         }
       });
       if (res.data?.customer) {
-        setCurrentUser(res.data.customer);
+        updateCustomerState(res.data.customer);
         localStorage.setItem('carwash_customer', JSON.stringify(res.data.customer));
       }
     } catch (err) {
@@ -130,9 +137,13 @@ export default function CustomerPortal() {
 
   // HANDLER: SIGN OUT
   const handleSignOut = () => {
-    localStorage.removeItem('carwash_customer');
-    setCurrentUser(null);
-    setAuthError('');
+    if (propSignOut) {
+      propSignOut();
+    } else {
+      localStorage.removeItem('carwash_customer');
+      updateCustomerState(null);
+      setAuthError('');
+    }
   };
 
   // HANDLER: ADD VEHICLE TO GARAGE

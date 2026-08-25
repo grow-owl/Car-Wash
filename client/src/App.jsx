@@ -15,19 +15,47 @@ export default function App() {
   const [activeBookingCode, setActiveBookingCode] = useState('');
   const [adminSubTab, setAdminSubTab] = useState('analytics');
 
+  // Logged-In Customer State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('carwash_customer');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleSignOut = () => {
+    localStorage.removeItem('carwash_customer');
+    setCurrentUser(null);
+    window.location.hash = '#home';
+    setActiveTab('home');
+  };
+
   // Shared Admin Action Triggers
   const [adminRefreshTrigger, setAdminRefreshTrigger] = useState(0);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
 
-  // Check URL hash/query parameter for private owner route (#admin) or customer portal (#login, #portal, #garage)
+  // Read secret Owner Portal path from .env
+  const OWNER_SECRET_PATH = import.meta.env.VITE_OWNER_PORTAL_SECRET_PATH || '#owner-sec89k7-wash-portal';
+
+  // Check URL hash for secret coded owner route or public customer routes (#login, #booking, #track, #services, #pricing, #contact)
   useEffect(() => {
     const handleUrlRoute = () => {
       const hash = window.location.hash;
-      const search = window.location.search;
-      if (hash === '#admin' || hash === '#owner' || search.includes('owner=true') || search.includes('admin=true')) {
+      const cleanHash = hash.replace('#', '');
+      const secretClean = OWNER_SECRET_PATH.replace('#', '');
+
+      if (hash === OWNER_SECRET_PATH || cleanHash === secretClean) {
         setActiveTab('admin');
-      } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip' || search.includes('login=true')) {
+      } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip') {
         setActiveTab('crm');
+      } else if (hash === '#booking') {
+        setActiveTab('booking');
+      } else if (hash === '#track') {
+        setActiveTab('track');
+      } else if (hash === '#services' || hash === '#pricing' || hash === '#contact') {
+        setActiveTab('home');
       }
     };
 
@@ -53,8 +81,8 @@ export default function App() {
   // OWNER DASHBOARD LAYOUT (Dedicated Sidebar)
   if (activeTab === 'admin') {
     return (
-      <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
-        {/* Left Owner Sidebar */}
+      <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0a1b27' }}>
+        {/* Left Owner Sidebar (Kept as requested) */}
         <AdminSidebar
           activeSubTab={adminSubTab}
           setActiveSubTab={setAdminSubTab}
@@ -66,8 +94,13 @@ export default function App() {
           }}
         />
 
-        {/* Right Owner Content Dashboard Area */}
-        <main style={{ flex: 1, padding: '24px 36px', overflowY: 'auto' }}>
+        {/* Right Owner Content Dashboard Area with Lighter Slate Navy Background */}
+        <main style={{
+          flex: 1,
+          padding: '24px 36px',
+          overflowY: 'auto',
+          background: 'linear-gradient(145deg, #18384d 0%, #112a3b 100%)'
+        }}>
           <AdminDashboard
             activeSubTab={adminSubTab}
             setActiveSubTab={setAdminSubTab}
@@ -87,6 +120,8 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeBookingCode={activeBookingCode}
+        currentUser={currentUser}
+        onSignOut={handleSignOut}
       />
 
       <main className="public-main-content" style={{ flex: 1, paddingTop: '72px' }}>
@@ -111,7 +146,11 @@ export default function App() {
         )}
 
         {activeTab === 'crm' && (
-          <CustomerPortal />
+          <CustomerPortal
+            currentUser={currentUser}
+            setCurrentUser={setCurrentUser}
+            onSignOut={handleSignOut}
+          />
         )}
       </main>
 
