@@ -54,7 +54,7 @@ export default function BeforeAfterSlider({
           style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
         />
         
-        {/* AFTER BADGE - POSITIONED BOTTOM RIGHT (COVERED BY BEFORE OVERLAY) */}
+        {/* AFTER BADGE - POSITIONED BOTTOM RIGHT */}
         <div className="slider-badge-after" style={{
           position: 'absolute',
           bottom: '12px',
@@ -73,49 +73,38 @@ export default function BeforeAfterSlider({
           ✨ AFTER: CERAMIC SHINE
         </div>
 
-        {/* BEFORE IMAGE (CLIPPED SLIDER TOP LAYER) */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: `${sliderPos}%`,
-          overflow: 'hidden',
-          borderRight: '3px solid var(--accent-aqua)',
-          boxShadow: '6px 0 20px rgba(0,0,0,0.6)',
-          zIndex: 2
-        }}>
-          <img 
-            src={beforeImage} 
-            alt="Before Muddy State"
-            style={{ 
-              width: '100%', 
-              height: '100%', 
-              objectFit: 'cover',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              minWidth: '860px'
-            }}
-          />
+        {/* BEFORE IMAGE (CLIPPED SLIDER TOP LAYER USING CLIP-PATH) */}
+        <img 
+          src={beforeImage} 
+          alt="Before Muddy State"
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            objectFit: 'cover', 
+            position: 'absolute', 
+            inset: 0,
+            zIndex: 2,
+            clipPath: `inset(0 ${100 - sliderPos}% 0 0)`
+          }}
+        />
 
-          {/* BEFORE BADGE - POSITIONED TOP LEFT */}
-          <div className="slider-badge-before" style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            background: 'rgba(150, 71, 52, 0.95)',
-            color: '#FFFFFF',
-            fontWeight: 800,
-            fontSize: '0.75rem',
-            padding: '4px 12px',
-            borderRadius: '16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            opacity: Number(sliderPos) < 10 ? 0 : 1,
-            transition: 'opacity 0.2s ease'
-          }}>
-            🚗 BEFORE: DUST & MUD
-          </div>
+        {/* BEFORE BADGE - POSITIONED TOP LEFT */}
+        <div className="slider-badge-before" style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          background: 'rgba(150, 71, 52, 0.95)',
+          color: '#FFFFFF',
+          fontWeight: 800,
+          fontSize: '0.75rem',
+          padding: '4px 12px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          zIndex: 3,
+          opacity: Number(sliderPos) < 10 ? 0 : 1,
+          transition: 'opacity 0.2s ease'
+        }}>
+          🚗 BEFORE: DUST & MUD
         </div>
 
         {/* CENTER DIVIDER HANDLE */}
