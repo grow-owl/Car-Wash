@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, TrendingUp, Calendar, Users, Wrench, DollarSign, Send, Plus, RefreshCw, LogOut, Car, Tag, ShieldCheck, Menu, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Calendar, Users, Wrench, DollarSign, Send, Plus, RefreshCw, LogOut, Car, Tag, ShieldCheck, Sparkles, Menu, X } from 'lucide-react';
 
 export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh, onRegisterWalkIn, onExitToCustomerSite }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -7,6 +7,7 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
   const menuItems = [
     { id: 'analytics', label: 'Revenue & Net Profit', icon: TrendingUp },
     { id: 'bookings', label: 'Booking & Bay Control', icon: Calendar },
+    { id: 'leads', label: 'Lead Management', icon: Sparkles },
     { id: 'crm', label: 'Customer CRM', icon: Users },
     { id: 'vehicles', label: 'Vehicle Management', icon: Car },
     { id: 'services', label: 'Services & Packages', icon: Wrench },
@@ -117,20 +118,21 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
         flexShrink: 0,
         zIndex: 999
       }}>
-        
+
         {/* SCROLLABLE NAV CONTENT WRAPPER */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           paddingRight: '2px',
           marginBottom: '8px'
         }}>
           {/* SIDEBAR LOGO */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', paddingLeft: '4px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingLeft: '4px', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '34px', objectFit: 'contain' }} />
+              <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '32px', objectFit: 'contain' }} />
               <span className="badge badge-terracotta" style={{ fontSize: '0.55rem', padding: '2px 6px' }}>
                 OWNER PANEL
               </span>
@@ -193,11 +195,11 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
         {/* QUICK ACTIONS & EXIT TO CUSTOMER SITE (PINNED AT BOTTOM) */}
         <div style={{
           borderTop: '1px solid rgba(175, 221, 229, 0.15)',
-          paddingTop: '10px',
-          marginTop: '6px',
+          paddingTop: '8px',
+          marginTop: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: '6px',
+          gap: '5px',
           flexShrink: 0
         }}>
           <button

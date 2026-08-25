@@ -467,14 +467,23 @@ main.public-main-content {
   .admin-sidebar {
     position: fixed !important;
     top: 0 !important;
-    left: -320px !important;
     bottom: 0 !important;
+    left: -320px !important;
+    height: 100dvh !important;
     height: 100vh !important;
-    width: 280px !important;
+    width: 270px !important;
+    max-width: 85vw !important;
     z-index: 9999 !important;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.8) !important;
     background: #012b2f !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    padding: 14px 12px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .admin-sidebar.mobile-drawer-open {

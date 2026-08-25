@@ -15,9 +15,13 @@ router.post('/coupons/validate', async (req, res) => {
     const coupon = await Coupon.findOne({ code: code.toUpperCase() });
     if (!coupon) return res.status(404).json({ error: 'Invalid coupon code' });
 
+    if (coupon.active === false) {
+      return res.status(400).json({ error: 'This promo coupon has been deactivated or expired by owner' });
+    }
+
     if (coupon.minOrder && amount < coupon.minOrder) {
       return res.status(400).json({
-        error: `Coupon requires a minimum order value of $${coupon.minOrder}`
+        error: `Coupon requires a minimum order value of ₹${coupon.minOrder}`
       });
     }
 
@@ -44,7 +48,7 @@ router.post('/coupons/validate', async (req, res) => {
 // COUPONS: List & Create
 router.get('/coupons', async (req, res) => {
   try {
-    const coupons = await Coupon.find({});
+    const coupons = await Coupon.find({}).sort({ createdAt: -1 });
     res.json(coupons);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -53,9 +57,43 @@ router.get('/coupons', async (req, res) => {
 
 router.post('/coupons', async (req, res) => {
   try {
-    const coupon = new Coupon(req.body);
+    const { code, discountType, value, minOrder, description } = req.body;
+    if (!code || !value) return res.status(400).json({ error: 'Code and discount value are required' });
+
+    const coupon = new Coupon({
+      code: code.toUpperCase(),
+      discountType: discountType || 'fixed',
+      value: Number(value),
+      minOrder: Number(minOrder || 0),
+      description: description || 'Promotional Discount Voucher',
+      active: true
+    });
     await coupon.save();
     res.status(201).json(coupon);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// COUPONS: Toggle Active Status
+router.patch('/coupons/:id/toggle', async (req, res) => {
+  try {
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+
+    coupon.active = !coupon.active;
+    await coupon.save();
+    res.json({ success: true, message: `Coupon ${coupon.code} is now ${coupon.active ? 'Active' : 'Deactivated'}`, coupon });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// COUPONS: Delete
+router.delete('/coupons/:id', async (req, res) => {
+  try {
+    await Coupon.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Coupon deleted' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -161,6 +199,114 @@ router.post('/abandoned/:id/recover', async (req, res) => {
     );
     res.json({
       message: 'Automated recovery SMS with 15% discount code sent!',
+      lead
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// SMART LEADS ENGINE (Popup, Exit Intent, Booking Drops)
+const Lead = require('../models/Lead');
+
+// LEADS: Create or Update Lead
+router.post('/leads', async (req, res) => {
+  try {
+    const { name, phone, source, serviceName, offerClaimed, notes } = req.body;
+    if (!phone) return res.status(400).json({ error: 'Phone number is required' });
+
+    let lead = await Lead.findOne({ phone });
+    if (lead) {
+      lead.source = source || lead.source;
+      lead.serviceName = serviceName || lead.serviceName;
+      lead.name = name || lead.name;
+      lead.offerClaimed = offerClaimed || lead.offerClaimed;
+      lead.notes = notes || lead.notes;
+      lead.lastActivity = new Date();
+      await lead.save();
+    } else {
+      lead = new Lead({
+        name: name || 'Valued Customer',
+        phone,
+        source: source || 'popup',
+        serviceName: serviceName || 'General Wash & Spa',
+        offerClaimed: offerClaimed || 'FIRST100',
+        notes: notes || ''
+      });
+      await lead.save();
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Lead captured successfully!',
+      lead
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// LEADS: List with Search & Status Filter
+router.get('/leads', async (req, res) => {
+  try {
+    const { status, search } = req.query;
+    let query = {};
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { serviceName: { $regex: search, $options: 'i' } }
+      ];
+    }
+    const leads = await Lead.find(query).sort({ updatedAt: -1 });
+    res.json(leads);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// LEADS: Update Status & Notes
+router.patch('/leads/:id/status', async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const updateData = { lastActivity: new Date() };
+    if (status) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
+
+    const lead = await Lead.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    res.json({ success: true, message: `Lead status updated to ${status}`, lead });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// LEADS: Delete
+router.delete('/leads/:id', async (req, res) => {
+  try {
+    await Lead.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Lead deleted' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// LEADS: Send WhatsApp / SMS Offer
+router.post('/leads/:id/send-offer', async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+    lead.status = 'contacted';
+    lead.lastActivity = new Date();
+    await lead.save();
+
+    res.json({
+      success: true,
+      message: `WhatsApp/SMS offer code ${lead.offerClaimed || 'FIRST100'} sent to ${lead.phone}!`,
       lead
     });
   } catch (err) {

@@ -61,6 +61,8 @@ export const uploadBeforeAfter = (data) => api.post('/crm/before-after', data);
 export const validateCoupon = (code, amount) => api.post('/marketing/coupons/validate', { code, amount });
 export const getCoupons = () => api.get('/marketing/coupons');
 export const createCoupon = (data) => api.post('/marketing/coupons', data);
+export const toggleCouponStatus = (id) => api.patch(`/marketing/coupons/${id}/toggle`);
+export const deleteCoupon = (id) => api.delete(`/marketing/coupons/${id}`);
 export const getMemberships = () => api.get('/marketing/memberships');
 export const subscribeMembership = (data) => api.post('/marketing/memberships/subscribe', data);
 export const getGiftCards = () => api.get('/marketing/giftcards');
@@ -72,8 +74,16 @@ export const getExpenses = () => api.get('/analytics/expenses');
 export const addExpense = (data) => api.post('/analytics/expenses', data);
 export const deleteExpense = (id) => api.delete(`/analytics/expenses/${id}`);
 
-export const getStaff = () => api.get('/expenses/staff');
-export const getAbandonedLeads = () => api.get('/expenses/abandoned');
-export const sendRecoveryOffer = (id) => api.post(`/expenses/abandoned/${id}/recover`);
+// Staff & Abandoned Recovery
+export const getStaff = () => api.get('/staff');
+export const getAbandonedLeads = () => api.get('/marketing/abandoned');
+export const sendRecoveryOffer = (id) => api.post(`/marketing/abandoned/${id}/recover`);
+
+// Smart Leads Engine (Popup, Exit Intent, Booking Drops)
+export const createLead = (data) => api.post('/marketing/leads', data);
+export const getLeads = (params) => api.get('/marketing/leads', { params });
+export const updateLeadStatus = (id, data) => api.patch(`/marketing/leads/${id}/status`, data);
+export const deleteLead = (id) => api.delete(`/marketing/leads/${id}`);
+export const sendLeadOffer = (id) => api.post(`/marketing/leads/${id}/send-offer`);
 
 export default api;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Calendar, Users, DollarSign, Wrench, Send, TrendingUp, AlertTriangle, CheckCircle2, Plus, RefreshCw, MessageSquare, Tag, ShieldCheck, Car, Trash2, Edit3, Eye, Search, Phone, Shield } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, DollarSign, Wrench, Send, TrendingUp, AlertTriangle, CheckCircle2, Plus, RefreshCw, MessageSquare, Tag, ShieldCheck, Car, Trash2, Edit3, Eye, Search, Phone, Shield, Sparkles, PhoneCall, ToggleLeft, ToggleRight } from 'lucide-react';
 import {
   getAnalytics, getBookings, updateBookingStatus, createWalkInBooking, getCustomers, getStaff, getExpenses, addExpense, deleteExpense,
-  getAbandonedBookings, sendAbandonedRecoveryOffer, getDueWashCustomers, sendDueWashReminder, getCoupons, getServices, createService, updateService, deleteService, getPackages, createPackage, updatePackage, deletePackage, getBays, updateBayStatus, resetCustomerPin
+  getAbandonedBookings, sendAbandonedRecoveryOffer, getDueWashCustomers, sendDueWashReminder, getCoupons, createCoupon, toggleCouponStatus, deleteCoupon, getServices, createService, updateService, deleteService, getPackages, createPackage, updatePackage, deletePackage, getBays, updateBayStatus, resetCustomerPin,
+  getLeads, updateLeadStatus, deleteLead, sendLeadOffer
 } from '../api';
 
 export default function AdminDashboard({
@@ -23,11 +24,21 @@ export default function AdminDashboard({
   const [abandonedLeads, setAbandonedLeads] = useState([]);
   const [dueCustomers, setDueCustomers] = useState([]);
   const [coupons, setCoupons] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [leadStatusFilter, setLeadStatusFilter] = useState('all');
 
   // Modals & Selectors
   const [selectedCustomerModal, setSelectedCustomerModal] = useState(null);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showAddCouponModal, setShowAddCouponModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+
+  // Coupon Form State
+  const [cpnCode, setCpnCode] = useState('');
+  const [cpnDiscountType, setCpnDiscountType] = useState('fixed');
+  const [cpnValue, setCpnValue] = useState(100);
+  const [cpnMinOrder, setCpnMinOrder] = useState(499);
+  const [cpnDesc, setCpnDesc] = useState('');
 
   // Service Form State
   const [svcName, setSvcName] = useState('');
@@ -62,7 +73,7 @@ export default function AdminDashboard({
 
   const fetchAllAdminData = async () => {
     try {
-      const [anaRes, bookRes, custRes, stfRes, expRes, abndRes, dueRes, cpnRes, svcRes, pkgRes, bayRes] = await Promise.all([
+      const [anaRes, bookRes, custRes, stfRes, expRes, abndRes, dueRes, cpnRes, svcRes, pkgRes, bayRes, leadRes] = await Promise.all([
         getAnalytics(),
         getBookings({ search: searchTerm }),
         getCustomers(crmSearch),
@@ -73,7 +84,8 @@ export default function AdminDashboard({
         getCoupons(),
         getServices(),
         getPackages(),
-        getBays()
+        getBays(),
+        getLeads({ search: searchTerm })
       ]);
       setAnalytics(anaRes.data);
       setBookings(bookRes.data);
@@ -86,6 +98,7 @@ export default function AdminDashboard({
       setServices(svcRes.data);
       setPackagesList(pkgRes.data);
       setBays(bayRes.data);
+      if (leadRes && leadRes.data) setLeads(leadRes.data);
     } catch (err) {
       console.error('Error loading admin dashboard:', err);
     }
@@ -201,6 +214,47 @@ export default function AdminDashboard({
       fetchAllAdminData();
     } catch (err) {
       alert('Error sending recovery offer');
+    }
+  };
+
+  const handleSaveCouponSubmit = async (e) => {
+    e.preventDefault();
+    if (!cpnCode || !cpnValue) return;
+    try {
+      await createCoupon({
+        code: cpnCode.toUpperCase().trim(),
+        discountType: cpnDiscountType,
+        value: Number(cpnValue),
+        minOrder: Number(cpnMinOrder || 0),
+        description: cpnDesc || 'Promotional Discount Voucher'
+      });
+      setShowAddCouponModal(false);
+      setCpnCode('');
+      setCpnValue(100);
+      setCpnDesc('');
+      fetchAllAdminData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error creating coupon');
+    }
+  };
+
+  const handleToggleCoupon = async (id) => {
+    try {
+      const res = await toggleCouponStatus(id);
+      alert(res.data.message || 'Coupon status updated!');
+      fetchAllAdminData();
+    } catch (err) {
+      alert('Error updating coupon status');
+    }
+  };
+
+  const handleDeleteCoupon = async (id, code) => {
+    if (!window.confirm(`Delete promo coupon ${code}?`)) return;
+    try {
+      await deleteCoupon(id);
+      fetchAllAdminData();
+    } catch (err) {
+      alert('Error deleting coupon');
     }
   };
 
@@ -467,6 +521,207 @@ export default function AdminDashboard({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODULE: ⭐ LEAD MANAGEMENT & SMART CAPTURE ENGINE */}
+      {activeSubTab === 'leads' && (
+        <div className="glass-panel" style={{ padding: '28px', border: '1.5px solid var(--accent-aqua)' }}>
+          {/* HEADER */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Sparkles size={24} color="var(--accent-aqua)" /> ⭐ Lead Management & Smart Capture Engine
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+                Track high-intent leads captured from 15s Timer Popups, Exit Intent Popups & Booking Drop-offs
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Search Phone / Name / Service..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  getLeads({ search: e.target.value }).then(res => setLeads(res.data));
+                }}
+                className="input-field"
+                style={{ width: '240px', padding: '8px 14px', fontSize: '0.84rem' }}
+              />
+              <button
+                onClick={fetchAllAdminData}
+                className="btn-secondary"
+                style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '10px' }}
+              >
+                <RefreshCw size={14} /> Refresh
+              </button>
+            </div>
+          </div>
+
+          {/* LEAD KPI STATS */}
+          <div className="grid-4" style={{ gap: '16px', marginBottom: '24px' }}>
+            <div style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 800 }}>TOTAL CAPTURED LEADS</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', marginTop: '4px' }}>{leads.length} Leads</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '2px' }}>From Popups & Exit Intents</div>
+            </div>
+
+            <div style={{ background: 'rgba(20, 199, 212, 0.15)', border: '1px solid var(--accent-aqua)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>NEW UNCONTACTED</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-aqua)', marginTop: '4px' }}>
+                {leads.filter(l => l.status === 'new').length}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '2px' }}>Awaiting Initial Call</div>
+            </div>
+
+            <div style={{ background: 'rgba(255, 195, 0, 0.15)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 800 }}>FOLLOW-UP ACTIVE</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent-gold)', marginTop: '4px' }}>
+                {leads.filter(l => l.status === 'contacted' || l.status === 'follow_up').length}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginTop: '2px' }}>In Contact / Sent Code</div>
+            </div>
+
+            <div style={{ background: 'rgba(150, 71, 52, 0.2)', border: '1px solid var(--accent-terracotta)', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ fontSize: '0.75rem', color: '#f2856e', fontWeight: 800 }}>CONVERTED CUSTOMERS</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f2856e', marginTop: '4px' }}>
+                {leads.filter(l => l.status === 'converted').length}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#f2856e', marginTop: '2px' }}>
+                {leads.length > 0 ? `${Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100)}% Conv. Rate` : '0% Conv.'}
+              </div>
+            </div>
+          </div>
+
+          {/* STATUS FILTER PILLS */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            {['all', 'new', 'contacted', 'follow_up', 'converted', 'not_interested'].map(st => (
+              <button
+                key={st}
+                onClick={() => setLeadStatusFilter(st)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  border: leadStatusFilter === st ? '1.5px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                  background: leadStatusFilter === st ? 'rgba(0, 229, 255, 0.2)' : 'rgba(0, 49, 53, 0.6)',
+                  color: leadStatusFilter === st ? 'var(--accent-aqua)' : 'var(--text-muted)',
+                  fontWeight: leadStatusFilter === st ? 800 : 600,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase'
+                }}
+              >
+                {st.replace('_', ' ')} {st === 'all' ? `(${leads.length})` : `(${leads.filter(l => l.status === st).length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* LEADS TABLE */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ background: 'rgba(0, 49, 53, 0.85)', borderBottom: '2px solid var(--accent-aqua)', textAlign: 'left' }}>
+                  <th style={{ padding: '12px' }}>Customer Name</th>
+                  <th style={{ padding: '12px' }}>Phone Number</th>
+                  <th style={{ padding: '12px' }}>Interested Service</th>
+                  <th style={{ padding: '12px' }}>Capture Source</th>
+                  <th style={{ padding: '12px' }}>Offer Code</th>
+                  <th style={{ padding: '12px' }}>Status</th>
+                  <th style={{ padding: '12px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads
+                  .filter(l => leadStatusFilter === 'all' || l.status === leadStatusFilter)
+                  .map((lead, idx) => (
+                    <tr key={lead._id || idx} style={{ borderBottom: '1px solid var(--border-light)', background: idx % 2 === 0 ? 'rgba(0, 30, 35, 0.4)' : 'transparent' }}>
+                      <td style={{ padding: '12px', fontWeight: 800, color: '#FFFFFF' }}>
+                        {lead.name || 'Valued Customer'}
+                      </td>
+                      <td style={{ padding: '12px', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                        +91 {lead.phone}
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: 700, color: '#CCD0CF' }}>
+                        {lead.serviceName || 'General Wash'}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <span className={`badge ${lead.source === 'exit_intent' ? 'badge-terracotta' : lead.source === 'booking' ? 'badge-gold' : 'badge-aqua'}`}>
+                          {lead.source === 'exit_intent' ? 'Exit Intent' : lead.source === 'booking' ? 'Booking Drop' : 'Popup Offer'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                        {lead.offerClaimed || 'FIRST100'}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <select
+                          value={lead.status}
+                          onChange={async (e) => {
+                            const newSt = e.target.value;
+                            try {
+                              await updateLeadStatus(lead._id, { status: newSt });
+                              fetchAllAdminData();
+                            } catch (err) {
+                              alert('Error updating status');
+                            }
+                          }}
+                          style={{
+                            background: lead.status === 'converted' ? 'rgba(20, 199, 212, 0.25)' : lead.status === 'new' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 195, 0, 0.2)',
+                            border: '1px solid var(--border-light)',
+                            color: '#FFFFFF',
+                            borderRadius: '8px',
+                            padding: '4px 8px',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="new">🆕 New</option>
+                          <option value="contacted">📲 Contacted</option>
+                          <option value="follow_up">⌛ Follow-up</option>
+                          <option value="converted">✅ Converted</option>
+                          <option value="not_interested">❌ Not Interested</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await sendLeadOffer(lead._id);
+                                alert(res.data.message || `WhatsApp Offer sent to ${lead.phone}!`);
+                                fetchAllAdminData();
+                              } catch (err) {
+                                alert('Error sending offer');
+                              }
+                            }}
+                            className="btn-primary"
+                            style={{ padding: '5px 10px', fontSize: '0.75rem', fontWeight: 800 }}
+                          >
+                            📲 Offer SMS
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!window.confirm(`Delete lead for ${lead.phone}?`)) return;
+                              try {
+                                await deleteLead(lead._id);
+                                fetchAllAdminData();
+                              } catch (err) {
+                                alert('Error deleting lead');
+                              }
+                            }}
+                            style={{ background: 'rgba(255, 77, 77, 0.15)', border: '1px solid #ff4d4d', color: '#ff4d4d', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -937,32 +1192,149 @@ export default function AdminDashboard({
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Tag size={22} color="var(--accent-cyan)" /> Coupon & Promotional Code Manager
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Create discount promo codes, flat off vouchers & percentage discounts</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Create discount promo codes, toggle active/deactive status, and manage vouchers</p>
             </div>
-            <span className="badge badge-aqua">{coupons.length} Active Vouchers</span>
+            <button
+              onClick={() => setShowAddCouponModal(true)}
+              className="btn-primary"
+              style={{ padding: '10px 20px', fontSize: '0.85rem' }}
+            >
+              <Plus size={16} /> + Create New Promo Coupon
+            </button>
           </div>
 
           <div className="grid-3" style={{ gap: '16px', marginBottom: '32px' }}>
-            {coupons.map((cpn, idx) => (
-              <div key={cpn._id || idx} style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--accent-cyan)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-gold)' }}>{cpn.code}</span>
-                    <span className="badge badge-terracotta">{cpn.discountType === 'percent' ? `${cpn.value}% OFF` : `₹${cpn.value} OFF`}</span>
+            {coupons.map((cpn, idx) => {
+              const isActive = cpn.active !== false;
+              return (
+                <div key={cpn._id || idx} style={{ background: 'rgba(0, 49, 53, 0.7)', border: isActive ? '1px solid var(--accent-cyan)' : '1px dashed var(--text-muted)', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', opacity: isActive ? 1 : 0.65 }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-gold)' }}>{cpn.code}</span>
+                      <span className="badge badge-terracotta">{cpn.discountType === 'percent' ? `${cpn.value}% OFF` : `₹${cpn.value} OFF`}</span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#CCD0CF', marginBottom: '10px' }}>{cpn.description || 'Promotional Discount Coupon'}</p>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Min Order: ₹{cpn.minOrder || cpn.minOrderValue || 0} • Uses: <strong>{cpn.usedCount || 0} times</strong>
+                    </div>
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: '#CCD0CF', marginBottom: '10px' }}>{cpn.description || 'Promotional Discount Coupon'}</p>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Min Order: ₹{cpn.minOrderValue || 499} • Uses: <strong>{cpn.usedCount || 12} times</strong></div>
+
+                  <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+                    <button
+                      onClick={() => handleToggleCoupon(cpn._id)}
+                      style={{
+                        background: isActive ? 'rgba(6, 214, 160, 0.2)' : 'rgba(255, 89, 100, 0.2)',
+                        border: isActive ? '1px solid #06D6A0' : '1px solid #FF5964',
+                        color: isActive ? '#06D6A0' : '#FF5964',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      {isActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                      <span>{isActive ? '🟢 Active' : '🔴 Deactivated'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteCoupon(cpn._id, cpn.code)}
+                      style={{ background: 'rgba(255, 77, 77, 0.15)', border: '1px solid #ff4d4d', color: '#ff4d4d', borderRadius: '6px', padding: '6px 10px', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => alert(`Coupon ${cpn.code} is active!`)}
-                    style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid var(--border-light)', color: '#FFFFFF', borderRadius: '6px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW PROMO COUPON MODAL */}
+      {showAddCouponModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,31,35,0.85)', backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div className="glass-panel" style={{ maxWidth: '480px', width: '100%', padding: '28px', border: '1.5px solid var(--accent-aqua)' }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '16px' }}>
+              🏷️ Create New Promo Coupon Code
+            </h3>
+            <form onSubmit={handleSaveCouponSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>Coupon Code *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. WASH100, SUPERVIP, MONSOON50"
+                  required
+                  value={cpnCode}
+                  onChange={(e) => setCpnCode(e.target.value.toUpperCase())}
+                  className="input-field"
+                  style={{ textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}
+                />
+              </div>
+
+              <div className="grid-2" style={{ gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>Discount Type *</label>
+                  <select
+                    value={cpnDiscountType}
+                    onChange={(e) => setCpnDiscountType(e.target.value)}
+                    className="input-field"
                   >
-                    Active
-                  </button>
+                    <option value="fixed">Flat Amount (₹)</option>
+                    <option value="percent">Percentage (%)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>Discount Value *</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 100 or 15"
+                    required
+                    min={1}
+                    value={cpnValue}
+                    onChange={(e) => setCpnValue(e.target.value)}
+                    className="input-field"
+                  />
                 </div>
               </div>
-            ))}
+
+              <div className="grid-2" style={{ gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>Min Order Spend (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 499"
+                    value={cpnMinOrder}
+                    onChange={(e) => setCpnMinOrder(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#CCD0CF', fontWeight: 700, marginBottom: '4px', display: 'block' }}>Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ₹100 Flat discount on first car wash"
+                  value={cpnDesc}
+                  onChange={(e) => setCpnDesc(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <button type="button" onClick={() => setShowAddCouponModal(false)} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Create Coupon</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/AdminSidebar';
 import Footer from './components/Footer';
+import SmartLeadPopup from './components/SmartLeadPopup';
 import CustomerHome from './pages/CustomerHome';
 import BookingFlow from './pages/BookingFlow';
 import TrackBooking from './pages/TrackBooking';
@@ -234,6 +235,11 @@ export default function App() {
           />
         )}
       </main>
+
+      <SmartLeadPopup onStartBookingWithOffer={(offerCode) => {
+        setPreselectedItem({ name: `Offer (${offerCode})`, price: 0 });
+        changeTab('booking');
+      }} />
 
       <Footer onOpenOwnerPortal={() => setActiveTab('admin')} />
     </div>
