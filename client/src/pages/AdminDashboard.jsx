@@ -668,21 +668,21 @@ export default function AdminDashboard({
                             }
                           }}
                           style={{
-                            background: lead.status === 'converted' ? 'rgba(20, 199, 212, 0.25)' : lead.status === 'new' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 195, 0, 0.2)',
-                            border: '1px solid var(--border-light)',
+                            background: '#06141B',
+                            border: '1px solid var(--accent-aqua)',
                             color: '#FFFFFF',
                             borderRadius: '8px',
-                            padding: '4px 8px',
-                            fontSize: '0.78rem',
+                            padding: '6px 10px',
+                            fontSize: '0.8rem',
                             fontWeight: 700,
                             cursor: 'pointer'
                           }}
                         >
-                          <option value="new">🆕 New</option>
-                          <option value="contacted">📲 Contacted</option>
-                          <option value="follow_up">⌛ Follow-up</option>
-                          <option value="converted">✅ Converted</option>
-                          <option value="not_interested">❌ Not Interested</option>
+                          <option value="new" style={{ background: '#06141B', color: '#FFFFFF' }}>New Lead</option>
+                          <option value="contacted" style={{ background: '#06141B', color: '#FFFFFF' }}>Contacted</option>
+                          <option value="follow_up" style={{ background: '#06141B', color: '#FFFFFF' }}>Follow Up</option>
+                          <option value="converted" style={{ background: '#06141B', color: '#FFFFFF' }}>Converted</option>
+                          <option value="not_interested" style={{ background: '#06141B', color: '#FFFFFF' }}>Not Interested</option>
                         </select>
                       </td>
                       <td style={{ padding: '12px' }}>

@@ -12,7 +12,19 @@ router.post('/coupons/validate', async (req, res) => {
     const { code, amount } = req.body;
     if (!code) return res.status(400).json({ error: 'Coupon code required' });
 
-    const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    let coupon = await Coupon.findOne({ code: code.toUpperCase() });
+    if (!coupon && code.toUpperCase() === 'FLAT20') {
+      coupon = new Coupon({
+        code: 'FLAT20',
+        discountType: 'percent',
+        value: 20,
+        minOrder: 0,
+        description: '20% OFF Welcome Discount',
+        active: true
+      });
+      await coupon.save();
+    }
+
     if (!coupon) return res.status(404).json({ error: 'Invalid coupon code' });
 
     if (coupon.active === false) {

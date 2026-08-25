@@ -60,7 +60,7 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
       return;
     }
 
-    const offerCode = offerType === 'vacuum' ? 'VACUUMFREE' : 'FIRST100';
+    const offerCode = 'FLAT20';
 
     setLoading(true);
     try {
@@ -162,11 +162,11 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
               marginBottom: '20px'
             }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--accent-gold)', fontWeight: 800, textTransform: 'uppercase' }}>PROMO CODE</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.08em', marginTop: '2px' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.08em', marginTop: '2px' }}>
                 {submittedOffer}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#CCD0CF', marginTop: '4px' }}>
-                {submittedOffer === 'VACUUMFREE' ? 'Complimentary Interior Vacuum Included' : '₹100 Flat Discount Applied'}
+                Flat 20% Discount Applied on Your First Wash
               </div>
             </div>
 
@@ -200,51 +200,27 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
             </div>
 
             <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, marginBottom: '8px' }}>
-              {triggerSource === 'exit_intent' ? 'Before You Leave' : 'Unlock Your Welcome Offer'}
+              {triggerSource === 'exit_intent' ? 'Before You Leave' : 'Unlock Flat 20% OFF'}
             </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
-              Enter your phone number to receive your complimentary wash reward.
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '18px' }}>
+              Enter your mobile number to unlock your exclusive 20% welcome discount.
             </p>
 
-            {/* OFFER SELECTOR PILLS */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              <button
-                type="button"
-                onClick={() => setOfferType('vacuum')}
-                style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: '10px',
-                  border: offerType === 'vacuum' ? '1.5px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                  background: offerType === 'vacuum' ? 'rgba(0, 229, 255, 0.12)' : 'rgba(0, 49, 53, 0.4)',
-                  color: offerType === 'vacuum' ? 'var(--accent-aqua)' : 'var(--text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                Free Interior Vacuum
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOfferType('discount')}
-                style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: '10px',
-                  border: offerType === 'discount' ? '1.5px solid var(--accent-gold)' : '1px solid var(--border-light)',
-                  background: offerType === 'discount' ? 'rgba(255, 195, 0, 0.12)' : 'rgba(0, 49, 53, 0.4)',
-                  color: offerType === 'discount' ? 'var(--accent-gold)' : 'var(--text-muted)',
-                  fontWeight: 700,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                ₹100 Flat OFF
-              </button>
+            {/* FLAT 20% DISCOUNT BANNER */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255, 195, 0, 0.15) 0%, rgba(255, 89, 100, 0.15) 100%)',
+              border: '1.5px solid var(--accent-gold)',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              textAlign: 'center',
+              marginBottom: '20px'
+            }}>
+              <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.04em' }}>
+                FLAT 20% DISCOUNT
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#CCD0CF', marginTop: '2px' }}>
+                Instant 20% OFF on all car wash & detailing packages
+              </div>
             </div>
 
             {/* FORM */}
@@ -330,7 +306,7 @@ export default function SmartLeadPopup({ onStartBookingWithOffer }) {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                 <ShieldCheck size={14} color="var(--accent-aqua)" />
-                <span>No spam. We only contact you regarding your wash offer.</span>
+                <span>We only contact you regarding your wash offer.</span>
               </div>
             </form>
           </div>
