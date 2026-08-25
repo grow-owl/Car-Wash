@@ -424,11 +424,11 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
                   {[
                     { id: 'all', label: 'All Services' },
-                    { id: 'wash', label: '🚿 Regular Wash' },
-                    { id: 'interior', label: '🧹 Interior Care' },
-                    { id: 'exterior', label: '✨ Exterior & Polish' },
-                    { id: 'engine', label: '⚙️ Engine & Chassis' },
-                    { id: 'premium', label: '🛋️ Premium Detailing' }
+                    { id: 'wash', label: 'Regular Wash' },
+                    { id: 'interior', label: 'Interior Care' },
+                    { id: 'exterior', label: 'Exterior & Polish' },
+                    { id: 'engine', label: 'Engine & Chassis' },
+                    { id: 'premium', label: 'Premium Detailing' }
                   ].map((cat) => (
                     <button
                       key={cat.id}

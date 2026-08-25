@@ -126,6 +126,31 @@ export default function App() {
       />
 
       <main className="public-main-content" style={{ flex: 1, paddingTop: '72px' }}>
+        {activeTab !== 'home' && (
+          <div className="container" style={{ paddingTop: '20px', paddingBottom: '10px' }}>
+            <button
+              onClick={() => setActiveTab('home')}
+              style={{
+                background: 'rgba(0, 49, 53, 0.85)',
+                border: '1.5px solid var(--accent-cyan)',
+                color: 'var(--accent-cyan)',
+                fontWeight: 800,
+                fontSize: '0.88rem',
+                padding: '8px 20px',
+                borderRadius: '22px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(0, 229, 255, 0.25)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ← Back to Home & Services
+            </button>
+          </div>
+        )}
+
         {activeTab === 'home' && (
           <CustomerHome
             onStartBooking={handleStartBooking}
@@ -147,11 +172,15 @@ export default function App() {
             preselectedItem={preselectedItem}
             onBookingComplete={handleBookingComplete}
             onTrackLive={handleTrackLive}
+            onBackToHome={() => setActiveTab('home')}
           />
         )}
 
         {activeTab === 'track' && (
-          <TrackBooking activeCode={activeBookingCode} />
+          <TrackBooking
+            activeCode={activeBookingCode}
+            onBackToHome={() => setActiveTab('home')}
+          />
         )}
 
         {activeTab === 'crm' && (
@@ -159,6 +188,7 @@ export default function App() {
             currentUser={currentUser}
             setCurrentUser={setCurrentUser}
             onSignOut={handleSignOut}
+            onBackToHome={() => setActiveTab('home')}
           />
         )}
       </main>

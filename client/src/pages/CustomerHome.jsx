@@ -299,45 +299,78 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginBottom: '36px' }}>
             
             {/* 1. VEHICLE SIZE SWITCHER */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(17, 33, 45, 0.95)', padding: '6px 14px', borderRadius: '30px', border: '1px solid var(--accent-gold)' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                SELECT VEHICLE SIZE:
+            <div style={{
+              background: 'rgba(0, 30, 35, 0.85)',
+              border: '1px solid var(--accent-gold)',
+              borderRadius: '28px',
+              padding: '6px 12px',
+              maxWidth: '580px',
+              margin: '0 auto 24px auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px',
+              flexWrap: 'wrap'
+            }}>
+              <span style={{
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                color: 'var(--accent-gold)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                paddingLeft: '10px',
+                whiteSpace: 'nowrap'
+              }}>
+                Select Vehicle Size:
               </span>
-              {[
-                { type: 'Hatchback', label: '🚗 Hatchback' },
-                { type: 'Sedan', label: '🚘 Sedan' },
-                { type: 'SUV', label: '🚙 SUV / MUV' }
-              ].map((v) => (
-                <button
-                  key={v.type}
-                  type="button"
-                  onClick={() => setVehicleSize(v.type)}
-                  style={{
-                    background: vehicleSize === v.type ? 'var(--accent-gold)' : 'transparent',
-                    color: vehicleSize === v.type ? '#06141B' : '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '0.82rem',
-                    border: 'none',
-                    padding: '6px 16px',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {v.label}
-                </button>
-              ))}
+              <div style={{ display: 'flex', gap: '4px', flex: '1 1 auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                {[
+                  { type: 'Hatchback', label: 'Hatchback' },
+                  { type: 'Sedan', label: 'Sedan' },
+                  { type: 'SUV', label: 'SUV / MUV' }
+                ].map((v) => (
+                  <button
+                    key={v.type}
+                    type="button"
+                    onClick={() => setVehicleSize(v.type)}
+                    style={{
+                      background: vehicleSize === v.type ? 'var(--accent-gold)' : 'transparent',
+                      color: vehicleSize === v.type ? '#06141B' : '#FFFFFF',
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      border: 'none',
+                      padding: '8px 18px',
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flex: '1 1 auto',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 2. CATEGORY TABS */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              alignItems: 'center',
+              maxWidth: '100%',
+              margin: '0 auto'
+            }}>
               {[
                 { id: 'all', label: 'All Services' },
-                { id: 'wash', label: '🚿 Regular Wash' },
-                { id: 'interior', label: '🧹 Interior Care' },
-                { id: 'exterior', label: '✨ Exterior & Polish' },
-                { id: 'engine', label: '⚙️ Engine & Chassis' },
-                { id: 'premium', label: '🛋️ Premium Detailing' }
+                { id: 'wash', label: 'Regular Wash' },
+                { id: 'interior', label: 'Interior Care' },
+                { id: 'exterior', label: 'Exterior & Polish' },
+                { id: 'engine', label: 'Engine & Chassis' },
+                { id: 'premium', label: 'Premium Detailing' }
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -347,12 +380,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                     background: selectedCategory === cat.id ? 'var(--accent-cyan)' : 'rgba(0, 49, 53, 0.6)',
                     color: selectedCategory === cat.id ? '#003135' : '#FFFFFF',
                     fontWeight: 800,
-                    fontSize: '0.85rem',
+                    fontSize: '0.82rem',
                     border: selectedCategory === cat.id ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
-                    padding: '8px 18px',
+                    padding: '8px 16px',
                     borderRadius: '20px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   {cat.label}
@@ -419,13 +453,6 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                           </div>
                           <p style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', lineHeight: '1.4' }}>{sc.desc}</p>
                         </div>
-                        
-                        <button
-                          className="btn-gold"
-                          style={{ width: '100%', padding: '10px', fontSize: '0.85rem', fontWeight: 800, borderRadius: '8px', justifyContent: 'center' }}
-                        >
-                          Book Service (₹{currentPrice})
-                        </button>
                       </div>
                     </div>
                   );
