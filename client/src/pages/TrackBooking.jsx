@@ -197,7 +197,7 @@ export default function TrackBooking({ activeCode = '' }) {
 
             <div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>TOTAL PAID</div>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--accent-aqua)' }}>${booking.totalAmount}</div>
+              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--accent-aqua)' }}>₹{booking.totalAmount}</div>
             </div>
 
             <div>
