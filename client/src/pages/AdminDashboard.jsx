@@ -127,6 +127,8 @@ export default function AdminDashboard({
   // Refresh & Sync status
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  const [whatsappToast, setWhatsappToast] = useState(null);
+  const [allotModalBay, setAllotModalBay] = useState(null); // 'BAY 1' | 'BAY 2' | null
 
   useEffect(() => {
     fetchAllAdminData();
@@ -165,10 +167,19 @@ export default function AdminDashboard({
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await updateBookingStatus(id, { status: newStatus });
+      const res = await updateBookingStatus(id, { status: newStatus });
       fetchAllAdminData();
-    } catch {
-      alert('Error');
+      if (res.data?.whatsappNotification) {
+        setWhatsappToast({
+          customerName: res.data.whatsappNotification.customerName,
+          phone: res.data.whatsappNotification.phone,
+          status: newStatus,
+          waLink: res.data.whatsappNotification.waLink
+        });
+        setTimeout(() => setWhatsappToast(null), 9000);
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error updating status');
     }
   };
 
@@ -180,6 +191,48 @@ export default function AdminDashboard({
     } catch {
       alert('Error');
     }
+  };
+
+  const handleBayChange = async (id, newBay) => {
+    try {
+      await updateBookingStatus(id, { bayAssigned: newBay, assignedBay: newBay });
+      fetchAllAdminData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update bay');
+    }
+  };
+
+  const handleAllotCarToBay = async (bookingId, bayName) => {
+    try {
+      await updateBookingStatus(bookingId, { 
+        bayAssigned: bayName,
+        assignedBay: bayName,
+        status: 'washing'
+      });
+      setAllotModalBay(null);
+      fetchAllAdminData();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to allot car to bay');
+    }
+  };
+
+  // Helper to find currently active car inside a bay
+  const getActiveBookingForBay = (bayNumOrName) => {
+    const bayStr = typeof bayNumOrName === 'number' ? `BAY ${bayNumOrName}` : String(bayNumOrName || '').toUpperCase();
+    const activeStatuses = ['washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
+    
+    // Priority 1: Actively washing / detailing booking in this bay
+    const active = bookings.find(b => {
+      const assigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+      return assigned.includes(bayStr) && activeStatuses.includes(b.status?.toLowerCase());
+    });
+    if (active) return active;
+
+    // Fallback: any confirmed/pending booking allotted to this bay for today
+    return bookings.find(b => {
+      const assigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+      return assigned.includes(bayStr) && (b.status === 'confirmed' || b.status === 'pending');
+    });
   };
 
   const handleWalkInSubmit = async (e) => {
@@ -510,71 +563,6 @@ export default function AdminDashboard({
 
   return (
     <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-      
-      {/* OWNER LIVE SYSTEM SYNC BAR */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '16px',
-        flexWrap: 'wrap',
-        gap: '10px',
-        background: 'rgba(0, 31, 35, 0.45)',
-        border: '1px solid var(--border-light)',
-        padding: '10px 16px',
-        borderRadius: '12px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.75rem',
-            fontWeight: 800,
-            color: '#25D366',
-            background: 'rgba(37, 211, 102, 0.12)',
-            border: '1px solid rgba(37, 211, 102, 0.3)',
-            padding: '4px 10px',
-            borderRadius: '20px'
-          }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#25D366', boxShadow: '0 0 8px #25D366' }} />
-            LIVE SYSTEM
-          </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--ice-tint)' }}>
-            Last updated: <strong style={{ color: '#FFFFFF' }}>{lastSyncTime}</strong>
-          </span>
-        </div>
-
-        <button
-          onClick={fetchAllAdminData}
-          disabled={isRefreshing}
-          className="btn-secondary"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '7px',
-            padding: '7px 16px',
-            borderRadius: '8px',
-            fontSize: '0.82rem',
-            fontWeight: 700,
-            cursor: isRefreshing ? 'wait' : 'pointer',
-            background: isRefreshing ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-            borderColor: isRefreshing ? 'var(--accent-cyan)' : 'var(--border-light)',
-            color: isRefreshing ? 'var(--accent-cyan)' : '#FFFFFF',
-            transition: 'all 0.2s ease'
-          }}
-          title="Sync & reload all real-time bookings, queue, bays, and financials from database"
-        >
-          <RefreshCw
-            size={14}
-            color="var(--accent-cyan)"
-            style={{
-              animation: isRefreshing ? 'spin 0.6s linear infinite' : 'none'
-            }}
-          />
-          {isRefreshing ? 'Refreshing Database...' : 'Refresh Data'}
-        </button>
-      </div>
 
       {/* 1. TOP STATS BAR (OPERATIONAL / STAFF-SAFE METRICS) */}
       <div style={{
@@ -616,53 +604,177 @@ export default function AdminDashboard({
       {activeSubTab === 'analytics' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
-          {/* LIVE BAYS */}
-          <div className="glass-panel" style={{ padding: '18px', borderRadius: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Live Bays</h3>
-              <button onClick={() => setShowWalkInModal(true)} className="btn-gold" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '8px' }}>
-                <Plus size={14} /> Walk-In Ticket
+          {/* LIVE BAYS (ACTIVE VEHICLE DETECTION & 1-CLICK ALLOTMENT) */}
+          <div className="glass-panel" style={{ padding: '20px', borderRadius: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Car size={18} color="var(--accent-cyan)" /> Live Bay Management
+                </h3>
+              </div>
+              <button onClick={() => setShowWalkInModal(true)} className="btn-gold" style={{ padding: '7px 16px', fontSize: '0.82rem', borderRadius: '8px', fontWeight: 800 }}>
+                <Plus size={15} /> New Walk-In Car
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-              {(bays.length ? bays : [
-                { _id: '1', bayNumber: 1, name: 'BAY 1', status: 'Available' },
-                { _id: '2', bayNumber: 2, name: 'BAY 2', status: 'Available' }
-              ]).map((bay) => {
-                const isOccupied = bay.status === 'Occupied';
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+              {[
+                { bayNumber: 1, name: 'BAY 1' },
+                { bayNumber: 2, name: 'BAY 2' }
+              ].map((bayDef) => {
+                const bayName = bayDef.name;
+                const activeCar = getActiveBookingForBay(bayDef.bayNumber);
+                const isOccupied = !!activeCar;
+                const waitingCars = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'vehicle_received');
+
                 return (
                   <div
-                    key={bay._id || bay.bayNumber}
-                    onClick={() => handleBayToggle(bay._id, bay.status)}
+                    key={bayDef.bayNumber}
                     style={{
-                      padding: '14px',
-                      borderRadius: '10px',
-                      background: isOccupied ? 'rgba(255, 89, 100, 0.12)' : 'rgba(0, 229, 255, 0.08)',
-                      border: isOccupied ? '1px solid #FF5964' : '1px solid var(--accent-cyan)',
-                      cursor: 'pointer'
+                      padding: '20px',
+                      borderRadius: '12px',
+                      background: 'rgba(0, 31, 35, 0.45)',
+                      border: isOccupied ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minHeight: '200px'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{bay.name || `Bay ${bay.bayNumber}`}</div>
+                    {/* Bay Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#FFFFFF', letterSpacing: '0.04em' }}>
+                        {bayName}
+                      </div>
+
                       <span style={{
-                        fontSize: '0.68rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '8px',
-                        background: isOccupied ? '#FF5964' : 'var(--accent-cyan)',
-                        color: '#06141B'
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: isOccupied ? 'rgba(0, 229, 255, 0.15)' : 'rgba(37, 211, 102, 0.15)',
+                        color: isOccupied ? 'var(--accent-cyan)' : '#25D366',
+                        border: isOccupied ? '1px solid var(--accent-cyan)' : '1px solid #25D366'
                       }}>
-                        {isOccupied ? 'OCCUPIED' : 'FREE'}
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isOccupied ? 'var(--accent-cyan)' : '#25D366' }} />
+                        {isOccupied ? (activeCar.status || 'Washing').toUpperCase().replace('_', ' ') : 'AVAILABLE'}
                       </span>
                     </div>
+
+                    {/* Active Car Info */}
+                    {isOccupied ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.25)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                              {activeCar.vehicleNumber}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
+                              {activeCar.trackingCode}
+                            </span>
+                          </div>
+                          
+                          <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
+                            {activeCar.customerName} • {activeCar.vehicleModel || activeCar.vehicleType}
+                          </div>
+
+                          <div style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 600, marginTop: '4px' }}>
+                            {activeCar.serviceName || activeCar.packageName}
+                          </div>
+                        </div>
+
+                        {/* Quick Stage Controls */}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <select
+                            value={activeCar.status}
+                            onChange={(e) => handleStatusChange(activeCar._id, e.target.value)}
+                            style={{
+                              flex: 1,
+                              padding: '7px 10px',
+                              borderRadius: '6px',
+                              background: '#06141B',
+                              color: 'var(--accent-cyan)',
+                              border: '1px solid var(--border-light)',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="vehicle_received">Stage: Vehicle Received</option>
+                            <option value="washing">Stage: High Pressure Wash</option>
+                            <option value="detailing">Stage: Interior & Polish</option>
+                            <option value="quality_check">Stage: Quality Inspection</option>
+                            <option value="ready">Stage: Ready for Pickup</option>
+                            <option value="completed">Stage: Completed & Free Bay</option>
+                          </select>
+
+                          <button
+                            onClick={() => handleStatusChange(activeCar._id, 'completed')}
+                            style={{
+                              padding: '7px 14px',
+                              fontSize: '0.76rem',
+                              fontWeight: 800,
+                              borderRadius: '6px',
+                              background: '#25D366',
+                              color: '#06141B',
+                              border: 'none',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            ✓ Finish & Free
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Bay Available State */
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 0', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setAllotModalBay(bayName)}
+                            className="btn-primary"
+                            style={{
+                              padding: '9px 18px',
+                              fontSize: '0.82rem',
+                              fontWeight: 800,
+                              borderRadius: '8px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            ⚡ Allot Waiting Car ({waitingCars.length} in Queue)
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setWalkInVeh('');
+                              setShowWalkInModal(true);
+                            }}
+                            className="btn-secondary"
+                            style={{
+                              padding: '9px 16px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              borderRadius: '8px'
+                            }}
+                          >
+                            + Walk-In
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* RECENT QUEUE (WITH DATE & TIME SLOTS) */}
+          {/* RECENT QUEUE (WITH DATE, TIME & BAY ALLOTMENT) */}
           <div className="glass-panel" style={{ padding: '18px', borderRadius: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -683,6 +795,7 @@ export default function AdminDashboard({
                     <th style={{ padding: '10px' }}>Customer</th>
                     <th style={{ padding: '10px' }}>Vehicle</th>
                     <th style={{ padding: '10px' }}>Service</th>
+                    <th style={{ padding: '10px' }}>Bay</th>
                     <th style={{ padding: '10px' }}>Status</th>
                     <th style={{ padding: '10px' }}>Amount</th>
                   </tr>
@@ -723,13 +836,33 @@ export default function AdminDashboard({
                         </td>
                         <td style={{ padding: '10px' }}>
                           <select
+                            value={b.bayAssigned || 'BAY 1'}
+                            onChange={(e) => handleBayChange(b._id, e.target.value)}
+                            style={{
+                              padding: '4px 6px',
+                              borderRadius: '6px',
+                              background: '#06141B',
+                              color: 'var(--accent-cyan)',
+                              border: '1px solid var(--border-light)',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="BAY 1">BAY 1</option>
+                            <option value="BAY 2">BAY 2</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <select
                             value={b.status}
                             onChange={(e) => handleStatusChange(b._id, e.target.value)}
                             style={{
                               padding: '5px 8px',
                               borderRadius: '6px',
                               background: '#06141B',
-                              color: b.status === 'completed' || b.status === 'Completed' ? '#25D366' : 'var(--accent-cyan)',
+                              color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
                               border: '1px solid var(--border-light)',
                               fontSize: '0.78rem',
                               fontWeight: 700,
@@ -739,9 +872,12 @@ export default function AdminDashboard({
                           >
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
-                            <option value="washing">Washing</option>
-                            <option value="detailing">Detailing</option>
-                            <option value="completed">Completed</option>
+                            <option value="vehicle_received">Vehicle Received</option>
+                            <option value="washing">High Pressure Wash</option>
+                            <option value="detailing">Interior & Polish</option>
+                            <option value="quality_check">Quality Check</option>
+                            <option value="ready">Ready for Pickup</option>
+                            <option value="completed">Completed / Delivered</option>
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </td>
@@ -935,6 +1071,7 @@ export default function AdminDashboard({
                   <th style={{ padding: '10px' }}>Customer</th>
                   <th style={{ padding: '10px' }}>Vehicle Info</th>
                   <th style={{ padding: '10px' }}>Service / Package</th>
+                  <th style={{ padding: '10px' }}>Bay</th>
                   <th style={{ padding: '10px' }}>Status</th>
                   <th style={{ padding: '10px' }}>Amount</th>
                   <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
@@ -983,13 +1120,33 @@ export default function AdminDashboard({
                         </td>
                         <td style={{ padding: '10px' }}>
                           <select
+                            value={b.bayAssigned || 'BAY 1'}
+                            onChange={(e) => handleBayChange(b._id, e.target.value)}
+                            style={{
+                              padding: '4px 6px',
+                              borderRadius: '6px',
+                              background: '#06141B',
+                              color: 'var(--accent-cyan)',
+                              border: '1px solid var(--border-light)',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="BAY 1">BAY 1</option>
+                            <option value="BAY 2">BAY 2</option>
+                          </select>
+                        </td>
+                        <td style={{ padding: '10px' }}>
+                          <select
                             value={b.status}
                             onChange={(e) => handleStatusChange(b._id, e.target.value)}
                             style={{
                               padding: '5px 8px',
                               borderRadius: '6px',
                               background: '#06141B',
-                              color: b.status === 'completed' || b.status === 'Completed' ? '#25D366' : 'var(--accent-cyan)',
+                              color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
                               border: '1px solid var(--border-light)',
                               fontSize: '0.78rem',
                               fontWeight: 700,
@@ -999,9 +1156,12 @@ export default function AdminDashboard({
                           >
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
-                            <option value="washing">Washing</option>
-                            <option value="detailing">Detailing</option>
-                            <option value="completed">Completed</option>
+                            <option value="vehicle_received">Vehicle Received</option>
+                            <option value="washing">High Pressure Wash</option>
+                            <option value="detailing">Interior & Polish</option>
+                            <option value="quality_check">Quality Check</option>
+                            <option value="ready">Ready for Pickup</option>
+                            <option value="completed">Completed / Delivered</option>
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </td>
@@ -1012,7 +1172,50 @@ export default function AdminDashboard({
                           </div>
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {/* WhatsApp Direct 1-Click Link */}
+                            {(() => {
+                              const cleanPhone = (b.phone || '').replace(/\D/g, '');
+                              const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
+                              const statusLabels = {
+                                pending: 'Pending Confirmation',
+                                confirmed: 'Booking Confirmed',
+                                vehicle_received: 'Vehicle Received at Bay',
+                                washing: 'High Pressure Foam Wash',
+                                detailing: 'Interior & Paint Detailing',
+                                quality_check: 'Final Quality Inspection',
+                                ready: 'Ready for Pickup',
+                                completed: 'Service Completed & Delivered',
+                                cancelled: 'Booking Cancelled'
+                              };
+                              const stageName = statusLabels[b.status?.toLowerCase()] || (b.status || 'Active').replace('_', ' ');
+                              const bayName = b.bayAssigned || 'Bay 1';
+                              const waMsg = `CAR WASH AUTO SPA - SERVICE UPDATE\n\nDear ${b.customerName || 'Customer'},\n\nYour vehicle (${b.vehicleNumber}) is currently in ${stageName} stage at ${bayName}.\n\nTracking Code: ${code}\nLive Status: https://carwash.com/track/${code}\n\nThank you for choosing Car Wash Auto Spa.`;
+                              const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;
+                              return (
+                                <a
+                                  href={waLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{
+                                    padding: '4px 8px',
+                                    fontSize: '0.7rem',
+                                    borderRadius: '4px',
+                                    background: '#25D366',
+                                    color: '#06141B',
+                                    fontWeight: 800,
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}
+                                  title="Send instant WhatsApp status update to customer"
+                                >
+                                  <MessageSquare size={12} /> WhatsApp
+                                </a>
+                              );
+                            })()}
+
                             <button
                               onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
                               className="btn-secondary"
@@ -1550,11 +1753,8 @@ export default function AdminDashboard({
                         }}
                       >
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                            <div>
-                              <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF' }}>{stf.name}</div>
-                              <div style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontWeight: 700, marginTop: '2px' }}>{stf.role}</div>
-                            </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#FFFFFF' }}>{stf.name}</div>
 
                             <select
                               value={stf.status || 'Available'}
@@ -1577,7 +1777,7 @@ export default function AdminDashboard({
                             </select>
                           </div>
 
-                          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
+                          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--ice-tint)' }}>
                             <Phone size={13} color="var(--accent-cyan)" /> {stf.phone || '-'}
                           </div>
                         </div>
@@ -1596,7 +1796,7 @@ export default function AdminDashboard({
                             type="button"
                             onClick={() => openDeleteConfirm(
                               'Remove Staff Member?',
-                              `${stf.name} (${stf.role})`,
+                              stf.name,
                               () => deleteStaff(stf._id).then(fetchAllAdminData)
                             )}
                             style={{
@@ -2030,14 +2230,14 @@ export default function AdminDashboard({
                   <div style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', marginBottom: '4px' }}>Quick Photo Presets:</div>
                   <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                     {[
-                      { label: 'Exterior Wash', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
-                      { label: 'Full Wash', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
-                      { label: 'Interior Spa', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
-                      { label: 'Waxing', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
-                      { label: 'Polishing', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
-                      { label: 'Engine Bay', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
-                      { label: 'Wheel & Tyre', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
-                      { label: 'Showroom Spa', url: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
+                      { label: 'Exterior Wash', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
+                      { label: 'Full Wash', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
+                      { label: 'Interior Spa', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
+                      { label: 'Waxing', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
+                      { label: 'Polishing', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
+                      { label: 'Engine Bay', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
+                      { label: 'Wheel & Tyre', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
+                      { label: 'Showroom Spa', url: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
                     ].map(p => (
                       <button
                         key={p.label}
@@ -2370,42 +2570,6 @@ export default function AdminDashboard({
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
-                    Role / Designation *
-                  </label>
-                  <select
-                    value={stfRole}
-                    onChange={(e) => setStfRole(e.target.value)}
-                    className="input-field"
-                    style={{ width: '100%', minHeight: '42px', fontSize: '0.85rem' }}
-                  >
-                    <option value="Wash Technician">Wash Technician</option>
-                    <option value="Detailer">Detailer</option>
-                    <option value="Helper">Helper</option>
-                    <option value="Supervisor">Supervisor</option>
-                    <option value="Manager">Manager</option>
-                  </select>
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
-                    Duty Status
-                  </label>
-                  <select
-                    value={stfStatus}
-                    onChange={(e) => setStfStatus(e.target.value)}
-                    className="input-field"
-                    style={{ width: '100%', minHeight: '42px', fontSize: '0.85rem' }}
-                  >
-                    <option value="Available">Available</option>
-                    <option value="On Job">On Job</option>
-                    <option value="Off Duty">Off Duty</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
                   Phone Number *
@@ -2421,6 +2585,22 @@ export default function AdminDashboard({
                 />
               </div>
 
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+                  Duty Status
+                </label>
+                <select
+                  value={stfStatus}
+                  onChange={(e) => setStfStatus(e.target.value)}
+                  className="input-field"
+                  style={{ width: '100%', minHeight: '42px', fontSize: '0.85rem' }}
+                >
+                  <option value="Available">Available</option>
+                  <option value="On Job">On Job</option>
+                  <option value="Off Duty">Off Duty</option>
+                </select>
+              </div>
+
               <button
                 type="submit"
                 className="btn-gold"
@@ -2429,6 +2609,175 @@ export default function AdminDashboard({
                 {editingStaff ? 'Update Staff Member' : 'Save Staff Member'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: ALLOT WAITING CAR TO SPECIFIC BAY */}
+      {allotModalBay && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '20px'
+        }}>
+          <div className="glass-panel" style={{ maxWidth: '640px', width: '100%', padding: '26px', border: '1.5px solid var(--accent-cyan)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#FFFFFF', margin: 0 }}>
+                  Allot Car to <span style={{ color: 'var(--accent-cyan)' }}>{allotModalBay}</span>
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                  Select an upcoming waiting vehicle from the queue to start washing in {allotModalBay}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAllotModalBay(null)}
+                style={{ background: 'none', border: 'none', color: '#CCD0CF', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+              {bookings.filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'vehicle_received').length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  No waiting cars in queue right now. You can create a new Walk-in car!
+                </div>
+              ) : (
+                bookings.filter(b => b.status === 'confirmed' || b.status === 'pending' || b.status === 'vehicle_received').map((b) => (
+                  <div
+                    key={b._id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '12px 14px',
+                      background: 'rgba(0, 31, 35, 0.55)',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(74, 92, 106, 0.3)',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🚗 {b.vehicleNumber} <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)' }}>({b.trackingCode})</span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                        {b.customerName} • {b.serviceName || b.packageName}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--accent-gold)', marginTop: '2px' }}>
+                        Slot: {b.date} at {b.slotTime}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleAllotCarToBay(b._id, allotModalBay)}
+                      className="btn-primary"
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '0.8rem',
+                        fontWeight: 800,
+                        borderRadius: '8px',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      ⚡ Allot & Start Wash →
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setAllotModalBay(null)}
+                className="btn-secondary"
+                style={{ padding: '8px 18px', fontSize: '0.82rem' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AUTOMATED WHATSAPP NOTIFICATION TOAST */}
+      {whatsappToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          background: 'linear-gradient(135deg, #072e23 0%, #061e1b 100%)',
+          border: '1px solid #25D366',
+          boxShadow: '0 10px 30px rgba(37, 211, 102, 0.35)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          maxWidth: '420px',
+          color: '#FFFFFF',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: '#25D366', fontSize: '0.9rem' }}>
+              <MessageSquare size={18} color="#25D366" />
+              Automated WhatsApp Dispatched!
+            </div>
+            <button
+              onClick={() => setWhatsappToast(null)}
+              style={{ background: 'transparent', border: 'none', color: '#8A99AD', cursor: 'pointer', padding: 0 }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div style={{ fontSize: '0.82rem', color: '#CCD0CF' }}>
+            Notification for <strong>{whatsappToast.customerName}</strong> ({whatsappToast.phone}) dispatched for <strong style={{ color: '#25D366', textTransform: 'uppercase' }}>{whatsappToast.status.replace('_', ' ')}</strong> stage.
+          </div>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <a
+              href={whatsappToast.waLink}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                background: '#25D366',
+                color: '#06141B',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              <ExternalLink size={13} /> Open / Send on WhatsApp
+            </a>
+            <button
+              onClick={() => setWhatsappToast(null)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid var(--border-light)',
+                color: '#CCD0CF',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.78rem',
+                fontWeight: 700
+              }}
+            >
+              Dismiss
+            </button>
           </div>
         </div>
       )}

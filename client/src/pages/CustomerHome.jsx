@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Clock, Phone, MapPin, Send, MessageCircle, CheckCircle } from 'lucide-react';
 import { getPackages, getServices } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
+import SectionDivider from '../components/SectionDivider';
 import { cleanText } from '../utils/cleanText';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService, onSelectPackage }) {
@@ -54,20 +55,20 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   // Default fallback catalog from Cloudinary
   const defaultServicesList = [
     // Wash
-    { category: 'wash', title: 'Exterior Car Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
-    { category: 'wash', title: 'Full Car Wash', prices: { Hatchback: 549, Sedan: 649, SUV: 749 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
-    { category: 'wash', title: 'Wheel & Tyre Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
+    { category: 'wash', title: 'Exterior Car Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
+    { category: 'wash', title: 'Full Car Wash', prices: { Hatchback: 549, Sedan: 649, SUV: 749 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
+    { category: 'wash', title: 'Wheel & Tyre Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
 
     // Interior
-    { category: 'interior', title: 'Interior Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg' },
-    { category: 'interior', title: 'Interior Vacuum Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg' },
-    { category: 'interior', title: 'Car Interior Detailing', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
+    { category: 'interior', title: 'Interior Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg' },
+    { category: 'interior', title: 'Interior Vacuum Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg' },
+    { category: 'interior', title: 'Car Interior Detailing', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
 
     // Polish & Detailing
-    { category: 'detailing', title: 'Car Waxing', prices: { Hatchback: 749, Sedan: 899, SUV: 1099 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
-    { category: 'detailing', title: 'Car Polishing', prices: { Hatchback: 1599, Sedan: 1899, SUV: 2299 }, origPrices: { Hatchback: 2499, Sedan: 2899, SUV: 3499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
-    { category: 'detailing', title: 'Engine Bay Cleaning', prices: { Hatchback: 449, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 699, Sedan: 799, SUV: 899 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
-    { category: 'detailing', title: 'Car Spa & Premium Detailing', prices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, origPrices: { Hatchback: 4499, Sedan: 4999, SUV: 5999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
+    { category: 'detailing', title: 'Car Waxing', prices: { Hatchback: 749, Sedan: 899, SUV: 1099 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
+    { category: 'detailing', title: 'Car Polishing', prices: { Hatchback: 1599, Sedan: 1899, SUV: 2299 }, origPrices: { Hatchback: 2499, Sedan: 2899, SUV: 3499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
+    { category: 'detailing', title: 'Engine Bay Cleaning', prices: { Hatchback: 449, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 699, Sedan: 799, SUV: 899 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
+    { category: 'detailing', title: 'Car Spa & Premium Detailing', prices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, origPrices: { Hatchback: 4499, Sedan: 4999, SUV: 5999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
   ];
 
   const defaultPackages = [
@@ -109,15 +110,15 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   // Resolve service images with fallback to Cloudinary hosted images
   const getFallbackServiceImage = (titleOrCategory = '') => {
     const s = titleOrCategory.toLowerCase();
-    if (s.includes('wax')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg';
-    if (s.includes('polish')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg';
-    if (s.includes('engine')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg';
-    if (s.includes('tyre') || s.includes('wheel')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg';
-    if (s.includes('vacuum')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg';
-    if (s.includes('detail') || s.includes('spa') || s.includes('ceramic')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg';
-    if (s.includes('interior')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg';
-    if (s.includes('full')) return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg';
-    return 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg';
+    if (s.includes('wax')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg';
+    if (s.includes('polish')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg';
+    if (s.includes('engine')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg';
+    if (s.includes('tyre') || s.includes('wheel')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg';
+    if (s.includes('vacuum')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg';
+    if (s.includes('detail') || s.includes('spa') || s.includes('ceramic')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg';
+    if (s.includes('interior')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg';
+    if (s.includes('full')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg';
+    return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg';
   };
 
   const resolvedServices = dbServices && dbServices.length > 0
@@ -158,7 +159,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         position: 'relative',
         minHeight: '480px',
         padding: '70px 0 80px 0',
-        background: `linear-gradient(to right, rgba(6, 20, 27, 0.95) 0%, rgba(17, 33, 45, 0.82) 60%, rgba(37, 55, 69, 0.4) 100%), url('/hero-bg.webp') center/cover no-repeat`,
+        background: `linear-gradient(to right, rgba(6, 20, 27, 0.95) 0%, rgba(17, 33, 45, 0.82) 60%, rgba(37, 55, 69, 0.4) 100%), url('https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788800670/car-wash/banners/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
         alignItems: 'center',
         borderBottom: '1px solid var(--border-light)'
@@ -216,6 +217,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           </div>
         </div>
       </section>
+      
+      <SectionDivider variant="cyan" icon="droplet" badge="REAL TRANSFORMATION" spacing="default" />
 
       {/* 2. BEFORE / AFTER SLIDER */}
       <section style={{
@@ -227,6 +230,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           <BeforeAfterSlider />
         </div>
       </section>
+
+      <SectionDivider variant="dual" icon="sparkle" badge="SERVICES CATALOG" spacing="default" />
 
       {/* 3. SERVICES CATALOG */}
       <section id="services-section" style={{
@@ -356,6 +361,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         </div>
       </section>
 
+      <SectionDivider variant="gold" icon="star" badge="VIP PACKAGES" spacing="default" />
+
       {/* 4. POPULAR WASH PACKAGES */}
       <section id="pricing-section" style={{
         background: '#11212D',
@@ -435,6 +442,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           </div>
         </div>
       </section>
+
+      <SectionDivider variant="cyan" icon="shield" badge="CONTACT & LOCATION" spacing="default" />
 
       {/* 5. QUICK ENQUIRY & LOCATION */}
       <section id="contact-section" style={{

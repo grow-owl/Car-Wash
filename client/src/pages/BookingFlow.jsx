@@ -144,7 +144,18 @@ export default function BookingFlow({
       setServices(svcRes.data || []);
       setPackages((pkgRes.data && pkgRes.data.length >= 3) ? pkgRes.data : primary3Packages);
       setAllAddons(addRes.data || []);
-      setSlots(slotRes.data || []);
+      const slotsData = slotRes.data || [];
+      setSlots(slotsData);
+
+      // Auto-select first available slot if currently selected slot is full or not in list
+      const currentSelectedSlotData = slotsData.find(s => s.slotTime === selectedSlot);
+      if (!currentSelectedSlotData || !currentSelectedSlotData.available) {
+        const firstAvail = slotsData.find(s => s.available);
+        if (firstAvail) {
+          setSelectedSlot(firstAvail.slotTime);
+        }
+      }
+
       if (!selectedService && !preselectedItem) {
         setSelectedService(primary3Packages[1]);
       }
@@ -244,7 +255,7 @@ export default function BookingFlow({
       }
     } catch (err) {
       console.error('Booking submission error:', err);
-      alert('Failed to submit booking. Please verify your details.');
+      alert(err.response?.data?.error || 'Failed to submit booking. Please verify your details or select another slot.');
     } finally {
       setIsSubmitting(false);
     }
@@ -708,50 +719,94 @@ export default function BookingFlow({
                       </div>
                     </div>
 
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>
-                      Available Bay Slots:
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Clock size={14} /> Available Bay Time Slots:
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--accent-aqua)', fontWeight: 700 }}>
+                        🟢 Active Bays: 2 (Bay 1 & Bay 2)
+                      </span>
+                    </div>
                     {(() => {
                       const defaultSlots = [
-                        { slotTime: '08:00 AM', available: true },
-                        { slotTime: '09:30 AM', available: true },
-                        { slotTime: '11:00 AM', available: true },
-                        { slotTime: '01:00 PM', available: true },
-                        { slotTime: '02:30 PM', available: true },
-                        { slotTime: '04:00 PM', available: true },
-                        { slotTime: '05:30 PM', available: true }
+                        { slotTime: '08:00 AM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '09:00 AM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '10:00 AM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '11:00 AM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '12:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '01:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '02:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '03:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '04:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '05:00 PM', available: true, remainingCapacity: 2, booked: 0 },
+                        { slotTime: '06:00 PM', available: true, remainingCapacity: 2, booked: 0 }
                       ];
 
                       const slotsToRender = (slots && slots.length > 0) ? slots : defaultSlots;
 
                       return (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: '8px' }}>
                           {slotsToRender.map((s, idx) => {
                             const timeLabel = typeof s === 'string' ? s : (s.slotTime || s.time || '10:00 AM');
-                            const isAvailable = typeof s === 'object' ? (s.available !== false) : true;
+                            const isAvailable = typeof s === 'object' ? (s.available !== false && s.remainingCapacity !== 0) : true;
                             const isSelected = selectedSlot === timeLabel;
+                            const remaining = typeof s === 'object' ? (s.remainingCapacity ?? 2) : 2;
 
                             return (
                               <button
                                 key={idx}
                                 type="button"
                                 disabled={!isAvailable}
-                                onClick={() => setSelectedSlot(timeLabel)}
+                                onClick={() => {
+                                  if (isAvailable) setSelectedSlot(timeLabel);
+                                }}
+                                title={!isAvailable ? `${timeLabel} is fully booked (Both Bay 1 & Bay 2 are occupied)` : `${remaining} Bay(s) available`}
                                 style={{
-                                  background: isSelected ? 'var(--accent-aqua)' : 'rgba(17, 33, 45, 0.85)',
-                                  color: isSelected ? '#06141B' : '#FFFFFF',
-                                  border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                                  background: !isAvailable
+                                    ? 'rgba(239, 68, 68, 0.08)'
+                                    : isSelected
+                                      ? 'var(--accent-aqua)'
+                                      : 'rgba(17, 33, 45, 0.85)',
+                                  color: !isAvailable
+                                    ? 'rgba(255, 255, 255, 0.35)'
+                                    : isSelected
+                                      ? '#06141B'
+                                      : '#FFFFFF',
+                                  border: !isAvailable
+                                    ? '1px dashed rgba(239, 68, 68, 0.4)'
+                                    : isSelected
+                                      ? '2px solid var(--accent-aqua)'
+                                      : '1px solid var(--border-light)',
                                   borderRadius: '8px',
                                   padding: '8px 4px',
                                   fontWeight: 800,
-                                  fontSize: '0.82rem',
+                                  fontSize: '0.8rem',
                                   cursor: isAvailable ? 'pointer' : 'not-allowed',
                                   opacity: isAvailable ? 1 : 0.45,
                                   textAlign: 'center',
-                                  transition: 'all 0.15s ease'
+                                  transition: 'all 0.15s ease',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '2px'
                                 }}
                               >
-                                {timeLabel}
+                                <span style={{ textDecoration: !isAvailable ? 'line-through' : 'none' }}>
+                                  {timeLabel}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.62rem',
+                                  fontWeight: 700,
+                                  color: !isAvailable
+                                    ? '#ef4444'
+                                    : isSelected
+                                      ? '#003135'
+                                      : remaining === 1
+                                        ? 'var(--accent-gold)'
+                                        : 'var(--accent-cyan)'
+                                }}>
+                                  {!isAvailable ? 'FULL (2/2)' : remaining === 1 ? '1 Bay Left' : 'Available'}
+                                </span>
                               </button>
                             );
                           })}

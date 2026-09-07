@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Lock, Car, Plus, Key, Zap, MapPin } from 'lucide-react';
 import { getMemberships, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle } from '../api';
 import { cleanText } from '../utils/cleanText';
+import SectionDivider from '../components/SectionDivider';
 
 export default function CustomerPortal({ currentUser: propUser, setCurrentUser: propSetUser, onSignOut: propSignOut }) {
   const [memberships, setMemberships] = useState([]);
@@ -44,10 +45,46 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   const [copiedCode, setCopiedCode] = useState(false);
 
   const [referralsList] = useState([
-    { friendName: 'Rahul Sharma', phone: '+91 9800112211', date: '2026-08-20', status: 'Completed Wash', rewardEarned: '100 Pts + ₹150 Credit' },
-    { friendName: 'Priya Mukherjee', phone: '+91 9831004455', date: '2026-08-22', status: 'Completed Wash', rewardEarned: '100 Pts + ₹150 Credit' },
+    { friendName: 'Rahul Sharma', phone: '+91 9800112211', date: '2026-08-20', status: 'Completed Wash', rewardEarned: '50 Pts + ₹50 Credit' },
+    { friendName: 'Priya Mukherjee', phone: '+91 9831004455', date: '2026-08-22', status: 'Completed Wash', rewardEarned: '50 Pts + ₹50 Credit' },
     { friendName: 'Amit Verma', phone: '+91 9874558899', date: '2026-08-23', status: 'Joined (Pending 1st Wash)', rewardEarned: 'Pending' }
   ]);
+
+  const defaultMemberships = [
+    {
+      _id: 'm1',
+      name: 'Silver Shine Pass',
+      priceMonthly: 199,
+      originalPrice: 249,
+      includedWashes: 2,
+      discountPct: 10,
+      priorityBooking: false,
+      perks: ['2 Express Exterior Washes/mo', '10% off all detailing add-ons', 'Free tire dressing'],
+      isPopular: false
+    },
+    {
+      _id: 'm2',
+      name: 'Gold Detailer Club',
+      priceMonthly: 299,
+      originalPrice: 399,
+      includedWashes: 4,
+      discountPct: 20,
+      priorityBooking: true,
+      perks: ['4 Ultimate Hydro-Washes/mo', '20% off ceramic coatings', 'Priority bay queue access', 'Free interior ozone sanitization'],
+      isPopular: true
+    },
+    {
+      _id: 'm3',
+      name: 'Platinum VIP Unlimited',
+      priceMonthly: 449,
+      originalPrice: 599,
+      includedWashes: 8,
+      discountPct: 30,
+      priorityBooking: true,
+      perks: ['Unlimited Express Exterior washes', '2 Full Interior Spas/mo', '30% off all premium services', 'Dedicated account manager'],
+      isPopular: false
+    }
+  ];
 
   useEffect(() => {
     fetchMemberships();
@@ -69,9 +106,14 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   const fetchMemberships = async () => {
     try {
       const res = await getMemberships();
-      setMemberships(res.data);
+      if (res.data && res.data.length > 0) {
+        setMemberships(res.data);
+      } else {
+        setMemberships(defaultMemberships);
+      }
     } catch (err) {
       console.error(err);
+      setMemberships(defaultMemberships);
     }
   };
 
@@ -193,7 +235,22 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
     }
   };
 
-  const referralCode = `CARWASH-${currentUser?.name ? currentUser.name.split(' ')[0].toUpperCase() : 'VIP'}88`;
+  // REFERRAL CODE GENERATION: CARWASH + Username + VEHICLENOlast4DIGIT
+  const getVehicleLast4 = () => {
+    if (currentUser?.vehicles && currentUser.vehicles.length > 0) {
+      const reg = currentUser.vehicles[0].regNumber || currentUser.vehicles[0].regNo || '';
+      const cleanReg = reg.replace(/[^A-Za-z0-9]/g, '');
+      if (cleanReg.length >= 4) return cleanReg.slice(-4).toUpperCase();
+      if (cleanReg.length > 0) return cleanReg.toUpperCase();
+    }
+    const phoneDigits = (currentUser?.phone || '').replace(/[^0-9]/g, '');
+    if (phoneDigits.length >= 4) return phoneDigits.slice(-4);
+    return '1122';
+  };
+
+  const cleanUserName = (currentUser?.name ? currentUser.name.trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() : 'VIP');
+  const vehicleLast4 = getVehicleLast4();
+  const referralCode = `CARWASH${cleanUserName}${vehicleLast4}`;
   const referralLink = `https://carwash.com/ref?code=${referralCode}`;
 
   const copyReferral = () => {
@@ -203,7 +260,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   };
 
   const shareOnWhatsApp = () => {
-    const text = encodeURIComponent(`Hi! Get ₹200 OFF your 1st car wash at CAR WASH! Use my referral code: ${referralCode} or click: ${referralLink}`);
+    const text = encodeURIComponent(`Hi! Get ₹100 OFF your 1st car wash at CAR WASH! Use my referral code: ${referralCode} or click: ${referralLink}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
@@ -471,100 +528,292 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
       ) : (
         <>
           {/* LOGGED IN CUSTOMER SUMMARY & SIGNOUT HEADER CARD */}
-          <div className="glass-panel" style={{ padding: '32px', marginBottom: '40px', border: '1px solid var(--accent-aqua)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-              <div>
-                <span className="badge badge-aqua">VIP CLUB MEMBER</span>
-                <h2 style={{ fontSize: '2rem', color: '#FFFFFF', marginTop: '4px' }}>{currentUser.name}</h2>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '2px' }}>Phone: {currentUser.phone}</div>
-                
-                <button
-                  onClick={handleSignOut}
-                  style={{
-                    background: 'rgba(255, 89, 100, 0.15)',
-                    border: '1px solid var(--accent-coral)',
-                    color: 'var(--accent-coral)',
-                    borderRadius: '20px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    marginTop: '12px'
-                  }}
-                >
-                  <LogOut size={14} /> Sign Out / Logout
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                <div style={{ textAlign: 'center', background: 'rgba(0, 49, 53, 0.8)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>MY LOYALTY POINTS</div>
-                  <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>{currentUser.loyaltyPoints || 50} PTS</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>Earn 10 pts per ₹100 spent</div>
+          <div className="glass-panel" style={{
+            padding: '24px 28px',
+            marginBottom: '32px',
+            border: '1px solid rgba(0, 229, 255, 0.25)',
+            background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(3, 16, 23, 0.98) 100%)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
+            borderRadius: '16px'
+          }}>
+            {/* TOP BAR: USER IDENTITY & LOGOUT */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+              paddingBottom: '20px',
+              borderBottom: '1px solid rgba(74, 92, 106, 0.25)'
+            }}>
+              {/* User Avatar & Info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, var(--accent-cyan) 0%, #008ba3 100%)',
+                  color: '#06141B',
+                  fontWeight: 900,
+                  fontSize: '1.15rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(0, 229, 255, 0.3)',
+                  letterSpacing: '0.04em',
+                  flexShrink: 0
+                }}>
+                  {currentUser.name ? currentUser.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'VIP'}
                 </div>
 
-                <div style={{ textAlign: 'center', background: 'rgba(0, 49, 53, 0.8)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ACTIVE MEMBERSHIP</div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', marginTop: '4px' }}>{currentUser.membershipStatus || 'VIP Member'}</div>
-                  <span className="badge badge-terracotta" style={{ marginTop: '4px' }}>Priority Bay Access</span>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
+                      {currentUser.name}
+                    </h2>
+                    <span className={`badge ${currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'badge-gold' : 'badge-aqua'}`} style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                      {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'Member Account'}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.84rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
+                    <Phone size={13} color="var(--accent-cyan)" />
+                    <span>+91 {currentUser.phone.replace('+91', '').trim()}</span>
+                    {currentUser.email && (
+                      <>
+                        <span style={{ opacity: 0.4 }}>•</span>
+                        <span>{currentUser.email}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Sign Out Action Button */}
+              <button
+                onClick={handleSignOut}
+                style={{
+                  background: 'rgba(255, 89, 100, 0.1)',
+                  border: '1px solid rgba(255, 89, 100, 0.35)',
+                  color: 'var(--accent-coral)',
+                  borderRadius: '10px',
+                  padding: '7px 14px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 89, 100, 0.2)';
+                  e.currentTarget.style.borderColor = 'var(--accent-coral)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 89, 100, 0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 89, 100, 0.35)';
+                }}
+              >
+                <LogOut size={14} /> Sign Out
+              </button>
+            </div>
+
+            {/* MIDDLE STATS GRID: 2 BALANCED SIDE-BY-SIDE CARDS */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '14px',
+              marginTop: '20px'
+            }}>
+              {/* Card 1: Loyalty Points */}
+              <div style={{
+                background: 'rgba(0, 31, 35, 0.6)',
+                padding: '16px 18px',
+                borderRadius: '12px',
+                border: '1px solid rgba(0, 229, 255, 0.18)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    My Loyalty Points
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-cyan)', margin: '4px 0 2px 0', lineHeight: 1 }}>
+                    {currentUser.loyaltyPoints || 50} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>PTS</span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)' }}>
+                    Earn 10 pts per ₹100 spent
+                  </div>
+                </div>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  background: 'rgba(0, 229, 255, 0.12)',
+                  border: '1px solid rgba(0, 229, 255, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-cyan)',
+                  flexShrink: 0
+                }}>
+                  <Award size={22} />
+                </div>
+              </div>
+
+              {/* Card 2: Active Membership */}
+              <div style={{
+                background: 'rgba(0, 31, 35, 0.6)',
+                padding: '16px 18px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 195, 0, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    Active Membership
+                  </div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '4px 0 4px 0', lineHeight: 1.2 }}>
+                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'None'}
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'var(--accent-gold)' : '#8A99AD', fontWeight: 600 }}>
+                    <Sparkles size={11} />
+                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'Priority Bay Access Enabled' : 'Upgrade below for VIP Perks'}
+                  </div>
+                </div>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 195, 0, 0.12)',
+                  border: '1px solid rgba(255, 195, 0, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-gold)',
+                  flexShrink: 0
+                }}>
+                  <Shield size={22} />
                 </div>
               </div>
             </div>
 
-            {/* FREE WASH MILESTONE PROGRESS TRACKER */}
-            <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid var(--border-light)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
-                <span>Free Express Wash Milestone Tracker</span>
-                <span style={{ color: 'var(--accent-aqua)' }}>{currentUser.loyaltyPoints || 50} / 350 PTS</span>
+            {/* BOTTOM: MILESTONE PROGRESS TRACKER */}
+            <div style={{
+              marginTop: '18px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(74, 92, 106, 0.25)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', fontWeight: 700, marginBottom: '8px' }}>
+                <span style={{ color: '#CCD0CF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Zap size={14} color="var(--accent-cyan)" /> Free Express Wash Milestone Tracker
+                </span>
+                <span style={{ color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                  {currentUser.loyaltyPoints || 50} <span style={{ color: '#8A99AD', fontWeight: 500 }}>/ 350 PTS</span>
+                </span>
               </div>
-              <div style={{ height: '12px', background: 'var(--bg-primary)', borderRadius: '6px', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, Math.round(((currentUser.loyaltyPoints || 50) / 350) * 100))}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-terracotta) 0%, var(--accent-aqua) 100%)' }} />
+              <div style={{ height: '8px', background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px', overflow: 'hidden', padding: '1px' }}>
+                <div style={{
+                  width: `${Math.min(100, Math.round(((currentUser.loyaltyPoints || 50) / 350) * 100))}%`,
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #00B4D8 0%, var(--accent-cyan) 100%)',
+                  borderRadius: '10px',
+                  boxShadow: '0 0 10px rgba(0, 229, 255, 0.4)',
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#8A99AD', marginTop: '6px' }}>
+                <span>{Math.min(100, Math.round(((currentUser.loyaltyPoints || 50) / 350) * 100))}% unlocked</span>
+                <span>{Math.max(0, 350 - (currentUser.loyaltyPoints || 50))} PTS needed for free wash</span>
               </div>
             </div>
           </div>
 
+          <SectionDivider variant="gold" icon="star" badge="MY VEHICLES" spacing="tight" />
+
           {/* MY GARAGE: SAVED VEHICLES LIST & ADD VEHICLE FORM */}
-          <div className="glass-panel" style={{ padding: '28px', marginBottom: '40px', border: '1px solid var(--accent-gold)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div className="glass-panel" style={{
+            padding: '24px 28px',
+            marginBottom: '32px',
+            border: '1px solid rgba(255, 195, 0, 0.25)',
+            background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(3, 16, 23, 0.98) 100%)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
+            borderRadius: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: '#FFFFFF' }}>
                   <Car size={20} color="var(--accent-gold)" /> My Garage (Saved Vehicles)
                 </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>1-Click select your saved cars during fast slot booking</p>
               </div>
             </div>
 
             {vehMsg && (
-              <div style={{ color: 'var(--accent-aqua)', fontSize: '0.85rem', fontWeight: 700, marginBottom: '12px' }}>
+              <div style={{ color: 'var(--accent-cyan)', fontSize: '0.85rem', fontWeight: 700, marginBottom: '12px' }}>
                 {vehMsg}
               </div>
             )}
 
-            <div className="grid-3" style={{ gap: '16px', marginBottom: '24px' }}>
-              {(currentUser.vehicles || [
-                { regNumber: 'WB-74-AY-1200', brand: 'Hyundai', model: 'Creta', type: 'Sedan', totalVisits: 5 },
-                { regNumber: 'WB-74-BY-1100', brand: 'Tata', model: 'Nexon', type: 'SUV', totalVisits: 3 }
+            {/* Saved Vehicles Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px'
+            }}>
+              {(currentUser.vehicles && currentUser.vehicles.length > 0 ? currentUser.vehicles : [
+                { regNumber: 'WB-74-AX2026', brand: 'Hyundai', model: 'BMW', type: 'Sedan', totalVisits: 1 }
               ]).map((v, i) => (
-                <div key={i} style={{ background: 'rgba(0, 49, 53, 0.7)', border: '1px solid var(--border-light)', padding: '16px', borderRadius: '12px' }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-gold)' }}>{v.regNumber}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#FFFFFF', marginTop: '2px' }}>{v.brand || 'Vehicle'} {v.model}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Type: {v.type || 'Sedan'}</span>
-                    <span>{v.totalVisits || 1} Wash Visits</span>
+                <div key={i} style={{
+                  background: 'rgba(0, 31, 35, 0.6)',
+                  border: '1px solid rgba(255, 195, 0, 0.25)',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '6px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.04em' }}>
+                      {v.regNumber}
+                    </span>
+                    <span className="badge badge-aqua" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                      {v.type || 'Sedan'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: '#FFFFFF', fontWeight: 600 }}>
+                    {v.brand || 'Vehicle'} {v.model}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', borderTop: '1px solid rgba(74, 92, 106, 0.2)', paddingTop: '6px', marginTop: '4px' }}>
+                    {v.totalVisits || 1} Wash Visits
                   </div>
                 </div>
               ))}
             </div>
 
             {/* ADD VEHICLE FORM */}
-            <form onSubmit={handleAddVehicle} style={{ background: 'rgba(0, 31, 35, 0.6)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '10px' }}>
+            <form onSubmit={handleAddVehicle} style={{
+              background: 'rgba(0, 20, 27, 0.6)',
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid rgba(74, 92, 106, 0.3)'
+            }}>
+              <div style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontWeight: 800, marginBottom: '10px' }}>
                 + Add New Vehicle to My Garage
               </div>
-              <div className="grid-3" style={{ gap: '12px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: '10px',
+                alignItems: 'center'
+              }}>
                 <input
                   type="text"
                   required
@@ -580,124 +829,260 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                   onChange={(e) => setNewVehModel(e.target.value)}
                   className="input-field"
                 />
-                <button type="submit" className="btn-gold" style={{ justifyContent: 'center', padding: '10px' }}>
+                <button type="submit" className="btn-gold" style={{ justifyContent: 'center', padding: '10px', width: '100%', height: '42px' }}>
                   <Plus size={16} /> Save to Garage
                 </button>
               </div>
             </form>
           </div>
 
+          <SectionDivider variant="cyan" icon="sparkle" badge="REFERRAL & REWARDS" spacing="default" />
+
           {/* REFERRAL SYSTEM & TRACKING */}
-          <div className="glass-panel" style={{ padding: '32px', marginBottom: '40px', border: '2px solid var(--accent-aqua)' }}>
-            <div className="grid-2" style={{ gap: '30px', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--accent-aqua)', fontWeight: 800, marginBottom: '4px' }}>
-                  REFERRAL PROGRAM & REWARDS
-                </div>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '12px' }}>
-                  Refer Friends, Earn Free Washes & Cash Credits!
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
-                  Share your unique referral code with friends & family:
-                </p>
+          <div className="glass-panel" style={{
+            padding: 'clamp(20px, 3.5vw, 36px)',
+            marginTop: '8px',
+            marginBottom: '44px',
+            border: '1px solid rgba(0, 229, 255, 0.3)',
+            background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(3, 16, 23, 0.98) 100%)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
+            borderRadius: '16px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '28px',
+              alignItems: 'stretch'
+            }}>
+              {/* Left: Referral Code & Benefits */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 16px 0', lineHeight: 1.25 }}>
+                    Refer Friends & Earn Free Washes!
+                  </h3>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.92rem' }}>
-                    <span style={{ background: 'var(--accent-aqua)', color: '#003135', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>1</span>
-                    <span><strong>Referred Friend Gets:</strong> ₹200 Flat Discount on 1st Wash.</span>
+                  {/* 2 Benefit Pills */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      background: 'rgba(0, 31, 35, 0.6)', padding: '12px 14px',
+                      borderRadius: '10px', border: '1px solid rgba(0, 229, 255, 0.2)',
+                      fontSize: '0.86rem'
+                    }}>
+                      <span style={{
+                        background: 'var(--accent-cyan)', color: '#06141B',
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 900, fontSize: '0.8rem', flexShrink: 0
+                      }}>1</span>
+                      <span style={{ color: '#E2E8F0', lineHeight: 1.4 }}>
+                        <strong style={{ color: 'var(--accent-cyan)' }}>Friend Gets:</strong> ₹100 Flat Discount on 1st Wash.
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '12px',
+                      background: 'rgba(0, 31, 35, 0.6)', padding: '12px 14px',
+                      borderRadius: '10px', border: '1px solid rgba(255, 195, 0, 0.2)',
+                      fontSize: '0.86rem'
+                    }}>
+                      <span style={{
+                        background: 'var(--accent-gold)', color: '#06141B',
+                        width: '24px', height: '24px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 900, fontSize: '0.8rem', flexShrink: 0
+                      }}>2</span>
+                      <span style={{ color: '#E2E8F0', lineHeight: 1.4 }}>
+                        <strong style={{ color: 'var(--accent-gold)' }}>You Earn:</strong> 50 Loyalty Points + ₹50 Wash Credit.
+                      </span>
+                    </div>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.92rem' }}>
-                    <span style={{ background: 'var(--accent-aqua)', color: '#003135', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>2</span>
-                    <span><strong>You (Existing Customer) Get:</strong> 100 Bonus Loyalty Points + ₹150 Wash Credit.</span>
-                  </div>
                 </div>
 
-                {/* Unique Referral Code Input & Share Buttons */}
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
-                    readOnly
-                    value={referralLink}
-                    className="input-field"
-                    style={{ flex: 1, fontWeight: 700, minWidth: '240px' }}
-                  />
-                  <button onClick={copyReferral} className="btn-primary" style={{ padding: '12px 20px' }}>
-                    <Copy size={17} /> {copiedCode ? 'Copied Link!' : 'Copy Code'}
-                  </button>
-                  <button onClick={shareOnWhatsApp} style={{
-                    background: '#25D366', color: '#FFFFFF', border: 'none', borderRadius: '8px', padding: '12px 20px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                {/* Referral Link Box & Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: '1px solid rgba(0, 229, 255, 0.3)',
+                    borderRadius: '10px',
+                    padding: '6px 8px 6px 12px',
+                    gap: '8px',
+                    minWidth: 0
                   }}>
-                    <MessageCircle size={18} /> Share WhatsApp
+                    <span style={{
+                      fontSize: '0.82rem',
+                      color: 'var(--accent-cyan)',
+                      fontWeight: 700,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                      minWidth: 0
+                    }}>
+                      {referralLink}
+                    </span>
+                    <button
+                      onClick={copyReferral}
+                      className="btn-primary"
+                      style={{
+                        padding: '8px 14px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        borderRadius: '8px',
+                        flexShrink: 0,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Copy size={13} /> {copiedCode ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={shareOnWhatsApp}
+                    style={{
+                      background: '#25D366',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '12px',
+                      fontWeight: 800,
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)',
+                      transition: 'all 0.2s ease',
+                      width: '100%'
+                    }}
+                  >
+                    <MessageCircle size={18} /> Share on WhatsApp
                   </button>
                 </div>
               </div>
 
-              {/* Referral Tracking Live Table */}
-              <div style={{ background: 'rgba(0,49,53,0.85)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-                <h4 style={{ fontSize: '1.1rem', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Users size={18} color="var(--accent-aqua)" /> My Referral Tracking (3 Referred)
-                </h4>
+              {/* Right: Referral Live Tracking Table */}
+              <div style={{
+                background: 'rgba(0, 31, 35, 0.5)',
+                padding: '20px 22px',
+                borderRadius: '14px',
+                border: '1px solid rgba(74, 92, 106, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '16px',
+                    paddingBottom: '10px',
+                    borderBottom: '1px solid rgba(74, 92, 106, 0.25)'
+                  }}>
+                    <h4 style={{
+                      fontSize: '0.98rem',
+                      fontWeight: 800,
+                      color: '#FFFFFF',
+                      margin: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <Users size={16} color="var(--accent-cyan)" /> My Referral Tracking
+                    </h4>
+                    <span className="badge badge-aqua" style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                      {referralsList.length} Referred
+                    </span>
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {referralsList.map((ref, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'rgba(0,31,35,0.7)', borderRadius: '8px', fontSize: '0.85rem' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{ref.friendName}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ref.date}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {referralsList.map((ref, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 14px',
+                        background: 'rgba(6, 20, 27, 0.7)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(74, 92, 106, 0.25)'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.88rem' }}>{ref.friendName}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#8A99AD', marginTop: '2px' }}>{ref.date}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span className={`badge ${ref.status.includes('Completed') ? 'badge-aqua' : 'badge-terracotta'}`} style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                            {ref.status}
+                          </span>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginTop: '4px', fontWeight: 700 }}>{ref.rewardEarned}</div>
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span className={`badge ${ref.status.includes('Completed') ? 'badge-aqua' : 'badge-terracotta'}`} style={{ fontSize: '0.68rem' }}>
-                          {ref.status}
-                        </span>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', marginTop: '2px' }}>{ref.rewardEarned}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
+          <SectionDivider variant="gold" icon="award" badge="VIP MEMBERSHIPS" spacing="default" />
+
           {/* MEMBERSHIP PLANS */}
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '2.1rem' }}>Monthly VIP Membership Passes</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Unlimited priority washes, zero queues & discounted detailing for regular drivers</p>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Monthly VIP Membership Passes</h2>
           </div>
 
           <div className="grid-3" style={{ marginBottom: '60px' }}>
-            {memberships.map((m, i) => (
-              <div key={i} className="glass-panel" style={{
-                padding: '32px',
-                position: 'relative',
-                border: m.isPopular ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                background: m.isPopular ? 'rgba(2, 73, 80, 0.85)' : 'var(--bg-glass-card)'
-              }}>
-                {m.isPopular && (
-                  <div style={{
-                    position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)',
-                    background: 'var(--accent-aqua)', color: '#003135', padding: '4px 16px', borderRadius: '20px',
-                    fontWeight: 800, fontSize: '0.75rem'
-                  }}>
-                    MOST POPULAR VIP
+            {(memberships.length > 0 ? memberships : defaultMemberships).map((m, i) => {
+              const currentPrice = m.priceMonthly ?? (i === 0 ? 199 : i === 1 ? 299 : 449);
+              const cutPrice = m.originalPrice ?? (i === 0 ? 249 : i === 1 ? 399 : 599);
+
+              return (
+                <div key={i} className="glass-panel" style={{
+                  padding: '28px 24px',
+                  position: 'relative',
+                  border: m.isPopular ? '2px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.3)',
+                  background: m.isPopular ? 'rgba(0, 49, 53, 0.85)' : 'rgba(6, 26, 36, 0.7)',
+                  borderRadius: '16px'
+                }}>
+                  {m.isPopular && (
+                    <div style={{
+                      position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)',
+                      background: 'var(--accent-cyan)', color: '#06141B', padding: '3px 14px', borderRadius: '20px',
+                      fontWeight: 900, fontSize: '0.72rem', letterSpacing: '0.04em'
+                    }}>
+                      MOST POPULAR VIP
+                    </div>
+                  )}
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: '#FFFFFF' }}>{m.name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
+                    <span style={{ fontSize: '1.1rem', color: '#8A99AD', textDecoration: 'line-through', fontWeight: 600 }}>
+                      ₹{cutPrice}
+                    </span>
+                    <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
+                      ₹{currentPrice}<span style={{ fontSize: '0.85rem', color: '#8A99AD', fontWeight: 500 }}>/mo</span>
+                    </span>
                   </div>
-                )}
-                <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>{m.name}</h3>
-                <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--accent-aqua)', marginBottom: '16px' }}>
-                  ₹{m.price}<span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>/{m.durationMonths}mo</span>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.86rem', color: '#CCD0CF' }}>
+                    {(m.perks || m.features || []).map((f, fi) => (
+                      <li key={fi} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Check size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px', fontWeight: 800, borderRadius: '10px' }}>
+                    Select {m.name}
+                  </button>
                 </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem' }}>
-                  {m.features?.map((f, fi) => (
-                    <li key={fi} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Check size={16} color="var(--accent-aqua)" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                  Select {m.name}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

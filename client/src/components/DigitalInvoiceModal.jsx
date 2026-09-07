@@ -62,19 +62,19 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     }))
   ];
 
-  // Compact rows for 100% 1-Page A4 fit
-  const totalTableRows = 5;
+  // 10 Service Item Rows for 100% 1-Page A4 fit
+  const totalTableRows = 10;
   const emptyRowsCount = Math.max(0, totalTableRows - lineItems.length);
 
-  const whatsappMessage = `*CAR WASH AUTO SPA & MANAGEMENT - INVOICE*\n` +
+  const whatsappMessage = `CAR WASH AUTO SPA - TAX INVOICE\n\n` +
+    `Dear ${customerName},\n\n` +
     `Invoice No: ${invoiceNumber}\n` +
     `Date: ${dateStr}\n` +
-    `Customer: ${customerName}\n` +
     `Vehicle: ${vehicleNumber} (${vehicleModel})\n` +
     `Service: ${booking.serviceName || booking.packageName}\n` +
     `Total Amount: Rs. ${totalAmount} (${paymentStatus})\n` +
-    `Live Tracking: http://localhost:5173/?track=${trackingCode}\n\n` +
-    `Thank you for choosing CAR WASH! Clean Today • Better Tomorrow`;
+    `Tracking Code: ${trackingCode}\n\n` +
+    `Thank you for choosing Car Wash Auto Spa.`;
 
   const waShareUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
 
@@ -103,12 +103,19 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             padding: 0 !important;
             background: #FFFFFF !important;
             height: 100% !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           body * {
             visibility: hidden;
           }
           .invoice-printable-sheet, .invoice-printable-sheet * {
             visibility: visible;
+          }
+          .invoice-watermark {
+            opacity: 0.055 !important;
+            display: flex !important;
+            visibility: visible !important;
           }
           .invoice-modal-overlay {
             position: absolute !important;
@@ -133,6 +140,8 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             padding: 8px 12px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .invoice-modal-controls {
             display: none !important;
@@ -232,17 +241,70 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
         <div
           className="invoice-printable-sheet"
           style={{
+            position: 'relative',
             background: '#FFFFFF',
             color: '#1A2930',
             borderRadius: '10px',
             padding: '24px 30px',
             fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
-            overflowY: 'auto'
+            overflow: 'hidden'
           }}
         >
+          {/* ELEGANT CARWASH LOGO WATERMARK */}
+          <div
+            className="invoice-watermark"
+            style={{
+              position: 'absolute',
+              top: '52%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-25deg)',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              zIndex: 0,
+              opacity: 0.05,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '440px'
+            }}
+            aria-hidden="true"
+          >
+            <img
+              src="/logo.webp"
+              alt=""
+              style={{
+                width: '260px',
+                height: 'auto',
+                filter: 'grayscale(100%)',
+                marginBottom: '10px'
+              }}
+            />
+            <div style={{
+              fontSize: '2.4rem',
+              fontWeight: 900,
+              letterSpacing: '0.12em',
+              color: '#003135',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap'
+            }}>
+              CAR WASH
+            </div>
+            <div style={{
+              fontSize: '1rem',
+              fontWeight: 800,
+              letterSpacing: '0.3em',
+              color: '#64748B',
+              textTransform: 'uppercase',
+              marginTop: '4px'
+            }}>
+              AUTO SPA
+            </div>
+          </div>
+
           {/* HEADER SECTION */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #E2E8F0', paddingBottom: '12px', marginBottom: '12px' }}>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #E2E8F0', paddingBottom: '12px', marginBottom: '12px' }}>
             {/* Logo & Business Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -302,12 +364,14 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
 
           {/* TWO-COLUMN DETAILS CONTAINER */}
           <div style={{
+            position: 'relative',
+            zIndex: 1,
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             border: '1.5px solid #BAE6FD',
             borderRadius: '6px',
             marginBottom: '12px',
-            background: '#F0F9FF',
+            background: 'rgba(240, 249, 255, 0.88)',
             overflow: 'hidden'
           }}>
             {/* Customer Details Box */}
@@ -384,7 +448,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
           </div>
 
           {/* LINE ITEMS TABLE */}
-          <div style={{ marginBottom: '12px' }}>
+          <div style={{ position: 'relative', zIndex: 1, marginBottom: '12px' }}>
             <table style={{
               width: '100%',
               borderCollapse: 'collapse',
@@ -393,39 +457,39 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             }}>
               <thead>
                 <tr style={{ background: '#E0F2FE', color: '#0369A1', textAlign: 'left', borderBottom: '1.5px solid #BAE6FD' }}>
-                  <th style={{ width: '40px', padding: '7px 10px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>#</th>
-                  <th style={{ padding: '7px 10px', borderRight: '1px solid #BAE6FD' }}>Service Description</th>
-                  <th style={{ width: '55px', padding: '7px 10px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>Qty</th>
-                  <th style={{ width: '105px', padding: '7px 10px', textAlign: 'right', borderRight: '1px solid #BAE6FD' }}>Unit Price (₹)</th>
-                  <th style={{ width: '115px', padding: '7px 10px', textAlign: 'right' }}>Amount (₹)</th>
+                  <th style={{ width: '38px', padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>#</th>
+                  <th style={{ padding: '5px 8px', borderRight: '1px solid #BAE6FD' }}>Service Description</th>
+                  <th style={{ width: '50px', padding: '5px 8px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>Qty</th>
+                  <th style={{ width: '100px', padding: '5px 8px', textAlign: 'right', borderRight: '1px solid #BAE6FD' }}>Unit Price (₹)</th>
+                  <th style={{ width: '110px', padding: '5px 8px', textAlign: 'right' }}>Amount (₹)</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Populated Service Items */}
                 {lineItems.map((item, index) => (
                   <tr key={index} style={{ borderBottom: '1px solid #E2E8F0', background: index % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
-                    <td style={{ padding: '6px 10px', textAlign: 'center', fontWeight: 700, color: '#64748B', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: '4px 8px', textAlign: 'center', fontWeight: 700, color: '#64748B', borderRight: '1px solid #BAE6FD', fontSize: '0.74rem' }}>
                       {index + 1}
                     </td>
-                    <td style={{ padding: '6px 10px', fontWeight: 600, color: '#0F172A', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: '4px 8px', fontWeight: 600, color: '#0F172A', borderRight: '1px solid #BAE6FD', fontSize: '0.76rem' }}>
                       {item.description}
                     </td>
-                    <td style={{ padding: '6px 10px', textAlign: 'center', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: '4px 8px', textAlign: 'center', color: '#334155', borderRight: '1px solid #BAE6FD', fontSize: '0.74rem' }}>
                       {item.qty}
                     </td>
-                    <td style={{ padding: '6px 10px', textAlign: 'right', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', color: '#334155', borderRight: '1px solid #BAE6FD', fontSize: '0.76rem' }}>
                       ₹{item.unitPrice.toLocaleString('en-IN')}
                     </td>
-                    <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: '#0F172A', fontSize: '0.76rem' }}>
                       ₹{item.amount.toLocaleString('en-IN')}
                     </td>
                   </tr>
                 ))}
 
-                {/* Compact Filler Rows */}
+                {/* Compact Filler Rows (Up to 10 total) */}
                 {Array.from({ length: emptyRowsCount }).map((_, i) => (
-                  <tr key={`empty-${i}`} style={{ borderBottom: '1px solid #E2E8F0', height: '24px' }}>
-                    <td style={{ padding: '4px 10px', textAlign: 'center', color: '#CBD5E1', borderRight: '1px solid #BAE6FD', fontSize: '0.72rem' }}>
+                  <tr key={`empty-${i}`} style={{ borderBottom: '1px solid #E2E8F0', height: '21px' }}>
+                    <td style={{ padding: '2px 8px', textAlign: 'center', color: '#CBD5E1', borderRight: '1px solid #BAE6FD', fontSize: '0.7rem' }}>
                       {lineItems.length + i + 1}
                     </td>
                     <td style={{ borderRight: '1px solid #BAE6FD' }}></td>
@@ -440,6 +504,8 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
 
           {/* BOTTOM SUMMARY & BRANDING SECTION */}
           <div style={{
+            position: 'relative',
+            zIndex: 1,
             display: 'grid',
             gridTemplateColumns: '1.2fr 1fr',
             gap: '16px',
@@ -511,6 +577,8 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
 
           {/* MOTTO FOOTER */}
           <div style={{
+            position: 'relative',
+            zIndex: 1,
             textAlign: 'center',
             fontSize: '0.75rem',
             fontWeight: 800,

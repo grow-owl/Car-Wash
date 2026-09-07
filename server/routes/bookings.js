@@ -99,21 +99,36 @@ router.get('/customer-timeline/:phone', async (req, res) => {
   }
 });
 
-// GET slots availability for date (Dynamic Capacity = Total Active Bays - Already Booked Slots)
+// GET slots availability for date (Dynamic Capacity = Total Active Bays = 2)
 router.get('/slots', async (req, res) => {
   const { date } = req.query;
-  const allSlots = ['08:00 AM', '09:30 AM', '11:00 AM', '01:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'];
+  const allSlots = [
+    '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM',
+    '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM',
+    '04:00 PM', '05:00 PM', '06:00 PM'
+  ];
 
   try {
     const targetDate = date || new Date().toISOString().split('T')[0];
-    const totalBaysCount = await Bay.countDocuments({}) || 4;
-    const maxCapacityPerSlot = Math.max(1, totalBaysCount);
+    const totalBaysCount = await Bay.countDocuments({}) || 2;
+    // Exactly 2 bays maximum capacity per time slot
+    const maxCapacityPerSlot = Math.min(2, Math.max(1, totalBaysCount));
 
-    const existingBookings = await Booking.find({ date: targetDate, status: { $ne: 'cancelled' } });
+    // Find active bookings on target date (exclude cancelled)
+    const existingBookings = await Booking.find({
+      date: targetDate,
+      status: { $ne: 'cancelled' }
+    });
 
     const slotCounts = {};
+    const slotBaysTaken = {};
     existingBookings.forEach(b => {
-      slotCounts[b.slotTime] = (slotCounts[b.slotTime] || 0) + 1;
+      const sTime = b.slotTime || b.timeSlot;
+      if (sTime) {
+        slotCounts[sTime] = (slotCounts[sTime] || 0) + 1;
+        if (!slotBaysTaken[sTime]) slotBaysTaken[sTime] = [];
+        slotBaysTaken[sTime].push(b.bayAssigned || b.assignedBay || 'BAY 1');
+      }
     });
 
     const availability = allSlots.map(slot => {
@@ -124,7 +139,8 @@ router.get('/slots', async (req, res) => {
         booked: bookedCount,
         capacity: maxCapacityPerSlot,
         remainingCapacity,
-        available: remainingCapacity > 0
+        available: remainingCapacity > 0,
+        baysTaken: slotBaysTaken[slot] || []
       };
     });
 
@@ -243,6 +259,32 @@ router.post('/', async (req, res) => {
       }
     }
 
+    const targetSlot = slotTime || '10:00 AM';
+
+    // Strict Bay Slot Collision Prevention: Exactly 2 bays (Max 2 bookings per slot)
+    const existingInSlot = await Booking.find({
+      date: bookingDateStr,
+      slotTime: targetSlot,
+      status: { $ne: 'cancelled' }
+    });
+
+    if (existingInSlot.length >= 2) {
+      return res.status(400).json({
+        error: `Selected slot (${targetSlot}) on ${bookingDateStr} is fully booked (${existingInSlot.length}/2 Bays occupied). Please choose another available time slot.`
+      });
+    }
+
+    // Auto-allocate Bay 1 or Bay 2 dynamically based on availability
+    let allocatedBay = 'BAY 1';
+    const takenBays = existingInSlot.map(b => (b.bayAssigned || b.assignedBay || '').toUpperCase());
+    if (takenBays.includes('BAY 1') && !takenBays.includes('BAY 2')) {
+      allocatedBay = 'BAY 2';
+    } else if (takenBays.includes('BAY 2') && !takenBays.includes('BAY 1')) {
+      allocatedBay = 'BAY 1';
+    } else if (existingInSlot.length === 1) {
+      allocatedBay = 'BAY 2';
+    }
+
     const regNo = (vehicleNumber || 'WB-74-TEMP').toUpperCase().trim();
     const brandName = vehicleBrand || 'Hyundai';
     const modelName = vehicleModel || vehicleType || 'Creta';
@@ -273,16 +315,16 @@ router.post('/', async (req, res) => {
       couponApplied: couponCode ? couponCode.toUpperCase() : '',
       bookingDate: bookingDateStr,
       date: bookingDateStr,
-      slotTime: slotTime || '10:00 AM',
-      timeSlot: slotTime || '10:00 AM',
+      slotTime: targetSlot,
+      timeSlot: targetSlot,
       paymentTiming: paymentTiming || (paymentMode === 'Cash' ? 'Pay After Service' : 'Pay Now'),
       paymentMode: paymentMode || 'Online',
       paymentStatus: isPaid ? 'Paid' : 'Pending',
       paidAt: isPaid ? new Date() : null,
       status: 'confirmed',
-      assignedBay: 'BAY 1',
-      bayAssigned: 'BAY 1',
-      staffAssigned: 'Rahul Kumar',
+      assignedBay: allocatedBay,
+      bayAssigned: allocatedBay,
+      staffAssigned: allocatedBay === 'BAY 2' ? 'Vikram Singh' : 'Rahul Kumar',
       bookingSource: bookingSource || 'Website'
     });
 
@@ -429,6 +471,44 @@ router.post('/walkin', async (req, res) => {
   }
 });
 
+// Helper to build formal, clean WhatsApp status update message
+const buildStatusWhatsAppMessage = (booking, newStatus) => {
+  const statusLabels = {
+    pending: 'Pending Confirmation',
+    confirmed: 'Booking Confirmed',
+    vehicle_received: 'Vehicle Received at Bay',
+    washing: 'High Pressure Foam Wash',
+    detailing: 'Interior & Paint Detailing',
+    quality_check: 'Final Quality Inspection',
+    ready: 'Ready for Pickup',
+    ready_for_pickup: 'Ready for Pickup',
+    completed: 'Service Completed & Delivered',
+    cancelled: 'Booking Cancelled'
+  };
+
+  const stageLabel = statusLabels[newStatus] || newStatus.toUpperCase().replace('_', ' ');
+  const trackingCode = booking.trackingCode || booking.bookingId;
+  const cleanPhone = (booking.phone || '').replace(/\D/g, '');
+  const phoneWithCountry = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
+  const bayText = booking.bayAssigned || 'Bay 1';
+
+  let text = `CAR WASH AUTO SPA - SERVICE UPDATE\n\n`;
+  text += `Dear ${booking.customerName || 'Customer'},\n\n`;
+  text += `Your vehicle (${booking.vehicleNumber}) is currently in ${stageLabel} stage at ${bayText}.\n\n`;
+  text += `Tracking Code: ${trackingCode}\n`;
+  text += `Live Status: https://carwash.com/track/${trackingCode}\n`;
+
+  if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'ready_for_pickup') {
+    text += `Total Amount: Rs. ${booking.totalAmount} (${booking.paymentStatus || 'Pending'})\n\n`;
+    text += `Your vehicle is ready. Thank you for choosing Car Wash Auto Spa.`;
+  } else {
+    text += `\nThank you for choosing Car Wash Auto Spa.`;
+  }
+
+  const waLink = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(text)}`;
+  return { text, waLink, recipient: booking.phone };
+};
+
 // PATCH Update job status / bay / staff
 router.patch('/:id/status', async (req, res) => {
   try {
@@ -445,7 +525,21 @@ router.patch('/:id/status', async (req, res) => {
     const booking = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
-    res.json({ message: `Status updated to ${booking.status}`, booking });
+    // Generate Automated WhatsApp Notification Payload
+    const waNotification = buildStatusWhatsAppMessage(booking, booking.status);
+    console.log(`[AUTOMATED WHATSAPP NOTIFICATION TRIGGERED] To: ${booking.phone} (${booking.customerName}) | Status: ${booking.status}`);
+
+    res.json({
+      message: `Status updated to ${booking.status}. WhatsApp notification generated for ${booking.phone}`,
+      booking,
+      whatsappNotification: {
+        sent: true,
+        phone: booking.phone,
+        customerName: booking.customerName,
+        message: waNotification.text,
+        waLink: waNotification.waLink
+      }
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

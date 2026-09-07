@@ -45,7 +45,7 @@ const seedData = async () => {
         durationMins: 25,
         description: 'High-pressure foam wash, pressure wash & hand drying for crystal-clear finish.',
         features: ['High-Pressure Foam Wash', 'Pressure Rinse', 'Microfiber Hand Drying', 'Window & Mirror Clean'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg',
         badge: 'Popular Wash',
         isPopular: true
       },
@@ -57,7 +57,7 @@ const seedData = async () => {
         durationMins: 45,
         description: 'Complete interior + exterior cleaning with cabin vacuum & exterior foam shine.',
         features: ['Full Exterior Foam Wash', 'Interior Vacuum Cleaning', 'Dashboard & Door Wipe', 'Tyre Polish'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg',
         badge: 'Best Value',
         isPopular: true
       },
@@ -69,7 +69,7 @@ const seedData = async () => {
         durationMins: 30,
         description: 'Dashboard, doors, seats & surfaces dust removal and UV protective dressing.',
         features: ['Dashboard Cleaning & Polish', 'Door Panels Scrub', 'AC Vents Dusting', 'Console Cleaning'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg',
         badge: 'Interior Care',
         isPopular: false
       },
@@ -81,7 +81,7 @@ const seedData = async () => {
         durationMins: 25,
         description: 'Deep suction vacuuming of seats, floor mats, carpet & boot compartment.',
         features: ['High-Suction Deep Vacuum', 'Footmat Shampoo & Dry', 'Boot Space Dusting', 'Seat Crevice Extraction'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg',
         badge: 'Quick Clean',
         isPopular: false
       },
@@ -93,7 +93,7 @@ const seedData = async () => {
         durationMins: 90,
         description: 'Deep cleaning and steam sanitization of complete cabin, roof, carpet & seats.',
         features: ['Complete Cabin Steam Spa', 'Roof & Carpet Stain Removal', 'Leather & Fabric Conditioning', 'Ozone Odor Removal'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg',
         badge: 'Deep Clean',
         isPopular: true
       },
@@ -105,7 +105,7 @@ const seedData = async () => {
         durationMins: 20,
         description: 'Brake dust acid wash, wheel rim scrubbing, and long-lasting deep tyre dressing.',
         features: ['Brake Dust Removal', 'Alloy Rim Deep Wash', 'Tyre Gloss Dressing', 'Mudguard Jet Clean'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg',
         badge: 'Wheel Shine',
         isPopular: false
       },
@@ -117,7 +117,7 @@ const seedData = async () => {
         durationMins: 45,
         description: 'High-gloss carnauba wax application for superior shine + basic paint protection.',
         features: ['Premium Hand Wax Application', 'Hydrophobic Water Beading', 'UV Sun Protection', 'Mirror Gloss Finish'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg',
         badge: 'Paint Gloss',
         isPopular: true
       },
@@ -129,7 +129,7 @@ const seedData = async () => {
         durationMins: 75,
         description: 'Restore gloss & remove minor dullness, swirl marks and surface oxidation.',
         features: ['Machine Buffing Polish', 'Swirl Mark Reduction', 'Paint Gloss Restoration', 'Synthetic Sealant Layer'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg',
         badge: 'Restoration',
         isPopular: false
       },
@@ -141,7 +141,7 @@ const seedData = async () => {
         durationMins: 35,
         description: 'Safe steam cleaning and degreasing of engine compartment & rubber dressing.',
         features: ['300°F Steam Degreasing', 'Hose & Wire Conditioning', 'Plastic Cover Shine', 'Moisture Blow Dry'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg',
         badge: 'Engine Care',
         isPopular: false
       },
@@ -153,7 +153,7 @@ const seedData = async () => {
         durationMins: 150,
         description: 'Comprehensive exterior + interior treatment for a showroom finish inside & out.',
         features: ['Full Interior Steam Spa', 'Machine Polish & Ceramic Seal', 'Engine Bay Degreasing', 'Alloy Wheel Protection'],
-        image: 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg',
+        image: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg',
         badge: 'Showroom Spa',
         isPopular: true
       }
@@ -584,7 +584,8 @@ const seedData = async () => {
     await Membership.insertMany([
       {
         name: 'Silver Shine Pass',
-        priceMonthly: 1499,
+        priceMonthly: 199,
+        originalPrice: 249,
         includedWashes: 2,
         discountPct: 10,
         priorityBooking: false,
@@ -593,7 +594,8 @@ const seedData = async () => {
       },
       {
         name: 'Gold Detailer Club',
-        priceMonthly: 2999,
+        priceMonthly: 299,
+        originalPrice: 399,
         includedWashes: 4,
         discountPct: 20,
         priorityBooking: true,
@@ -602,7 +604,8 @@ const seedData = async () => {
       },
       {
         name: 'Platinum VIP Unlimited',
-        priceMonthly: 4999,
+        priceMonthly: 449,
+        originalPrice: 599,
         includedWashes: 8,
         discountPct: 30,
         priorityBooking: true,

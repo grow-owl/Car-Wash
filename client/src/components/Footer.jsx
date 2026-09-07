@@ -3,30 +3,11 @@ import { Phone, MapPin, Clock, Mail } from 'lucide-react';
 
 export default function Footer({ onOpenOwnerPortal }) {
   return (
-    <footer style={{
-      background: 'linear-gradient(180deg, rgba(6, 20, 27, 0.98) 0%, #040e14 100%)',
-      borderTop: '1px solid rgba(74, 92, 106, 0.3)',
-      padding: '48px 0 24px 0',
-      marginTop: '80px',
-      color: '#CCD0CF',
-      width: '100%'
-    }}>
-      {/* UPPER FOOTER CONTAINER: FULL WIDTH SPREAD FROM FAR LEFT TO FAR RIGHT */}
-      <div style={{
-        maxWidth: '1440px',
-        width: '100%',
-        margin: '0 auto',
-        padding: '0 32px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-        gap: '40px',
-        marginBottom: '36px',
-        boxSizing: 'border-box'
-      }}>
+    <footer className="site-footer">
+      {/* UPPER FOOTER CONTAINER: 3-COLUMN SPREAD (LEFT, CENTER, EXTREME RIGHT) */}
+      <div className="footer-upper-grid">
         {/* LEFT COLUMN: BRAND & SHORT DESCRIPTION */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 280px', maxWidth: '360px' }}>
+        <div className="footer-col-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img
               src="/logo.webp"
@@ -52,13 +33,13 @@ export default function Footer({ onOpenOwnerPortal }) {
           </p>
         </div>
 
-        {/* CENTER COLUMN: WORKING HOURS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 240px' }}>
+        {/* CENTER COLUMN: WORKING HOURS (CENTER ALIGNED IN CONTAINER) */}
+        <div className="footer-col-center">
           <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
             Working Hours
           </h4>
 
-          <div style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="footer-list" style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
               <Clock size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
               <span>Mon - Sat: <strong style={{ color: '#FFFFFF' }}>08:00 AM - 07:00 PM</strong></span>
@@ -71,13 +52,13 @@ export default function Footer({ onOpenOwnerPortal }) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: CONTACT & SUPPORT */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 260px' }}>
+        {/* RIGHT COLUMN: CONTACT & SUPPORT (EXTREME RIGHT ALIGNED) */}
+        <div className="footer-col-right">
           <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
             Contact & Support
           </h4>
 
-          <div style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="footer-list" style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
               <MapPin size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
               <span style={{ color: '#FFFFFF', fontWeight: 500 }}>Sevoke Road, Siliguri, WB 734001</span>
@@ -101,21 +82,7 @@ export default function Footer({ onOpenOwnerPortal }) {
       </div>
 
       {/* LOWER FOOTER BAR: FULL WIDTH EDGE-TO-EDGE SPREAD */}
-      <div style={{
-        maxWidth: '1440px',
-        width: '100%',
-        margin: '0 auto',
-        padding: '16px 32px 0 32px',
-        borderTop: '1px solid rgba(74, 92, 106, 0.3)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        fontSize: '0.82rem',
-        color: 'var(--ice-tint)',
-        flexWrap: 'wrap',
-        gap: '14px',
-        boxSizing: 'border-box'
-      }}>
+      <div className="footer-lower-bar">
         {/* LEFT: COPYRIGHT */}
         <div>
           <span>© 2026 CAR WASH Auto Spa. All rights reserved.</span>

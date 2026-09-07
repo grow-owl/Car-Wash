@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 
 export default function BeforeAfterSlider({ 
-  beforeImage = "/before-wash.webp",
-  afterImage = "/after-wash.webp"
+  beforeImage = "https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788800672/car-wash/banners/before-wash.jpg",
+  afterImage = "https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788800673/car-wash/banners/after-wash.jpg"
 }) {
   const [sliderPos, setSliderPos] = useState(50);
 
