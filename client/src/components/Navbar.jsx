@@ -117,10 +117,14 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0 }}
         >
           <img
-            src="/logo.png"
+            src="/logo.webp"
             alt="CAR WASH Logo"
+            width="42"
+            height="42"
+            decoding="async"
             style={{
               height: '42px',
+              width: 'auto',
               objectFit: 'contain',
               filter: 'drop-shadow(0 2px 10px rgba(0, 229, 255, 0.35))'
             }}

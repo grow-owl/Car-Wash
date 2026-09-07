@@ -3,6 +3,10 @@ const router = express.Router();
 const Booking = require('../models/Booking');
 const Expense = require('../models/Expense');
 const Customer = require('../models/Customer');
+const { verifyAdminToken } = require('../middleware/adminAuth');
+
+// All Analytics & Financials routes are strictly protected
+router.use(verifyAdminToken);
 
 // GET Analytics & Net Profit Dashboard Summary
 router.get('/dashboard', async (req, res) => {

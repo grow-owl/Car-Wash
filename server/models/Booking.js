@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const BookingSchema = new mongoose.Schema({
   bookingId: { type: String, sparse: true },
+  invoiceNumber: { type: String, sparse: true, index: true },
   trackingCode: { type: String, required: true, unique: true },
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
   customerName: { type: String, required: true },
@@ -37,7 +38,9 @@ const BookingSchema = new mongoose.Schema({
     default: 'confirmed'
   },
   paymentMode: { type: String, enum: ['UPI', 'Card', 'Cash', 'Online'], default: 'Online' },
+  paymentTiming: { type: String, enum: ['Pay Now', 'Pay After Service'], default: 'Pay Now' },
   paymentStatus: { type: String, enum: ['Paid', 'Pending'], default: 'Paid' },
+  paidAt: { type: Date },
   assignedBay: { type: String, default: 'BAY 1' },
   bayAssigned: { type: String, default: 'BAY 1' },
   assignedStaff: [{ type: String }],

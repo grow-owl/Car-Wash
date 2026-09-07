@@ -69,16 +69,20 @@ router.get('/coupons', async (req, res) => {
 
 router.post('/coupons', async (req, res) => {
   try {
-    const { code, discountType, value, minOrder, description } = req.body;
-    if (!code || !value) return res.status(400).json({ error: 'Code and discount value are required' });
+    const code = req.body.code ? req.body.code.toUpperCase().trim() : '';
+    const val = req.body.value !== undefined ? req.body.value : req.body.discountValue;
+    const minOrd = req.body.minOrder !== undefined ? req.body.minOrder : req.body.minOrderAmount;
+    const isAct = req.body.active !== undefined ? req.body.active : (req.body.isActive !== undefined ? req.body.isActive : true);
+
+    if (!code || val === undefined) return res.status(400).json({ error: 'Code and discount value are required' });
 
     const coupon = new Coupon({
-      code: code.toUpperCase(),
-      discountType: discountType || 'fixed',
-      value: Number(value),
-      minOrder: Number(minOrder || 0),
-      description: description || 'Promotional Discount Voucher',
-      active: true
+      code: code,
+      discountType: req.body.discountType || 'fixed',
+      value: Number(val),
+      minOrder: Number(minOrd || 0),
+      description: req.body.description || 'Promotional Discount Voucher',
+      active: isAct
     });
     await coupon.save();
     res.status(201).json(coupon);

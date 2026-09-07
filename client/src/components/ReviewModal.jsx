@@ -20,7 +20,7 @@ export default function ReviewModal({ isOpen, onClose, onSubmitReview }) {
       rating,
       comment: reviewText,
       date: 'Just Now',
-      photo: photoUrl || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=400&q=80'
+      photo: photoUrl || 'https://res.cloudinary.com/xa8njngd/image/upload/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg'
     };
     setSubmitted(true);
     setTimeout(() => {
@@ -72,7 +72,7 @@ export default function ReviewModal({ isOpen, onClose, onSubmitReview }) {
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <span className="badge badge-aqua">VERIFIED CUSTOMER FEEDBACK</span>
               <h2 style={{ fontSize: '1.8rem', color: '#FFFFFF', marginTop: '6px' }}>Rate Your Detailing Experience</h2>
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Share your honest review & car photos with CAR WASH Siliguri</p>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Share your honest review & car photos</p>
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

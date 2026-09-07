@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Lock, Car, Plus, Key } from 'lucide-react';
+import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Lock, Car, Plus, Key, Zap, MapPin } from 'lucide-react';
 import { getMemberships, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle } from '../api';
+import { cleanText } from '../utils/cleanText';
 
 export default function CustomerPortal({ currentUser: propUser, setCurrentUser: propSetUser, onSignOut: propSignOut }) {
   const [memberships, setMemberships] = useState([]);
@@ -25,6 +26,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   // Signup form state
   const [signUpName, setSignUpName] = useState('');
   const [signUpPhone, setSignUpPhone] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPin, setSignUpPin] = useState('');
   const [signUpRegNo, setSignUpRegNo] = useState('');
   const [signUpModel, setSignUpModel] = useState('');
@@ -92,12 +94,15 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
     setAuthError('');
     try {
       const res = await loginCustomer(loginPhone, loginPin);
+      if (res.data?.token) {
+        localStorage.setItem('carwash_customer_token', res.data.token);
+      }
       if (res.data?.customer) {
         updateCustomerState(res.data.customer);
         localStorage.setItem('carwash_customer', JSON.stringify(res.data.customer));
       }
     } catch (err) {
-      setAuthError(err.response?.data?.error || 'Invalid phone number or PIN. Please try again.');
+      setAuthError(err.response?.data?.error || 'Invalid phone number / email or password. Please try again.');
     } finally {
       setAuthLoading(false);
     }
@@ -117,6 +122,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
       const res = await signupCustomer({
         name: signUpName,
         phone: signUpPhone,
+        email: signUpEmail,
         pin: signUpPin,
         vehicle: {
           regNumber: signUpRegNo,
@@ -124,6 +130,9 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
           brand: 'Hyundai'
         }
       });
+      if (res.data?.token) {
+        localStorage.setItem('carwash_customer_token', res.data.token);
+      }
       if (res.data?.customer) {
         updateCustomerState(res.data.customer);
         localStorage.setItem('carwash_customer', JSON.stringify(res.data.customer));
@@ -137,6 +146,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
   // HANDLER: SIGN OUT
   const handleSignOut = () => {
+    localStorage.removeItem('carwash_customer_token');
     if (propSignOut) {
       propSignOut();
     } else {
@@ -193,49 +203,126 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   };
 
   const shareOnWhatsApp = () => {
-    const text = encodeURIComponent(`Hi! Get ₹200 OFF your 1st car wash at CAR WASH Siliguri! Use my referral code: ${referralCode} or click: ${referralLink}`);
+    const text = encodeURIComponent(`Hi! Get ₹200 OFF your 1st car wash at CAR WASH! Use my referral code: ${referralCode} or click: ${referralLink}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
   return (
-    <div className="container" style={{ paddingTop: '40px', paddingBottom: '80px' }}>
+    <div className="container" style={{ paddingTop: '20px', paddingBottom: '60px' }}>
       
-      {/* HEADER TITLE */}
-      <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-        <span className="badge badge-aqua">CAR WASH VIP CLUB & MY GARAGE</span>
-        <h1 style={{ fontSize: '2.4rem', marginTop: '6px' }}>Customer Account, Garage & Loyalty Rewards</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Manage your saved vehicles, track loyalty points & claim referral rewards in Siliguri</p>
-      </div>
-
-      {/* IF NOT LOGGED IN: DISPLAY AUTHENTICATION PANEL (LOGIN / SIGNUP) */}
+      {/* IF NOT LOGGED IN: DISPLAY RESPONSIVE SPLIT AUTHENTICATION PANEL */}
       {!currentUser ? (
-        <div style={{ maxWidth: '440px', margin: '0 auto 60px auto' }}>
-          <div className="glass-panel" style={{ padding: '32px', border: '1px solid var(--accent-aqua)', borderRadius: '16px' }}>
+        <div className="auth-split-card">
+          {/* LEFT COLUMN: HERO VISUAL & MINIMAL BRAND HIGHLIGHTS */}
+          <div className="auth-hero-side">
+            <div>
+              <span className="badge badge-aqua" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={13} /> CAR WASH VIP
+              </span>
+              <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, marginTop: '8px' }}>
+                Fast Booking & Live Tracking
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '6px' }}>
+                Premium car detailing & steam wash experience.
+              </p>
+
+              <div className="auth-hero-features" style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.15)', border: '1px solid var(--accent-aqua)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-aqua)', flexShrink: 0 }}>
+                    <Zap size={15} />
+                  </div>
+                  <span>Instant Slot Booking</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0, 229, 255, 0.15)', border: '1px solid var(--accent-aqua)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-aqua)', flexShrink: 0 }}>
+                    <MapPin size={15} />
+                  </div>
+                  <span>Live Wash Status Tracking</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255, 195, 0, 0.15)', border: '1px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-gold)', flexShrink: 0 }}>
+                    <Car size={15} />
+                  </div>
+                  <span>Saved Vehicle Garage</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255, 89, 100, 0.15)', border: '1px solid var(--accent-coral)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-coral)', flexShrink: 0 }}>
+                    <Gift size={15} />
+                  </div>
+                  <span>VIP Points & Milestone Cashback</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="auth-hero-footer" style={{ marginTop: '24px', paddingTop: '14px', borderTop: '1px solid rgba(74, 92, 106, 0.3)', fontSize: '0.78rem', color: 'var(--text-subtle)' }}>
+              100% Secure &bull; Guaranteed Satisfaction
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: CLEAN MINIMAL AUTH FORMS */}
+          <div className="auth-form-side">
             
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 800, textAlign: 'center', marginBottom: '6px', color: '#FFFFFF' }}>
-              {authMode === 'login' ? 'Log In to Customer Account' : 'Register New Account'}
-            </h3>
-            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
-              {authMode === 'login' ? 'Enter your details to access My Garage & rewards' : 'Create your free account to track bookings'}
-            </p>
+            {/* TABS SWITCHER */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px', background: 'rgba(6, 20, 27, 0.8)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  background: authMode === 'login' ? 'linear-gradient(135deg, #00D2B4 0%, #0096B4 100%)' : 'transparent',
+                  color: authMode === 'login' ? '#06141B' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'center'
+                }}
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  background: authMode === 'signup' ? 'linear-gradient(135deg, #E6B000 0%, #C99600 100%)' : 'transparent',
+                  color: authMode === 'signup' ? '#06141B' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease',
+                  textAlign: 'center'
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
 
             {authError && (
-              <div style={{ background: 'rgba(255, 89, 100, 0.15)', border: '1px solid var(--accent-coral)', color: 'var(--accent-coral)', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.85rem', fontWeight: 600 }}>
+              <div style={{ background: 'rgba(255, 89, 100, 0.15)', border: '1px solid var(--accent-coral)', color: 'var(--accent-coral)', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', fontWeight: 600 }}>
                 {authError}
               </div>
             )}
 
             {/* FORM 1: LOG IN */}
+            {/* FORM 1: LOG IN */}
             {authMode === 'login' && (
-              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                    Mobile Phone Number *
+                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Mobile Number or Email
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Enter Mobile Phone Number"
+                    placeholder="Enter phone number or email address"
                     value={loginPhone}
                     onChange={(e) => setLoginPhone(e.target.value)}
                     className="input-field"
@@ -243,14 +330,14 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>
-                    Password (Min 6 Characters) *
+                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
+                    Password
                   </label>
                   <input
                     type="password"
                     required
                     minLength={6}
-                    placeholder="Enter Password (min 6 characters)"
+                    placeholder="Enter password (min 6 chars)"
                     value={loginPin}
                     onChange={(e) => setLoginPin(e.target.value)}
                     className="input-field"
@@ -261,20 +348,19 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                   type="submit"
                   disabled={authLoading}
                   className="btn-primary"
-                  style={{ width: '100%', justifyContent: 'center', padding: '14px', marginTop: '6px', fontSize: '1rem', fontWeight: 800 }}
+                  style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: '4px', fontSize: '0.95rem', fontWeight: 800 }}
                 >
                   {authLoading ? 'Logging In...' : 'Log In'}
                 </button>
 
-                {/* SIGN UP BUTTON LINK BELOW FORM */}
-                <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                  Don't have an account?{' '}
+                <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+                  New here?{' '}
                   <button
                     type="button"
                     onClick={() => { setAuthMode('signup'); setAuthError(''); }}
                     style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                   >
-                    Sign Up / Register
+                    Create an account
                   </button>
                 </div>
               </form>
@@ -282,38 +368,51 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
             {/* FORM 2: SIGN UP / REGISTER */}
             {authMode === 'signup' && (
-              <form onSubmit={handleSignUpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handleSignUpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Full Name *</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Full Name</label>
                   <input
                     type="text"
                     required
-                    placeholder="Enter Full Name"
+                    placeholder="Your Full Name"
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     className="input-field"
                   />
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Mobile Number *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter Mobile Phone Number"
-                    value={signUpPhone}
-                    onChange={(e) => setSignUpPhone(e.target.value)}
-                    className="input-field"
-                  />
+                <div className="grid-2" style={{ gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Mobile Number *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 9800112233"
+                      value={signUpPhone}
+                      onChange={(e) => setSignUpPhone(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={signUpEmail}
+                      onChange={(e) => setSignUpEmail(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Create Password (Min 6 Characters) *</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Password *</label>
                   <input
                     type="password"
                     required
                     minLength={6}
-                    placeholder="Enter Password (min 6 characters)"
+                    placeholder="Create Password (min 6 chars)"
                     value={signUpPin}
                     onChange={(e) => setSignUpPin(e.target.value)}
                     className="input-field"
@@ -322,7 +421,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
                 <div className="grid-2" style={{ gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Vehicle Reg Number *</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Vehicle Reg No</label>
                     <input
                       type="text"
                       required
@@ -333,11 +432,11 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 600 }}>Car Model *</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Car Model</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Creta / Nexon"
+                      placeholder="e.g. Creta"
                       value={signUpModel}
                       onChange={(e) => setSignUpModel(e.target.value)}
                       className="input-field"
@@ -349,13 +448,12 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                   type="submit"
                   disabled={authLoading}
                   className="btn-gold"
-                  style={{ width: '100%', justifyContent: 'center', padding: '14px', marginTop: '10px', fontSize: '1rem', fontWeight: 800 }}
+                  style={{ width: '100%', justifyContent: 'center', padding: '13px', marginTop: '6px', fontSize: '0.95rem', fontWeight: 800 }}
                 >
                   {authLoading ? 'Creating Account...' : 'Create Account'}
                 </button>
 
-                {/* LOG IN BUTTON LINK BELOW FORM */}
-                <div style={{ textAlign: 'center', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-light)', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
                   Already have an account?{' '}
                   <button
                     type="button"
@@ -500,7 +598,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                   Refer Friends, Earn Free Washes & Cash Credits!
                 </h3>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '20px' }}>
-                  Share your unique referral code with friends & family in Siliguri:
+                  Share your unique referral code with friends & family:
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>

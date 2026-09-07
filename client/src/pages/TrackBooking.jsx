@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Search, CheckCircle2, Clock, Car, Shield, MessageSquare, AlertCircle } from 'lucide-react';
-import { trackBooking } from '../api';
+import { Search, CheckCircle2, Clock, Car, Shield, MessageSquare, AlertCircle, CreditCard, Check, QrCode } from 'lucide-react';
+import { trackBooking, payBookingByCode } from '../api';
 
 export default function TrackBooking({ activeCode = '' }) {
   const [trackingCode, setTrackingCode] = useState(activeCode || 'CW-8921');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Pay Now Modal State
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payMode, setPayMode] = useState('UPI');
+  const [paying, setPaying] = useState(false);
+  const [paySuccessMsg, setPaySuccessMsg] = useState('');
 
   const stages = [
-    { key: 'confirmed', label: 'Booking Confirmed', icon: '📝' },
-    { key: 'received', label: 'Vehicle Received', icon: '🔑' },
-    { key: 'washing', label: 'High Pressure Wash', icon: '🧼' },
-    { key: 'detailing', label: 'Interior & Polish', icon: '✨' },
-    { key: 'quality_check', label: 'Quality Inspection', icon: '🔍' },
-    { key: 'ready_for_pickup', label: 'Ready for Pickup', icon: '🚗' }
+    { key: 'confirmed', label: 'Booking Confirmed' },
+    { key: 'received', label: 'Vehicle Received' },
+    { key: 'washing', label: 'High Pressure Wash' },
+    { key: 'detailing', label: 'Interior & Polish' },
+    { key: 'quality_check', label: 'Quality Inspection' },
+    { key: 'ready_for_pickup', label: 'Ready for Pickup' }
   ];
 
   useEffect(() => {
@@ -36,7 +42,26 @@ export default function TrackBooking({ activeCode = '' }) {
     } catch (err) {
       setLoading(false);
       setBooking(null);
-      setError(err.response?.data?.error || 'Booking code not found. Please try CW-8921 or CW-8922.');
+      setError(err.response?.data?.error || 'Booking code not found. Please check your tracking ID.');
+    }
+  };
+
+  const handleCompletePayment = async () => {
+    if (!booking) return;
+    setPaying(true);
+    try {
+      const res = await payBookingByCode(booking.trackingCode, {
+        paymentMode: payMode,
+        paymentStatus: 'Paid'
+      });
+      setBooking(res.data.booking);
+      setShowPayModal(false);
+      setPaySuccessMsg(`Payment of ₹${booking.totalAmount} via ${payMode} confirmed successfully!`);
+      setTimeout(() => setPaySuccessMsg(''), 5000);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to process payment');
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -53,23 +78,43 @@ export default function TrackBooking({ activeCode = '' }) {
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <span className="badge badge-aqua">TRANSPARENT SERVICE LOG</span>
         <h1 style={{ fontSize: '2.2rem', marginTop: '6px' }}>Live Vehicle Job Status Tracker</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Enter your 6-digit tracking code to see real-time bay & detailing updates</p>
+        <p style={{ color: 'var(--text-muted)' }}>Enter your tracking code to see real-time bay & detailing updates</p>
       </div>
 
       {/* Search Input Box */}
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '36px' }}>
-        <input
-          type="text"
-          value={trackingCode}
-          onChange={(e) => setTrackingCode(e.target.value)}
-          placeholder="Enter Booking Tracking Code (e.g. CW-8921)"
-          className="input-field"
-          style={{ textTransform: 'uppercase', fontSize: '1.1rem', padding: '14px 20px' }}
-        />
-        <button type="submit" className="btn-primary" style={{ padding: '0 28px' }}>
-          <Search size={20} /> Track Job
+        <div style={{ flex: 1, position: 'relative' }}>
+          <input
+            type="text"
+            placeholder="Enter tracking code (e.g. CW-8921)"
+            value={trackingCode}
+            onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
+            className="input-field"
+            style={{ paddingLeft: '44px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}
+          />
+          <Search size={20} color="var(--accent-aqua)" style={{ position: 'absolute', left: '16px', top: '15px' }} />
+        </div>
+        <button type="submit" className="btn-aqua" style={{ padding: '0 28px' }}>
+          Track Job
         </button>
       </form>
+
+      {paySuccessMsg && (
+        <div style={{
+          background: 'rgba(0, 210, 180, 0.15)',
+          border: '1px solid var(--accent-aqua)',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          color: '#FFFFFF',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '24px'
+        }}>
+          <CheckCircle2 size={24} color="var(--accent-aqua)" />
+          <strong>{paySuccessMsg}</strong>
+        </div>
+      )}
 
       {error && (
         <div style={{
@@ -98,7 +143,7 @@ export default function TrackBooking({ activeCode = '' }) {
         <div className="glass-panel" style={{ padding: '36px', border: '1px solid var(--accent-aqua)' }}>
           
           {/* Header Summary */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', borderBottom: '1px solid var(--border-light)', paddingBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', borderBottom: '1px solid var(--border-light)', paddingBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)' }}>TRACKING CODE</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>
@@ -138,44 +183,57 @@ export default function TrackBooking({ activeCode = '' }) {
                 height: '4px',
                 background: 'var(--bg-primary)',
                 zIndex: 1
-              }}>
-                <div style={{
-                  height: '100%',
-                  width: `${(currentStageIndex / (stages.length - 1)) * 100}%`,
-                  background: 'linear-gradient(90deg, var(--accent-terracotta) 0%, var(--accent-aqua) 100%)',
-                  transition: 'width 0.4s ease'
-                }} />
-              </div>
+              }} />
 
-              {stages.map((stg, i) => {
-                const isPassed = i <= currentStageIndex;
-                const isCurrent = i === currentStageIndex;
+              {/* Dynamic Completed Line */}
+              <div style={{
+                position: 'absolute',
+                top: '20px',
+                left: '25px',
+                width: `${(currentStageIndex / (stages.length - 1)) * 90}%`,
+                height: '4px',
+                background: 'var(--accent-aqua)',
+                zIndex: 2,
+                transition: 'width 0.5s ease'
+              }} />
+
+              {stages.map((stage, idx) => {
+                const isCompleted = idx <= currentStageIndex;
+                const isCurrent = idx === currentStageIndex;
 
                 return (
-                  <div key={stg.key} style={{ textAlign: 'center', zIndex: 2, flex: 1 }}>
+                  <div key={stage.key} style={{
+                    position: 'relative',
+                    zIndex: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    maxWidth: '100px'
+                  }}>
                     <div style={{
                       width: '42px',
                       height: '42px',
                       borderRadius: '50%',
-                      background: isCurrent ? 'var(--accent-aqua)' : isPassed ? 'var(--accent-terracotta)' : 'var(--bg-primary)',
-                      color: isCurrent ? '#003135' : '#FFFFFF',
+                      background: isCompleted ? 'var(--accent-aqua)' : 'var(--bg-primary)',
                       border: isCurrent ? '3px solid #FFFFFF' : '2px solid var(--border-light)',
+                      color: isCompleted ? '#002d31' : 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      margin: '0 auto 8px auto',
                       fontWeight: 800,
-                      boxShadow: isCurrent ? '0 0 20px var(--accent-aqua-glow)' : 'none',
+                      boxShadow: isCurrent ? '0 0 15px var(--accent-aqua)' : 'none',
                       transition: 'all 0.3s ease'
                     }}>
-                      {stg.icon}
+                      {isCompleted ? <Check size={20} strokeWidth={3} /> : idx + 1}
                     </div>
                     <div style={{
                       fontSize: '0.75rem',
                       fontWeight: isCurrent ? 800 : 500,
-                      color: isCurrent ? 'var(--accent-aqua)' : isPassed ? '#FFFFFF' : 'var(--text-muted)'
+                      color: isCompleted ? '#FFFFFF' : 'var(--text-muted)',
+                      marginTop: '8px'
                     }}>
-                      {stg.label}
+                      {stage.label}
                     </div>
                   </div>
                 );
@@ -183,7 +241,7 @@ export default function TrackBooking({ activeCode = '' }) {
             </div>
           </div>
 
-          {/* Job Details Card */}
+          {/* Job & Payment Details Card */}
           <div className="grid-2" style={{ gap: '16px', background: 'rgba(0, 49, 53, 0.7)', padding: '20px', borderRadius: '12px' }}>
             <div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SERVICE TYPE</div>
@@ -196,8 +254,30 @@ export default function TrackBooking({ activeCode = '' }) {
             </div>
 
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>TOTAL PAID</div>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--accent-aqua)' }}>₹{booking.totalAmount}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>PAYMENT STATUS</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                <span className={booking.paymentStatus === 'Paid' ? 'badge badge-aqua' : 'badge badge-gold'}>
+                  {booking.paymentStatus === 'Paid' ? `PAID (₹${booking.totalAmount} • ${booking.paymentMode || 'Online'})` : `PENDING / PAY AFTER SERVICE (₹${booking.totalAmount})`}
+                </span>
+                {booking.paymentStatus !== 'Paid' && (
+                  <button
+                    onClick={() => setShowPayModal(true)}
+                    className="btn-primary"
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      background: 'linear-gradient(135deg, #00D2B4 0%, #0096B4 100%)',
+                      color: '#06141B',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Pay Online Now
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
@@ -225,6 +305,118 @@ export default function TrackBooking({ activeCode = '' }) {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* QUICK PAY MODAL */}
+      {showPayModal && booking && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 300,
+          background: 'rgba(0, 20, 27, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div className="glass-panel" style={{ maxWidth: '480px', width: '100%', padding: '28px', border: '1px solid var(--accent-aqua)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+            <h3 style={{ fontSize: '1.3rem', marginBottom: '8px', color: '#FFFFFF' }}>
+              Complete Service Payment
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Tracking Code: <strong style={{ color: 'var(--accent-aqua)' }}>{booking.trackingCode}</strong> &bull; Amount: <strong style={{ color: 'var(--accent-aqua)' }}>₹{booking.totalAmount}</strong>
+            </p>
+
+            <div style={{ marginBottom: '18px' }}>
+              <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px' }}>
+                Select Payment Mode:
+              </label>
+              <div className="grid-2" style={{ gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPayMode('UPI')}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: payMode === 'UPI' ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                    background: payMode === 'UPI' ? 'rgba(0, 210, 180, 0.15)' : 'rgba(10, 30, 39, 0.6)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    textAlign: 'center'
+                  }}
+                >
+                  Online UPI / QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayMode('Cash')}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: payMode === 'Cash' ? '2px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                    background: payMode === 'Cash' ? 'rgba(230, 176, 0, 0.15)' : 'rgba(10, 30, 39, 0.6)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    textAlign: 'center'
+                  }}
+                >
+                  Cash at Counter
+                </button>
+              </div>
+            </div>
+
+            {payMode === 'UPI' && (
+              <div style={{ background: 'rgba(0, 49, 53, 0.6)', border: '1px dashed var(--accent-aqua)', padding: '16px', borderRadius: '10px', textAlign: 'center', marginBottom: '20px' }}>
+                <QrCode size={48} color="var(--accent-aqua)" style={{ margin: '0 auto 8px auto' }} />
+                <div style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 700 }}>
+                  UPI ID: carwash@upi
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Scan with GPay / PhonePe / Paytm to pay ₹{booking.totalAmount}
+                </div>
+              </div>
+            )}
+
+            {payMode === 'Cash' && (
+              <div style={{ background: 'rgba(230, 176, 0, 0.1)', border: '1px dashed var(--accent-gold)', padding: '14px', borderRadius: '10px', textAlign: 'center', marginBottom: '20px', fontSize: '0.84rem', color: '#FFFFFF' }}>
+                Hand over <strong>₹{booking.totalAmount}</strong> cash to the bay supervisor at vehicle delivery.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowPayModal(false)}
+                className="btn-secondary"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCompletePayment}
+                disabled={paying}
+                className="btn-primary"
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(135deg, #00D2B4 0%, #0096B4 100%)',
+                  color: '#06141B',
+                  fontWeight: 800,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                {paying ? 'Processing...' : `Confirm Payment (₹${booking.totalAmount})`}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

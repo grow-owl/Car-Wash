@@ -1,89 +1,160 @@
 import React from 'react';
-import { ShieldCheck, Phone, MapPin, Clock, Lock } from 'lucide-react';
+import { Phone, MapPin, Clock, Mail } from 'lucide-react';
 
 export default function Footer({ onOpenOwnerPortal }) {
   return (
     <footer style={{
-      background: 'var(--bg-primary)',
-      borderTop: '1px solid var(--border-light)',
+      background: 'linear-gradient(180deg, rgba(6, 20, 27, 0.98) 0%, #040e14 100%)',
+      borderTop: '1px solid rgba(74, 92, 106, 0.3)',
       padding: '48px 0 24px 0',
-      marginTop: '80px'
+      marginTop: '80px',
+      color: '#CCD0CF',
+      width: '100%'
     }}>
-      <div className="container grid-3" style={{ marginBottom: '32px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <img src="/logo.png" alt="CAR WASH Logo" style={{ height: '38px', objectFit: 'contain' }} />
+      {/* UPPER FOOTER CONTAINER: FULL WIDTH SPREAD FROM FAR LEFT TO FAR RIGHT */}
+      <div style={{
+        maxWidth: '1440px',
+        width: '100%',
+        margin: '0 auto',
+        padding: '0 32px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        gap: '40px',
+        marginBottom: '36px',
+        boxSizing: 'border-box'
+      }}>
+        {/* LEFT COLUMN: BRAND & SHORT DESCRIPTION */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 280px', maxWidth: '360px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img
+              src="/logo.webp"
+              alt="CAR WASH Logo"
+              width="38"
+              height="38"
+              loading="lazy"
+              decoding="async"
+              style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
+            />
             <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.05 }}>
-                CAR<span style={{ color: 'var(--accent-aqua)' }}>WASH</span>
+              <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1.05, letterSpacing: '0.02em' }}>
+                CAR<span style={{ color: 'var(--accent-cyan)' }}>WASH</span>
               </div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--ice-tint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <div style={{ fontSize: '0.62rem', color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginTop: '2px' }}>
                 AUTO SPA & MANAGEMENT
               </div>
             </div>
           </div>
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-            Next-Generation Auto Detailing & Car Wash Business Management System in Siliguri. Engineered for maximum shine and customer satisfaction.
+
+          <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', lineHeight: '1.5', margin: 0 }}>
+            Auto detailing & car spa engineered for maximum gloss and paint protection.
           </p>
         </div>
 
-        <div>
-          <h4 style={{ fontSize: '1rem', color: 'var(--ice-tint)', marginBottom: '12px' }}>Working Hours</h4>
-          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={16} color="var(--accent-aqua)" /> Mon - Sat: 08:00 AM - 07:00 PM
+        {/* CENTER COLUMN: WORKING HOURS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 240px' }}>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
+            Working Hours
+          </h4>
+
+          <div style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
+              <Clock size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <span>Mon - Sat: <strong style={{ color: '#FFFFFF' }}>08:00 AM - 07:00 PM</strong></span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={16} color="var(--accent-terracotta)" /> Sunday: 09:00 AM - 05:00 PM
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
+              <Clock size={16} color="var(--accent-gold)" style={{ flexShrink: 0 }} />
+              <span>Sunday: <strong style={{ color: 'var(--accent-gold)' }}>09:00 AM - 05:00 PM</strong></span>
             </div>
           </div>
         </div>
 
-        <div>
-          <h4 style={{ fontSize: '1rem', color: 'var(--ice-tint)', marginBottom: '12px' }}>Location & Contact</h4>
-          <div style={{ fontSize: '0.88rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin size={16} color="var(--accent-aqua)" /> Siliguri
+        {/* RIGHT COLUMN: CONTACT & SUPPORT */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: '1 1 260px' }}>
+          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
+            Contact & Support
+          </h4>
+
+          <div style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
+              <MapPin size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <span style={{ color: '#FFFFFF', fontWeight: 500 }}>Sevoke Road, Siliguri, WB 734001</span>
             </div>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Phone size={16} color="var(--accent-aqua)" /> +91 8609504186
+              <Phone size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <a href="tel:+918609504186" style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }}>
+                +91 86095 04186
+              </a>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Mail size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <a href="mailto:info@carwash.in" style={{ color: 'var(--ice-tint)', textDecoration: 'none' }}>
+                info@carwash.in
+              </a>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container" style={{
-        borderTop: '1px solid rgba(175, 221, 229, 0.1)',
-        paddingTop: '20px',
+      {/* LOWER FOOTER BAR: FULL WIDTH EDGE-TO-EDGE SPREAD */}
+      <div style={{
+        maxWidth: '1440px',
+        width: '100%',
+        margin: '0 auto',
+        padding: '16px 32px 0 32px',
+        borderTop: '1px solid rgba(74, 92, 106, 0.3)',
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         fontSize: '0.82rem',
-        color: 'var(--text-muted)',
+        color: 'var(--ice-tint)',
         flexWrap: 'wrap',
-        gap: '12px'
+        gap: '14px',
+        boxSizing: 'border-box'
       }}>
+        {/* LEFT: COPYRIGHT */}
         <div>
-          © 2026 CAR WASH System • Siliguri | Crafted with precision by GrowOwl Pvt. Ltd.
+          <span>© 2026 CAR WASH Auto Spa. All rights reserved.</span>
         </div>
 
-        {/* Private discreet owner portal link */}
-        <button
-          onClick={onOpenOwnerPortal}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(175, 221, 229, 0.3)',
-            cursor: 'pointer',
-            fontSize: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-          title="Private Owner Portal Access"
-        >
-          <Lock size={12} /> Owner Portal
-        </button>
+        {/* RIGHT: ATTRIBUTION */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
+          <span style={{ fontSize: '0.76rem', color: '#8A99AD', fontWeight: 500 }}>
+            Created and Designed by
+          </span>
+          <a
+            href="https://www.growowl.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GrowOwl"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              transition: 'opacity 0.2s ease, transform 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'scale(1.04)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <img
+              src="/growowl-logo.png"
+              alt="GrowOwl"
+              style={{
+                height: '14px',
+                width: 'auto',
+                objectFit: 'contain',
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                background: 'transparent'
+              }}
+            />
+          </a>
+        </div>
       </div>
     </footer>
   );

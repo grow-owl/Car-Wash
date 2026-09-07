@@ -23,11 +23,33 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH Update staff status / rating
+// PUT / PATCH Update staff details (Name, Role, Phone, Hours, Status, etc.)
+router.put('/:id', async (req, res) => {
+  try {
+    const staff = await Staff.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!staff) return res.status(404).json({ error: 'Staff member not found' });
+    res.json(staff);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.patch('/:id', async (req, res) => {
   try {
     const staff = await Staff.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!staff) return res.status(404).json({ error: 'Staff member not found' });
     res.json(staff);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE Remove staff member
+router.delete('/:id', async (req, res) => {
+  try {
+    const staff = await Staff.findByIdAndDelete(req.params.id);
+    if (!staff) return res.status(404).json({ error: 'Staff member not found' });
+    res.json({ message: 'Staff member removed successfully', id: req.params.id });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

@@ -1,9 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, getPackages, getAddons, getSlotsAvailability, validateCoupon, createBooking, checkPhoneExists, captureAbandonedBooking, createLead } from '../api';
-import SmartUpsellModal from '../components/SmartUpsellModal';
+import {
+  Calendar,
+  Clock,
+  Car,
+  Check,
+  CheckCircle2,
+  Sparkles,
+  ShieldCheck,
+  ArrowRight,
+  ArrowLeft,
+  Tag,
+  Info
+} from 'lucide-react';
+import {
+  getServices,
+  getPackages,
+  getAddons,
+  getSlotsAvailability,
+  validateCoupon,
+  createBooking,
+  checkPhoneExists,
+  captureAbandonedBooking,
+  createLead
+} from '../api';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
+import { cleanText } from '../utils/cleanText';
 
-export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1, preselectedItem = null, onBookingComplete, onTrackLive }) {
+export default function BookingFlow({
+  initialVehicle = 'Sedan',
+  initialStep = 1,
+  preselectedItem = null,
+  onBookingComplete,
+  onTrackLive,
+  onBackToHome
+}) {
   const [step, setStep] = useState(initialStep);
   const [vehicleType, setVehicleType] = useState(initialVehicle);
 
@@ -12,8 +42,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const [allAddons, setAllAddons] = useState([]);
   const [slots, setSlots] = useState([]);
 
+  const [bookingMode, setBookingMode] = useState('custom'); // 'custom' | 'packages'
   const [selectedService, setSelectedService] = useState(preselectedItem);
-  const [bookingMode, setBookingMode] = useState('packages'); // 'packages' | 'custom'
   const [selectedCustomServices, setSelectedCustomServices] = useState([]);
   const [customCategoryFilter, setCustomCategoryFilter] = useState('all');
 
@@ -27,20 +57,18 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const [email, setEmail] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [vehicleModel, setVehicleModel] = useState('');
-  const [paymentMode, setPaymentMode] = useState('Online');
+  const [isExistingCustomer, setIsExistingCustomer] = useState(false);
+  const [existingVehicles, setExistingVehicles] = useState([]);
 
   // Coupon
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponStatus, setCouponStatus] = useState('');
 
-  // Modals
-  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  // Confirmation Modal
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const stripEmojis = (str) => typeof str === 'string' ? str.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|🥈|🥇|⭐|📦|🛠️|⏱️|🟢|🔴|✨|🚗|🚘|🚙|🏎️|🛻|✓|🛠/gu, '').trim() : str;
 
   const primary3Packages = [
     {
@@ -78,12 +106,29 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     }
   ];
 
+  // Handle preselected item from landing page
   useEffect(() => {
     if (preselectedItem) {
-      setSelectedService(preselectedItem);
+      if (preselectedItem.includedServices || preselectedItem.tagline || preselectedItem.title?.includes('Package') || preselectedItem.name?.includes('Package')) {
+        setBookingMode('packages');
+        setSelectedService(preselectedItem);
+      } else {
+        setBookingMode('custom');
+        const serviceObj = {
+          _id: preselectedItem._id || preselectedItem.id,
+          name: preselectedItem.name || preselectedItem.title,
+          category: preselectedItem.category || 'wash',
+          price: preselectedItem.price || preselectedItem.basePrice || 499,
+          originalPrice: preselectedItem.originalPrice || Math.round((preselectedItem.price || 499) * 1.35),
+          durationMins: preselectedItem.durationMins || 30,
+          description: preselectedItem.description || 'Professional car care service'
+        };
+        setSelectedCustomServices([serviceObj]);
+      }
     }
   }, [preselectedItem]);
 
+  // Fetch dynamic services and packages from database
   useEffect(() => {
     fetchData();
   }, [vehicleType, selectedDate]);
@@ -96,10 +141,10 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
         getAddons(),
         getSlotsAvailability(selectedDate)
       ]);
-      setServices(svcRes.data);
-      setPackages(pkgRes.data.length >= 3 ? pkgRes.data : primary3Packages);
-      setAllAddons(addRes.data);
-      setSlots(slotRes.data);
+      setServices(svcRes.data || []);
+      setPackages((pkgRes.data && pkgRes.data.length >= 3) ? pkgRes.data : primary3Packages);
+      setAllAddons(addRes.data || []);
+      setSlots(slotRes.data || []);
       if (!selectedService && !preselectedItem) {
         setSelectedService(primary3Packages[1]);
       }
@@ -112,7 +157,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
   const handleApplyCoupon = async () => {
     if (!couponCode) return;
     try {
-      const basePrice = selectedService?.price || 0;
+      const basePrice = calculateBaseTotal();
       const res = await validateCoupon(couponCode, basePrice);
       if (res.data.valid) {
         setCouponDiscount(res.data.discountCalculated);
@@ -123,40 +168,44 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     }
   };
 
+  // Toggle selection for dynamic custom service
   const toggleCustomService = (svc) => {
     setSelectedCustomServices(prev => {
-      const exists = prev.some(s => s.name === svc.name);
+      const exists = prev.some(s => s._id === svc._id || s.name.toLowerCase() === svc.name.toLowerCase());
       if (exists) {
-        return prev.filter(s => s.name !== svc.name);
+        return prev.filter(s => s._id !== svc._id && s.name.toLowerCase() !== svc.name.toLowerCase());
       } else {
         return [...prev, svc];
       }
     });
   };
 
+  // Pricing calculations
   const calculateBaseTotal = () => {
     if (bookingMode === 'custom') {
-      return selectedCustomServices.reduce((sum, s) => sum + (s.price || 0), 0);
+      return selectedCustomServices.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
     }
-    return selectedService?.price || 799;
+    return Number(selectedService?.price) || 799;
   };
 
   const calculateFinalTotal = () => {
     const base = calculateBaseTotal();
-    const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price || 0), 0);
+    const addonsTotal = selectedAddons.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
     const total = base + addonsTotal - couponDiscount;
     return total > 0 ? total : 0;
   };
 
+  // Single-click slot confirmation (Direct Booking without payment gateway barrier)
   const handleConfirmBookingSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
     if (!customerName || !phone || !vehicleNumber) {
       alert('Please fill in Customer Name, Phone Number, and Vehicle Registration Number.');
       return;
     }
 
     if (bookingMode === 'custom' && selectedCustomServices.length === 0) {
-      alert('Please select at least 1 custom service.');
+      alert('Please select at least 1 custom service before booking.');
       return;
     }
 
@@ -164,45 +213,41 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     try {
       const serviceNameVal = bookingMode === 'custom'
         ? (selectedCustomServices.map(s => s.name).join(' + ') || 'Custom Wash Combo')
-        : (selectedService?.name || 'Pro Shine & Protection Package');
+        : (selectedService?.name || selectedService?.title || 'Pro Wash Package');
 
       const payload = {
-        customerName,
-        phone,
+        customerName: cleanText(customerName),
+        phone: phone.replace(/\D/g, ''),
         email: email || 'customer@example.com',
         vehicleType,
-        vehicleNumber,
+        vehicleNumber: vehicleNumber.toUpperCase().trim(),
         vehicleModel: vehicleModel || vehicleType,
-        serviceName: serviceNameVal,
-        packageName: bookingMode === 'custom' ? 'Custom Service Combo' : (selectedService?.title || selectedService?.name),
-        addons: selectedAddons.map(a => ({ name: a.name, price: a.price })),
+        serviceName: cleanText(serviceNameVal),
+        packageName: bookingMode === 'custom' ? 'Custom Service Combo' : cleanText(selectedService?.title || selectedService?.name || 'Selected Package'),
+        addons: selectedAddons.map(a => ({ name: cleanText(a.name), price: Number(a.price) })),
         date: selectedDate,
         slotTime: selectedSlot,
         totalAmount: calculateFinalTotal(),
         discountAmount: couponDiscount,
         couponApplied: couponDiscount > 0 ? couponCode : '',
-        paymentMode,
-        paymentStatus: 'Paid'
+        paymentTiming: 'Pay After Service',
+        paymentMode: 'Pay at Center',
+        paymentStatus: 'Pending'
       };
 
       const res = await createBooking(payload);
       setConfirmedBooking(res.data);
+      setShowInvoiceModal(true);
 
-      if (onBookingComplete) onBookingComplete(res.data.trackingCode);
-
-      // Trigger Smart Upsell Modal after booking step
-      setShowUpsellModal(true);
+      if (onBookingComplete) {
+        onBookingComplete(res.data.trackingCode);
+      }
     } catch (err) {
       console.error('Booking submission error:', err);
-      alert('Failed to submit booking. Please check your fields.');
+      alert('Failed to submit booking. Please verify your details.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleUpsellModalClose = () => {
-    setShowUpsellModal(false);
-    setShowInvoiceModal(true);
   };
 
   const vehiclesList = [
@@ -213,23 +258,47 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
     { type: 'Truck', desc: 'Pickup / Off-road' }
   ];
 
-  const displayPackagesList = (packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
+  const displayPackagesList = (packages && packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
+
+  // Derive active categories dynamically from DB services
+  const availableCategories = ['all'];
+  services.forEach(s => {
+    const cat = (s.category || 'wash').toLowerCase();
+    if (!availableCategories.includes(cat)) {
+      availableCategories.push(cat);
+    }
+  });
+
+  const getCategoryLabel = (cat) => {
+    if (cat === 'all') return 'All Services';
+    if (cat === 'wash') return 'Washing';
+    if (cat === 'interior') return 'Interior Care';
+    if (cat === 'detailing' || cat === 'exterior') return 'Detailing & Polish';
+    if (cat === 'engine') return 'Engine & Chassis';
+    return cat.charAt(0).toUpperCase() + cat.slice(1);
+  };
+
+  const filteredServices = customCategoryFilter === 'all'
+    ? services
+    : services.filter(s => (s.category || 'wash').toLowerCase() === customCategoryFilter);
 
   return (
     <div className="container" style={{ paddingTop: '40px', paddingBottom: '80px' }}>
       
       {/* HEADER WIZARD TITLE */}
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <span className="badge badge-aqua">AUTO SPA APPOINTMENT</span>
-        <h1 style={{ fontSize: '2.4rem', marginTop: '6px' }}>Reserve Your Detailing Slot</h1>
-        <p style={{ color: 'var(--text-muted)' }}>Simple 4-step instant booking & digital invoice in Siliguri</p>
+        <span className="badge badge-aqua">INSTANT APPOINTMENT</span>
+        <h1 style={{ fontSize: '2.4rem', marginTop: '6px', color: '#FFFFFF' }}>Reserve Your Detailing Slot</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+          Select your services, choose date & slot, and get instant booking confirmation with ₹0 advance payment.
+        </p>
       </div>
 
-      {/* 4-STEP WIZARD PROGRESS BAR */}
+      {/* 3-STEP WIZARD PROGRESS BAR */}
       <div className="wizard-step-bar" style={{
         display: 'flex',
         justifyContent: 'space-between',
-        marginBottom: '40px',
+        marginBottom: '36px',
         background: 'var(--bg-glass-card)',
         padding: '16px 24px',
         borderRadius: '16px',
@@ -240,8 +309,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
         {[
           { num: 1, label: 'Service Selection' },
           { num: 2, label: 'Vehicle Selection' },
-          { num: 3, label: 'Booking & Slot' },
-          { num: 4, label: 'Online Payment' }
+          { num: 3, label: 'Slot & Confirmation' }
         ].map(st => (
           <div
             key={st.num}
@@ -279,37 +347,21 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
       {/* MAIN STEP CONTENT CONTAINER */}
       <div className="glass-panel" style={{ padding: '36px', border: '1px solid var(--accent-aqua)' }}>
         
-        {/* STEP 1: SERVICE PACKAGE OR CUSTOM STANDALONE SELECTION */}
+        {/* STEP 1: DYNAMIC SERVICE SELECTION (FROM OWNER DATABASE ONLY) */}
         {step === 1 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>1. Choose Package or Custom Service Combo</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Select a pre-made package bundle or manually pick individual standalone services</p>
+                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>1. Choose Services or Package</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                  Pick standalone custom treatments or select a complete detailing bundle
+                </p>
               </div>
-              <span className="badge badge-aqua">Step 1 of 4</span>
+              <span className="badge badge-aqua">Step 1 of 3</span>
             </div>
 
-            {/* BOOKING MODE SWITCHER TABS */}
+            {/* SWITCHER TABS */}
             <div style={{ display: 'flex', gap: '12px', marginBottom: '28px', background: 'rgba(0,49,53,0.6)', padding: '6px', borderRadius: '12px', width: 'fit-content', border: '1px solid var(--border-light)' }}>
-              <button
-                type="button"
-                onClick={() => setBookingMode('packages')}
-                style={{
-                  background: bookingMode === 'packages' ? 'var(--accent-aqua)' : 'transparent',
-                  color: bookingMode === 'packages' ? '#003135' : '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.88rem',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Pre-Made Full Packages
-              </button>
-
               <button
                 type="button"
                 onClick={() => setBookingMode('custom')}
@@ -327,13 +379,151 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
               >
                 Custom Service Combo (Pick Individual Services)
               </button>
+
+              <button
+                type="button"
+                onClick={() => setBookingMode('packages')}
+                style={{
+                  background: bookingMode === 'packages' ? 'var(--accent-aqua)' : 'transparent',
+                  color: bookingMode === 'packages' ? '#003135' : '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Pre-Made Full Packages
+              </button>
             </div>
 
-            {/* MODE 1: PRE-MADE PACKAGES */}
+            {/* MODE 1: CUSTOM STANDALONE SERVICES (FROM DATABASE ONLY) */}
+            {bookingMode === 'custom' && (
+              <div style={{ marginBottom: '32px' }}>
+                
+                {/* COMBO SUMMARY BAR */}
+                <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '14px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'var(--accent-gold)', fontSize: '0.95rem' }}>
+                      Selected Services ({selectedCustomServices.length})
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                      {selectedCustomServices.length > 0
+                        ? selectedCustomServices.map(s => s.name).join(' • ')
+                        : 'No service selected yet (Check boxes below to build your combo)'}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                    Combo Total: ₹{calculateBaseTotal()}
+                  </div>
+                </div>
+
+                {/* CATEGORY FILTER TABS */}
+                {availableCategories.length > 1 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                    {availableCategories.map((catId) => (
+                      <button
+                        key={catId}
+                        type="button"
+                        onClick={() => setCustomCategoryFilter(catId)}
+                        style={{
+                          background: customCategoryFilter === catId ? 'var(--accent-cyan)' : 'rgba(0, 49, 53, 0.6)',
+                          color: customCategoryFilter === catId ? '#003135' : '#FFFFFF',
+                          fontWeight: 800,
+                          fontSize: '0.82rem',
+                          border: customCategoryFilter === catId ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                          padding: '6px 14px',
+                          borderRadius: '18px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {getCategoryLabel(catId)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* DYNAMIC DATABASE SERVICES GRID */}
+                {filteredServices.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                    <Info size={32} style={{ color: 'var(--accent-cyan)', marginBottom: '8px' }} />
+                    <p>No services found in this category.</p>
+                  </div>
+                ) : (
+                  <div className="grid-2" style={{ gap: '14px' }}>
+                    {filteredServices.map((s) => {
+                      const basePrice = Number(s.price || s.basePrice || 499);
+                      const origPrice = s.originalPrice ? Number(s.originalPrice) : Math.round(basePrice * 1.35);
+                      const isChecked = selectedCustomServices.some(cs => cs._id === s._id || cs.name.toLowerCase() === s.name.toLowerCase());
+                      const itemToToggle = {
+                        _id: s._id,
+                        name: s.name,
+                        price: basePrice,
+                        originalPrice: origPrice,
+                        category: s.category,
+                        durationMins: s.durationMins || 30,
+                        description: s.description
+                      };
+
+                      return (
+                        <div
+                          key={s._id || s.name}
+                          onClick={() => toggleCustomService(itemToToggle)}
+                          style={{
+                            background: isChecked ? 'rgba(0, 229, 255, 0.15)' : 'rgba(0,49,53,0.6)',
+                            border: isChecked ? '2px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '14px',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                            />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 800, fontSize: '0.98rem', color: '#FFFFFF' }}>{cleanText(s.name)}</span>
+                                <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.78rem', opacity: 0.75 }}>₹{origPrice}</span>
+                                <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--accent-gold)' }}>₹{basePrice}</span>
+                              </div>
+                              {s.description && (
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {cleanText(s.description)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>
+                              {s.durationMins || 30} mins
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MODE 2: PRE-MADE PACKAGES */}
             {bookingMode === 'packages' && (
               <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
                 {displayPackagesList.map((pkg, idx) => {
-                  const pkgName = stripEmojis(pkg.title || pkg.name);
+                  const pkgName = cleanText(pkg.title || pkg.name);
                   const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
 
                   return (
@@ -373,7 +563,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                       </div>
 
                       <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-                        {pkg.description || pkg.tagline}
+                        {cleanText(pkg.description || pkg.tagline)}
                       </p>
 
                       <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px', marginTop: '14px' }}>
@@ -381,8 +571,8 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                           INCLUDED SERVICES:
                         </div>
                         {pkg.includedServices && pkg.includedServices.map((inc, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px' }}>
-                            <span>• {inc}</span>
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', marginBottom: '6px', color: '#CCD0CF' }}>
+                            <span>• {cleanText(inc)}</span>
                           </div>
                         ))}
                       </div>
@@ -391,7 +581,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                         <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>Duration: ~{pkg.durationMins || 50} mins</span>
                         {isSelected && (
                           <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            Selected
+                            <Check size={14} /> Selected
                           </span>
                         )}
                       </div>
@@ -401,166 +591,19 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
               </div>
             )}
 
-            {/* MODE 2: CUSTOM STANDALONE INDIVIDUAL SERVICES SELECTOR */}
-            {bookingMode === 'custom' && (
-              <div style={{ marginBottom: '32px' }}>
-                
-                {/* COMBO SUMMARY BAR */}
-                <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '14px 20px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <div>
-                    <div style={{ fontWeight: 800, color: 'var(--accent-gold)', fontSize: '0.95rem' }}>
-                      Selected Custom Services ({selectedCustomServices.length})
-                    </div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
-                      {selectedCustomServices.length > 0 ? selectedCustomServices.map(s => s.name).join(' • ') : 'No service selected yet (Check boxes below to build your combo)'}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
-                    Combo Total: ₹{calculateBaseTotal()}
-                  </div>
-                </div>
-
-                {/* CATEGORY FILTER TABS FOR CUSTOM SERVICES */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                  {[
-                    { id: 'all', label: 'All Services' },
-                    { id: 'wash', label: 'Regular Wash' },
-                    { id: 'interior', label: 'Interior Care' },
-                    { id: 'exterior', label: 'Exterior & Polish' },
-                    { id: 'engine', label: 'Engine & Chassis' },
-                    { id: 'premium', label: 'Premium Detailing' }
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setCustomCategoryFilter(cat.id)}
-                      style={{
-                        background: customCategoryFilter === cat.id ? 'var(--accent-cyan)' : 'rgba(0, 49, 53, 0.6)',
-                        color: customCategoryFilter === cat.id ? '#003135' : '#FFFFFF',
-                        fontWeight: 800,
-                        fontSize: '0.82rem',
-                        border: customCategoryFilter === cat.id ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
-                        padding: '6px 14px',
-                        borderRadius: '18px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* DYNAMIC 25+ CUSTOM SERVICES GRID */}
-                {(() => {
-                  const masterServicesList = [
-                    // 1. REGULAR WASH SERVICES
-                    { category: 'wash', name: 'Express Exterior Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, duration: '25 mins', desc: 'High-pressure foam wash, wheel scrub & blow dry' },
-                    { category: 'wash', name: 'Foam Wash', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Thick snow foam lifting dirt and grime without scratches' },
-                    { category: 'wash', name: 'Basic Interior + Exterior Wash', prices: { Hatchback: 499, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: 'Full foam wash + cabin vacuuming & footmat cleaning' },
-                    { category: 'wash', name: 'Premium Car Wash', prices: { Hatchback: 699, Sedan: 799, SUV: 899 }, origPrices: { Hatchback: 999, Sedan: 1199, SUV: 1399 }, duration: '50 mins', desc: 'Foam wash, exterior clean, interior vacuum, dash polish, door panels, tyre shine & air freshener' },
-                    { category: 'wash', name: 'Underbody Wash', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'High-pressure underbody mud extraction & chassis rinse' },
-
-                    // 2. INTERIOR CLEANING SERVICES
-                    { category: 'interior', name: 'Interior Vacuum & Dusting', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '30 mins', desc: 'Deep cabin vacuuming & dust extraction from seats & footmats' },
-                    { category: 'interior', name: 'Dashboard & Door Panel Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'UV protective non-greasy dashboard polish & door panel scrub' },
-                    { category: 'interior', name: 'Seat Cleaning & Fabric Scrub', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Deep upholstery stain extraction & fabric/leather hydration' },
-                    { category: 'interior', name: 'Interior Deep Cleaning', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, duration: '90 mins', desc: 'Complete interior steam extraction, carpet shampooing & sanitization' },
-                    { category: 'interior', name: 'Roof & Carpet Cleaning', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 1099 }, duration: '45 mins', desc: 'Fabric headliner stain removal & carpet steam extraction' },
-                    { category: 'interior', name: 'AC Vent Cleaning & Steam Sanitize', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '25 mins', desc: 'Ozone steam sanitization inside AC ducts eliminating vent mold' },
-                    { category: 'interior', name: 'Odour Removal & Sanitisation', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '30 mins', desc: 'Permanent smoke & pet odor elimination with anti-bacterial fogging' },
-
-                    // 3. EXTERIOR CARE & SHINE
-                    { category: 'exterior', name: 'Tyre & Alloy Deep Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: 'Brake dust acid wash & alloy rim polishing' },
-                    { category: 'exterior', name: 'Tyre Dressing & Shine', prices: { Hatchback: 99, Sedan: 149, SUV: 199 }, origPrices: { Hatchback: 199, Sedan: 249, SUV: 299 }, duration: '15 mins', desc: 'Long-lasting deep wet look tire dressing' },
-                    { category: 'exterior', name: 'Exterior Wax Polish', prices: { Hatchback: 799, Sedan: 999, SUV: 1199 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, duration: '50 mins', desc: 'Hand wax application for smooth paint shine & UV protection' },
-                    { category: 'exterior', name: 'Machine Polish / Paint Enhancement', prices: { Hatchback: 1999, Sedan: 2499, SUV: 2999 }, origPrices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, duration: '90 mins', desc: 'Dual action machine buffing to remove swirl marks & restore gloss' },
-                    { category: 'exterior', name: 'Scratch Removal – Minor', prices: { Hatchback: 499, Sedan: 599, SUV: 699 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '35 mins', desc: 'Spot compounding & buffing to eliminate minor surface scratches' },
-                    { category: 'exterior', name: 'Headlight Restoration', prices: { Hatchback: 499, Sedan: 499, SUV: 499 }, origPrices: { Hatchback: 799, Sedan: 799, SUV: 799 }, duration: '30 mins', desc: 'Yellow oxidation removal & clear UV acrylic sealant' },
-
-                    // 4. ENGINE & UNDERBODY CARE
-                    { category: 'engine', name: 'Engine Bay Cleaning', prices: { Hatchback: 499, Sedan: 549, SUV: 599 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, duration: '40 mins', desc: '300°F steam degreasing of engine block & plastic covers' },
-                    { category: 'engine', name: 'Engine Bay Dressing', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, duration: '20 mins', desc: 'Protective hose & rubber wire conditioning' },
-                    { category: 'engine', name: 'Underbody Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, duration: '25 mins', desc: '360° pressure underbody mud removal' },
-                    { category: 'engine', name: 'Anti-Rust Treatment', prices: { Hatchback: 1499, Sedan: 1799, SUV: 2199 }, origPrices: { Hatchback: 2199, Sedan: 2499, SUV: 2999 }, duration: '60 mins', desc: 'Heavy-duty rubberized anti-corrosion chassis coating' },
-
-                    // 5. PREMIUM DETAILING
-                    { category: 'premium', name: 'Complete Interior Detailing', prices: { Hatchback: 1999, Sedan: 1999, SUV: 1999 }, origPrices: { Hatchback: 2999, Sedan: 2999, SUV: 2999 }, duration: '120 mins', desc: 'Deep steam sanitization, leather spa, carpet extraction & AC vent cleaning' },
-                    { category: 'premium', name: 'Exterior Detailing & Polish', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3499, Sedan: 3499, SUV: 3499 }, duration: '150 mins', desc: 'Multi-stage paint correction, clay bar treatment & synthetic wax polish' },
-                    { category: 'premium', name: 'Complete Car Detailing', prices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, origPrices: { Hatchback: 5999, Sedan: 5999, SUV: 5999 }, duration: '180 mins', desc: 'Full interior + exterior showroom transformation with engine bay & tire dressing' },
-                    { category: 'premium', name: 'Teflon / Paint Protection', prices: { Hatchback: 2499, Sedan: 2499, SUV: 2499 }, origPrices: { Hatchback: 3999, Sedan: 3999, SUV: 3999 }, duration: '120 mins', desc: 'Hydrophobic paint barrier enhancing color depth & swirl masking' },
-                    { category: 'premium', name: 'Nano Ceramic Protection', prices: { Hatchback: 4999, Sedan: 4999, SUV: 4999 }, origPrices: { Hatchback: 6999, Sedan: 6999, SUV: 6999 }, duration: '240 mins', desc: '9H Nano ceramic paint shield with 1-year gloss guarantee' },
-                    { category: 'premium', name: '1-Year Ceramic Coating', prices: { Hatchback: 7999, Sedan: 7999, SUV: 7999 }, origPrices: { Hatchback: 10999, Sedan: 10999, SUV: 10999 }, duration: '360 mins', desc: 'Professional multi-layer 9H ceramic coating with warranty card' },
-                    { category: 'premium', name: 'PPF – Partial Protection Film', prices: { Hatchback: 25000, Sedan: 25000, SUV: 25000 }, origPrices: { Hatchback: 35000, Sedan: 35000, SUV: 35000 }, duration: '480 mins', desc: 'Self-healing Paint Protection Film for high-impact front bumper & bonnet' }
-                  ];
-
-                  const filteredList = customCategoryFilter === 'all'
-                    ? masterServicesList
-                    : masterServicesList.filter(s => s.category === customCategoryFilter);
-
-                  const activeVeh = vehicleType || 'Sedan';
-
-                  return (
-                    <div className="grid-2" style={{ gap: '14px' }}>
-                      {filteredList.map((s, idx) => {
-                        const calculatedPrice = s.prices[activeVeh] || s.prices['Sedan'];
-                        const calculatedOrigPrice = s.origPrices[activeVeh] || s.origPrices['Sedan'];
-                        const itemToToggle = { ...s, price: calculatedPrice, originalPrice: calculatedOrigPrice };
-                        const isChecked = selectedCustomServices.some(cs => cs.name === s.name);
-
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => toggleCustomService(itemToToggle)}
-                            style={{
-                              background: isChecked ? 'rgba(0, 229, 255, 0.15)' : 'rgba(0,49,53,0.6)',
-                              border: isChecked ? '2px solid var(--accent-cyan)' : '1px solid var(--border-light)',
-                              borderRadius: '12px',
-                              padding: '16px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '14px',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => {}}
-                                style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
-                              />
-                              <div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 800, fontSize: '0.98rem', color: '#FFFFFF' }}>{s.name}</span>
-                                  <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.78rem', opacity: 0.75 }}>₹{calculatedOrigPrice}</span>
-                                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--accent-gold)' }}>₹{calculatedPrice}</span>
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{s.desc}</div>
-                              </div>
-                            </div>
-
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              <span className="badge badge-cyan" style={{ fontSize: '0.65rem' }}>{s.duration}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
             <div style={{ textAlign: 'right' }}>
               <button
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  if (bookingMode === 'custom' && selectedCustomServices.length === 0) {
+                    alert('Please select at least 1 service to build your custom combo.');
+                    return;
+                  }
+                  setStep(2);
+                }}
                 className="btn-aqua"
                 style={{ padding: '14px 32px' }}
               >
-                Next: Vehicle Selection
+                Next: Vehicle Selection <ArrowRight size={16} style={{ marginLeft: '6px' }} />
               </button>
             </div>
           </div>
@@ -574,7 +617,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                 <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>2. Select Vehicle Category</h3>
                 <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Choose your car type to get exact sizing and bay slot allocation</p>
               </div>
-              <span className="badge badge-aqua">Step 2 of 4</span>
+              <span className="badge badge-aqua">Step 2 of 3</span>
             </div>
 
             <div className="grid-3" style={{ gap: '20px', marginBottom: '32px' }}>
@@ -592,6 +635,7 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                     transition: 'all 0.25s ease'
                   }}
                 >
+                  <Car size={32} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 10px auto' }} />
                   <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#FFFFFF' }}>{v.type}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>{v.desc}</div>
                 </div>
@@ -600,187 +644,174 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button onClick={() => setStep(1)} className="btn-secondary">
-                Back: Service Selection
+                <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Back: Services
               </button>
 
               <button onClick={() => setStep(3)} className="btn-aqua" style={{ padding: '14px 32px' }}>
-                Next: Date & Slot
+                Next: Slot & Confirmation <ArrowRight size={16} style={{ marginLeft: '6px' }} />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 3: DATE & TIME SLOT SELECTION */}
+        {/* STEP 3: SLOT BOOKING & INSTANT DIRECT CONFIRMATION */}
         {step === 3 && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>3. Pick Preferred Date & Wash Bay Slot</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Select an open time slot for your appointment in Siliguri</p>
+                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>3. Pick Slot & Confirm Appointment</h3>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+                  Reserve your bay slot instantly. Pay ₹0 upfront & settle after your wash at the center.
+                </p>
               </div>
-              <span className="badge badge-aqua">Step 3 of 4</span>
-            </div>
-
-            <div className="grid-2" style={{ gap: '24px', marginBottom: '32px' }}>
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-                  Select Wash Date:
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="input-field"
-                  style={{ fontSize: '1rem', padding: '12px' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '8px', display: 'block' }}>
-                  Select Available Time Slot:
-                </label>
-                {(() => {
-                  const defaultSlots = [
-                    { slotTime: '08:00 AM', available: true },
-                    { slotTime: '09:30 AM', available: true },
-                    { slotTime: '11:00 AM', available: true },
-                    { slotTime: '01:00 PM', available: true },
-                    { slotTime: '02:30 PM', available: true },
-                    { slotTime: '04:00 PM', available: true },
-                    { slotTime: '05:30 PM', available: true }
-                  ];
-
-                  const slotsToRender = (slots && slots.length > 0) ? slots : defaultSlots;
-
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                      {slotsToRender.map((s, idx) => {
-                        const timeLabel = typeof s === 'string' ? s : (s.slotTime || s.time || '10:00 AM');
-                        const isAvailable = typeof s === 'object' ? (s.available !== false) : true;
-                        const remaining = typeof s === 'object' ? (s.remainingCapacity ?? (isAvailable ? 3 : 0)) : 3;
-                        const isSelected = selectedSlot === timeLabel;
-
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            disabled={!isAvailable}
-                            onClick={() => setSelectedSlot(timeLabel)}
-                            style={{
-                              background: isSelected ? 'var(--accent-aqua)' : 'rgba(17, 33, 45, 0.85)',
-                              color: isSelected ? '#06141B' : '#FFFFFF',
-                              border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
-                              borderRadius: '8px',
-                              padding: '12px',
-                              fontWeight: 800,
-                              fontSize: '0.92rem',
-                              cursor: isAvailable ? 'pointer' : 'not-allowed',
-                              opacity: isAvailable ? 1 : 0.45,
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>{timeLabel}</span>
-                            </div>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isSelected ? '#06141B' : 'var(--text-muted)' }}>
-                              {isAvailable ? `${remaining} Bays Open` : 'Fully Booked'}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(2)} className="btn-secondary">
-                Back: Vehicle Category
-              </button>
-
-              <button onClick={() => setStep(4)} className="btn-aqua" style={{ padding: '14px 32px' }}>
-                Next: Payment & Confirm
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: ONLINE PAYMENT & FINAL CONFIRMATION */}
-        {step === 4 && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.4rem', color: '#FFFFFF' }}>4. Customer Details & Online Payment</h3>
-                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Enter your contact info to receive digital receipt & SMS updates</p>
-              </div>
-              <span className="badge badge-aqua">Step 4 of 4</span>
+              <span className="badge badge-aqua">Step 3 of 3</span>
             </div>
 
             <form onSubmit={handleConfirmBookingSubmit}>
-              <div className="grid-2" style={{ gap: '24px', marginBottom: '32px' }}>
-                {/* Left Column: Form Inputs */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Mobile Number *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. +91 8609504186"
-                      value={phone}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setPhone(val);
-                        if (val.replace(/\D/g, '').length >= 10) {
-                          checkPhoneExists(val).then(res => {
-                            if (res.data.exists) {
-                              setIsExistingCustomer(true);
-                              if (res.data.name) setCustomerName(res.data.name);
-                              if (res.data.vehicles) setExistingVehicles(res.data.vehicles);
-                            } else {
-                              setIsExistingCustomer(false);
-                            }
-                          });
-
-                          // Capture abandoned lead draft
-                          captureAbandonedBooking({
-                            customerName: customerName || 'Lead User',
-                            phone: val,
-                            vehicleType,
-                            vehicleNumber,
-                            vehicleModel,
-                            serviceName: selectedService?.name || 'Pro Shine Package',
-                            subtotal: calculateFinalTotal(),
-                            stepReached: step
-                          }).catch(() => {});
-
-                          createLead({
-                            name: customerName || 'Valued Customer',
-                            phone: val.replace(/\D/g, ''),
-                            source: 'booking',
-                            serviceName: selectedService?.name || 'Pro Shine Package'
-                          }).catch(() => {});
-                        }
-                      }}
-                      className="input-field"
-                    />
-                    {isExistingCustomer && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '4px', fontWeight: 700 }}>
-                        Welcome back, {customerName}! Existing customer account found.
+              <div className="grid-2" style={{ gap: '28px', marginBottom: '32px' }}>
+                
+                {/* Left Column: Date, Slot & Customer Info */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  
+                  {/* Date & Slot Pickers */}
+                  <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Calendar size={14} /> Select Wash Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setSelectedDate(e.target.value)}
+                          className="input-field"
+                          style={{ fontSize: '0.92rem', padding: '10px 12px' }}
+                        />
                       </div>
-                    )}
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={14} /> Selected Slot
+                        </label>
+                        <div style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          background: 'rgba(15, 164, 175, 0.15)',
+                          border: '1px solid var(--accent-aqua)',
+                          color: 'var(--accent-aqua)',
+                          fontWeight: 800,
+                          fontSize: '0.92rem'
+                        }}>
+                          {selectedSlot}
+                        </div>
+                      </div>
+                    </div>
+
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', display: 'block' }}>
+                      Available Bay Slots:
+                    </label>
+                    {(() => {
+                      const defaultSlots = [
+                        { slotTime: '08:00 AM', available: true },
+                        { slotTime: '09:30 AM', available: true },
+                        { slotTime: '11:00 AM', available: true },
+                        { slotTime: '01:00 PM', available: true },
+                        { slotTime: '02:30 PM', available: true },
+                        { slotTime: '04:00 PM', available: true },
+                        { slotTime: '05:30 PM', available: true }
+                      ];
+
+                      const slotsToRender = (slots && slots.length > 0) ? slots : defaultSlots;
+
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                          {slotsToRender.map((s, idx) => {
+                            const timeLabel = typeof s === 'string' ? s : (s.slotTime || s.time || '10:00 AM');
+                            const isAvailable = typeof s === 'object' ? (s.available !== false) : true;
+                            const isSelected = selectedSlot === timeLabel;
+
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                disabled={!isAvailable}
+                                onClick={() => setSelectedSlot(timeLabel)}
+                                style={{
+                                  background: isSelected ? 'var(--accent-aqua)' : 'rgba(17, 33, 45, 0.85)',
+                                  color: isSelected ? '#06141B' : '#FFFFFF',
+                                  border: isSelected ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                                  borderRadius: '8px',
+                                  padding: '8px 4px',
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem',
+                                  cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                  opacity: isAvailable ? 1 : 0.45,
+                                  textAlign: 'center',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                {timeLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
-                      {isExistingCustomer ? 'Enter Your Account PIN / Password *' : 'Full Name *'}
-                    </label>
-                    {!isExistingCustomer ? (
+                  {/* Customer Information Inputs */}
+                  <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#FFFFFF', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                      Customer & Vehicle Details
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Mobile Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="e.g. 9876543210"
+                        value={phone}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPhone(val);
+                          const digits = val.replace(/\D/g, '');
+                          if (digits.length >= 10) {
+                            checkPhoneExists(digits).then(res => {
+                              if (res.data?.exists) {
+                                setIsExistingCustomer(true);
+                                if (res.data.name && !customerName) setCustomerName(res.data.name);
+                                if (res.data.vehicles) setExistingVehicles(res.data.vehicles);
+                              } else {
+                                setIsExistingCustomer(false);
+                              }
+                            }).catch(() => {});
+
+                            // Capture abandoned lead
+                            captureAbandonedBooking({
+                              customerName: customerName || 'Valued Customer',
+                              phone: digits,
+                              vehicleType,
+                              vehicleNumber,
+                              vehicleModel,
+                              serviceName: bookingMode === 'custom' ? selectedCustomServices.map(s => s.name).join(' + ') : selectedService?.name,
+                              subtotal: calculateFinalTotal(),
+                              stepReached: 3
+                            }).catch(() => {});
+                          }
+                        }}
+                        className="input-field"
+                      />
+                      {isExistingCustomer && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', marginTop: '4px', fontWeight: 700 }}>
+                          Welcome back! Existing customer record recognized.
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Customer Full Name *</label>
                       <input
                         type="text"
                         required
@@ -789,200 +820,203 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                         onChange={(e) => setCustomerName(e.target.value)}
                         className="input-field"
                       />
-                    ) : null}
-                  </div>
+                    </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
-                      {isExistingCustomer ? 'Enter Account Password *' : 'Create Password (Min 6 Characters) *'}
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      minLength={6}
-                      placeholder="Enter Password (min 6 characters)"
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
+                    {/* Saved Vehicles for Existing Customer */}
+                    {isExistingCustomer && existingVehicles.length > 0 && (
+                      <div style={{ background: 'rgba(0, 31, 35, 0.8)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--accent-aqua)' }}>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>Quick Select Saved Vehicle:</label>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                          {existingVehicles.map((v, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setVehicleNumber(v.regNumber);
+                                if (v.model) setVehicleModel(v.model);
+                              }}
+                              className="btn-secondary"
+                              style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                            >
+                              {v.regNumber} {v.model ? `(${v.model})` : ''}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* SAVED VEHICLES SELECTION FOR EXISTING CUSTOMERS */}
-                  {isExistingCustomer && existingVehicles.length > 0 && (
-                    <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-aqua)' }}>
-                      <label style={{ fontSize: '0.78rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>1-Click Select Saved Vehicle:</label>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-                        {existingVehicles.map((v, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              setVehicleNumber(v.regNumber);
-                              setVehicleModel(v.model);
-                            }}
-                            className="btn-secondary"
-                            style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                          >
-                            {v.regNumber} ({v.model})
-                          </button>
-                        ))}
+                    <div className="grid-2" style={{ gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Vehicle Reg Number *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. WB-02-AK-1234"
+                          value={vehicleNumber}
+                          onChange={(e) => setVehicleNumber(e.target.value)}
+                          className="input-field"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Car Model (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Nexon / Creta"
+                          value={vehicleModel}
+                          onChange={(e) => setVehicleModel(e.target.value)}
+                          className="input-field"
+                        />
                       </div>
                     </div>
-                  )}
-
-                  <div className="grid-2" style={{ gap: '12px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Vehicle Reg Number *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g. WB-74-AY-1200"
-                        value={vehicleNumber}
-                        onChange={(e) => setVehicleNumber(e.target.value)}
-                        className="input-field"
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Car Model</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Creta / Nexon"
-                        value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        className="input-field"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Payment Method</label>
-                    <select
-                      value={paymentMode}
-                      onChange={(e) => setPaymentMode(e.target.value)}
-                      className="input-field"
-                    >
-                      <option value="Online">Instant Online UPI / QR Code</option>
-                      <option value="Card">Credit / Debit Card</option>
-                      <option value="Cash">Pay Cash at Bay Counter</option>
-                    </select>
                   </div>
                 </div>
 
-                {/* Right Column: Order Summary, Enhance Your Wash & Coupon */}
-                <div style={{ background: 'rgba(0, 49, 53, 0.85)', padding: '24px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                {/* Right Column: Add-ons & Order Summary */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
-                  {/* 🔥 SMART UPSELLING SYSTEM: ENHANCE YOUR WASH */}
-                  <div style={{ background: 'rgba(255, 195, 0, 0.12)', border: '1px solid var(--accent-gold)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--accent-gold)' }}>Enhance Your Wash (Add-ons)</span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '8px', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
-                      {[
-                        { name: 'Tyre Shine', price: 99 },
-                        { name: 'Dashboard Polish', price: 149 },
-                        { name: 'Interior Vacuum', price: 199 },
-                        { name: 'Engine Bay Cleaning', price: 499 },
-                        { name: 'Underbody Wash', price: 249 },
-                        { name: 'AC Vent Cleaning', price: 199 },
-                        { name: 'Air Freshener', price: 99 },
-                        { name: 'Headlight Restoration', price: 499 },
-                        { name: 'Rain Repellent Coating', price: 299 },
-                        { name: 'Seat Cleaning', price: 499 }
-                      ].map((addon, idx) => {
-                        const isChecked = selectedAddons.some(a => a.name === addon.name);
-                        return (
-                          <label
-                            key={idx}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              background: isChecked ? 'rgba(0, 229, 255, 0.18)' : 'rgba(17, 33, 45, 0.7)',
-                              border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
-                              borderRadius: '8px',
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              fontSize: '0.82rem',
-                              color: '#FFFFFF'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => {
-                                  if (isChecked) {
-                                    setSelectedAddons(prev => prev.filter(a => a.name !== addon.name));
-                                  } else {
-                                    setSelectedAddons(prev => [...prev, addon]);
-                                  }
-                                }}
-                                style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
-                              />
-                              <span>{addon.name}</span>
-                            </div>
-                            <span style={{ fontWeight: 800, color: 'var(--accent-gold)' }}>+₹{addon.price}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#FFFFFF' }}>Order Summary</h4>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.95rem' }}>
-                    <span>Base Service ({selectedService?.title || selectedService?.name || 'Selected Wash'}):</span>
-                    <span>₹{calculateBaseTotal()}</span>
-                  </div>
-
-                  {selectedAddons.map((a, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                      <span>+ {a.name}</span>
-                      <span>+₹{a.price}</span>
-                    </div>
-                  ))}
-
-                  {/* Coupon Code Input */}
-                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-light)' }}>
-                    <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>Apply Promo Coupon Code:</label>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                      <input
-                        type="text"
-                        placeholder="e.g. WELCOME20 or FRESH50"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        className="input-field"
-                      />
-                      <button type="button" onClick={handleApplyCoupon} className="btn-secondary" style={{ padding: '0 16px' }}>
-                        Apply
-                      </button>
-                    </div>
-                    {couponStatus && (
-                      <div style={{ fontSize: '0.8rem', color: couponStatus.includes('Success') ? 'var(--accent-aqua)' : '#e0725a', marginTop: '4px', fontWeight: 700 }}>
-                        {couponStatus}
+                  {/* Optional Add-ons */}
+                  {allAddons.length > 0 && (
+                    <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                        <Sparkles size={16} style={{ color: 'var(--accent-gold)' }} />
+                        <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--accent-gold)' }}>Recommended Add-ons (Optional)</span>
                       </div>
-                    )}
-                  </div>
-
-                  {couponDiscount > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e0725a', fontWeight: 700, marginTop: '8px', fontSize: '0.95rem' }}>
-                      <span>Promo Discount ({couponCode}):</span>
-                      <span>-₹{couponDiscount}</span>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {allAddons.slice(0, 6).map((addon, idx) => {
+                          const isChecked = selectedAddons.some(a => a.name === addon.name);
+                          return (
+                            <label
+                              key={idx}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: isChecked ? 'rgba(0, 229, 255, 0.15)' : 'rgba(17, 33, 45, 0.7)',
+                                border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                cursor: 'pointer',
+                                fontSize: '0.82rem',
+                                color: '#FFFFFF'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    if (isChecked) {
+                                      setSelectedAddons(prev => prev.filter(a => a.name !== addon.name));
+                                    } else {
+                                      setSelectedAddons(prev => [...prev, addon]);
+                                    }
+                                  }}
+                                  style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                                />
+                                <span>{cleanText(addon.name)}</span>
+                              </div>
+                              <span style={{ fontWeight: 800, color: 'var(--accent-gold)' }}>+₹{addon.price}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-aqua)', borderTop: '2px solid var(--accent-aqua)', paddingTop: '14px', marginTop: '16px' }}>
-                    <span>Total Amount Payable:</span>
-                    <span>₹{calculateFinalTotal()}</span>
+                  {/* Summary & Coupon */}
+                  <div style={{ background: 'rgba(0, 49, 53, 0.85)', padding: '20px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
+                    <h4 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#FFFFFF' }}>Booking Summary</h4>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#CCD0CF' }}>
+                      <span>Vehicle:</span>
+                      <span style={{ fontWeight: 700, color: '#FFFFFF' }}>{vehicleType}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#CCD0CF' }}>
+                      <span>Date & Slot:</span>
+                      <span style={{ fontWeight: 700, color: '#FFFFFF' }}>{selectedDate} at {selectedSlot}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem', color: '#CCD0CF' }}>
+                      <span>
+                        {bookingMode === 'custom' ? `Custom Combo (${selectedCustomServices.length} items)` : (selectedService?.name || 'Selected Package')}:
+                      </span>
+                      <span style={{ fontWeight: 700, color: '#FFFFFF' }}>₹{calculateBaseTotal()}</span>
+                    </div>
+
+                    {selectedAddons.map((a, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        <span>+ {cleanText(a.name)}</span>
+                        <span>+₹{a.price}</span>
+                      </div>
+                    ))}
+
+                    {/* Coupon Input */}
+                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+                      <label style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Tag size={12} /> Apply Promo Coupon Code:
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <input
+                          type="text"
+                          placeholder="e.g. WELCOME20"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="input-field"
+                          style={{ padding: '8px 10px', fontSize: '0.85rem' }}
+                        />
+                        <button type="button" onClick={handleApplyCoupon} className="btn-secondary" style={{ padding: '0 14px', fontSize: '0.82rem' }}>
+                          Apply
+                        </button>
+                      </div>
+                      {couponStatus && (
+                        <div style={{ fontSize: '0.75rem', color: couponStatus.includes('Success') ? 'var(--accent-aqua)' : '#e0725a', marginTop: '4px', fontWeight: 700 }}>
+                          {couponStatus}
+                        </div>
+                      )}
+                    </div>
+
+                    {couponDiscount > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e0725a', fontWeight: 700, marginTop: '8px', fontSize: '0.88rem' }}>
+                        <span>Promo Discount ({couponCode}):</span>
+                        <span>-₹{couponDiscount}</span>
+                      </div>
+                    )}
+
+                    {/* Total Amount Payable */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.35rem', fontWeight: 800, color: 'var(--accent-aqua)', borderTop: '2px solid var(--accent-aqua)', paddingTop: '12px', marginTop: '14px' }}>
+                      <span>Total Payable:</span>
+                      <span>₹{calculateFinalTotal()}</span>
+                    </div>
+
+                    {/* Pay After Service Assurance Badge */}
+                    <div style={{
+                      marginTop: '14px',
+                      background: 'rgba(0, 229, 255, 0.08)',
+                      border: '1px solid var(--accent-cyan)',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.78rem',
+                      color: 'var(--ice-tint)'
+                    }}>
+                      <ShieldCheck size={18} style={{ color: 'var(--accent-cyan)', flexShrink: 0 }} />
+                      <span>
+                        <strong>Pay After Service:</strong> No upfront payment required. Pay via Cash, UPI or Card at the service center after your car wash.
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button type="button" onClick={() => setStep(3)} className="btn-secondary">
-                  Back: Date & Slot
+              {/* Form Actions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
+                <button type="button" onClick={() => setStep(2)} className="btn-secondary">
+                  <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Back: Vehicle
                 </button>
 
                 <button
@@ -990,18 +1024,22 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
                   disabled={isSubmitting}
                   className="btn-primary"
                   style={{
-                    background: '#DCD6C4',
-                    color: '#002d31',
+                    background: 'var(--accent-aqua)',
+                    color: '#003135',
                     fontWeight: 800,
-                    fontSize: '1rem',
+                    fontSize: '1.05rem',
                     border: 'none',
-                    padding: '14px 36px',
+                    padding: '14px 40px',
                     borderRadius: '28px',
                     cursor: 'pointer',
-                    boxShadow: '0 6px 25px rgba(220, 214, 196, 0.45)'
+                    boxShadow: '0 6px 25px rgba(15, 164, 175, 0.45)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
-                  {isSubmitting ? 'Confirming Appointment...' : `Pay ₹${calculateFinalTotal()} & Confirm Slot`}
+                  <CheckCircle2 size={18} />
+                  {isSubmitting ? 'Confirming Appointment...' : `Confirm & Book Slot (₹${calculateFinalTotal()})`}
                 </button>
               </div>
             </form>
@@ -1010,25 +1048,16 @@ export default function BookingFlow({ initialVehicle = 'Sedan', initialStep = 1,
 
       </div>
 
-      {/* SMART UPSELL MODAL */}
-      {showUpsellModal && (
-        <SmartUpsellModal
-          onClose={handleUpsellModalClose}
-          onAddonsSelected={(addons) => {
-            setSelectedAddons(addons);
-            handleUpsellModalClose();
-          }}
-        />
-      )}
-
-      {/* DIGITAL INVOICE MODAL */}
+      {/* DIGITAL INVOICE MODAL (INSTANT DIRECT CONFIRMATION) */}
       {showInvoiceModal && confirmedBooking && (
         <DigitalInvoiceModal
           booking={confirmedBooking}
+          isOpen={showInvoiceModal}
           onClose={() => {
             setShowInvoiceModal(false);
             if (onTrackLive) onTrackLive(confirmedBooking.trackingCode);
           }}
+          onTrackLive={onTrackLive}
         />
       )}
 

@@ -1,14 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
-import AdminSidebar from './components/AdminSidebar';
 import Footer from './components/Footer';
-import SmartLeadPopup from './components/SmartLeadPopup';
 import CustomerHome from './pages/CustomerHome';
-import BookingFlow from './pages/BookingFlow';
-import TrackBooking from './pages/TrackBooking';
-import CustomerPortal from './pages/CustomerPortal';
-import AdminDashboard from './pages/AdminDashboard';
+import { verifyAdminToken } from './api';
 import './theme.css';
+
+// Code Splitting - Lazy Load Secondary & Heavy Routes for Instant Initial Load
+const AdminSidebar = lazy(() => import('./components/AdminSidebar'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminLoginGate = lazy(() => import('./components/AdminLoginGate'));
+const BookingFlow = lazy(() => import('./pages/BookingFlow'));
+const TrackBooking = lazy(() => import('./pages/TrackBooking'));
+const CustomerPortal = lazy(() => import('./pages/CustomerPortal'));
+const SmartLeadPopup = lazy(() => import('./components/SmartLeadPopup'));
+
+function PageLoader() {
+  return (
+    <div style={{
+      minHeight: '60vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '16px',
+      color: 'var(--accent-cyan)'
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        border: '3px solid rgba(0, 229, 255, 0.2)',
+        borderTopColor: 'var(--accent-cyan)',
+        animation: 'spin 0.8s linear infinite'
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div style={{ fontSize: '0.9rem', letterSpacing: '0.05em', color: 'var(--ice-tint)' }}>Loading CAR WASH...</div>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -16,6 +45,43 @@ export default function App() {
   const [preselectedItem, setPreselectedItem] = useState(null);
   const [activeBookingCode, setActiveBookingCode] = useState('');
   const [adminSubTab, setAdminSubTab] = useState('analytics');
+
+  // Authenticated Owner / Admin State
+  const [currentAdmin, setCurrentAdmin] = useState(() => {
+    try {
+      const token = localStorage.getItem('carwash_admin_token');
+      const user = localStorage.getItem('carwash_admin_user');
+      return token && user ? JSON.parse(user) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Verify Admin JWT token with backend on mount
+  useEffect(() => {
+    const token = localStorage.getItem('carwash_admin_token');
+    if (token) {
+      verifyAdminToken()
+        .then((res) => {
+          if (res.data?.user) {
+            setCurrentAdmin(res.data.user);
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('carwash_admin_token');
+          localStorage.removeItem('carwash_admin_user');
+          setCurrentAdmin(null);
+        });
+    }
+  }, []);
+
+  const handleAdminSignOut = () => {
+    localStorage.removeItem('carwash_admin_token');
+    localStorage.removeItem('carwash_admin_user');
+    setCurrentAdmin(null);
+    window.location.hash = '#home';
+    setActiveTab('home');
+  };
 
   // Change Admin Sub-Tab with History pushState for Mobile Phone Edge Swipe Back Gesture
   const changeAdminSubTab = (newSubTab) => {
@@ -46,8 +112,8 @@ export default function App() {
   const [adminRefreshTrigger, setAdminRefreshTrigger] = useState(0);
   const [showWalkInModal, setShowWalkInModal] = useState(false);
 
-  // Read secret Owner Portal path from .env
-  const OWNER_SECRET_PATH = import.meta.env.VITE_OWNER_PORTAL_SECRET_PATH || '#owner-sec89k7-wash-portal';
+  // Read secret Admin Portal path from .env
+  const ADMIN_SECRET_PATH = import.meta.env.VITE_ADMIN_SECRET_PATH || import.meta.env.VITE_OWNER_PORTAL_SECRET_PATH || '#admin-login-x97k';
 
   // Tab navigator that pushes to Browser History for Mobile Native Back Gesture/Button
   const changeTab = (tabName, hashValue = null) => {
@@ -78,9 +144,15 @@ export default function App() {
 
       const hash = window.location.hash;
       const cleanHash = hash.replace('#', '');
-      const secretClean = OWNER_SECRET_PATH.replace('#', '');
+      const secretClean = ADMIN_SECRET_PATH.replace('#', '');
 
-      if (hash.startsWith('#admin') || hash === OWNER_SECRET_PATH || cleanHash === secretClean || hash === '#owner') {
+      if (
+        hash.startsWith('#admin') ||
+        hash === ADMIN_SECRET_PATH ||
+        cleanHash === secretClean ||
+        cleanHash.startsWith('admin-login') ||
+        hash === '#owner'
+      ) {
         setActiveTab('admin');
         const parts = hash.split('/');
         if (parts.length > 1 && parts[1]) {
@@ -104,7 +176,7 @@ export default function App() {
       window.removeEventListener('hashchange', handleUrlRoute);
       window.removeEventListener('popstate', handleUrlRoute);
     };
-  }, []);
+  }, [ADMIN_SECRET_PATH]);
 
   const handleStartBooking = (vehType) => {
     if (vehType) setSelectedVehicle(vehType);
@@ -120,40 +192,52 @@ export default function App() {
     changeTab('track');
   };
 
-  // OWNER DASHBOARD LAYOUT (Dedicated Sidebar)
+  // OWNER / ADMIN DASHBOARD OR AUTH GATE
   if (activeTab === 'admin') {
-    return (
-      <div className="admin-layout" style={{ display: 'flex', minHeight: '100vh', background: '#0a1b27' }}>
-        {/* Left Owner Sidebar */}
-        <AdminSidebar
-          activeSubTab={adminSubTab}
-          setActiveSubTab={changeAdminSubTab}
-          onRefresh={() => setAdminRefreshTrigger(prev => prev + 1)}
-          onRegisterWalkIn={() => setShowWalkInModal(true)}
-          onExitToCustomerSite={() => {
-            window.location.hash = '#home';
-            setActiveTab('home');
-          }}
-        />
+    // If NOT authenticated, show the secure Admin Login Gate
+    if (!currentAdmin) {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <div style={{ minHeight: '100vh', background: '#06141b' }}>
+            <AdminLoginGate
+              onLoginSuccess={(user) => {
+                setCurrentAdmin(user);
+              }}
+              onCancel={() => {
+                window.location.hash = '#home';
+                setActiveTab('home');
+              }}
+            />
+          </div>
+        </Suspense>
+      );
+    }
 
-        {/* Right Owner Content Dashboard Area with Responsive Scrollable Layout */}
-        <main className="admin-main-area" style={{
-          flex: 1,
-          minWidth: 0,
-          padding: '20px 24px',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          background: 'linear-gradient(145deg, #18384d 0%, #112a3b 100%)'
-        }}>
-          <AdminDashboard
+    // If Authenticated with JWT, show full Owner Management Portal
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <div className="admin-layout">
+          {/* Left Owner Sidebar */}
+          <AdminSidebar
             activeSubTab={adminSubTab}
             setActiveSubTab={changeAdminSubTab}
-            refreshTrigger={adminRefreshTrigger}
-            showWalkInModal={showWalkInModal}
-            setShowWalkInModal={setShowWalkInModal}
+            onRefresh={() => setAdminRefreshTrigger(prev => prev + 1)}
+            onRegisterWalkIn={() => setShowWalkInModal(true)}
+            onExitToCustomerSite={handleAdminSignOut}
           />
-        </main>
-      </div>
+
+          {/* Right Owner Content Dashboard Area with Responsive Scrollable Layout */}
+          <main className="admin-main-area" style={{ padding: '20px 24px' }}>
+            <AdminDashboard
+              activeSubTab={adminSubTab}
+              setActiveSubTab={changeAdminSubTab}
+              refreshTrigger={adminRefreshTrigger}
+              showWalkInModal={showWalkInModal}
+              setShowWalkInModal={setShowWalkInModal}
+            />
+          </main>
+        </div>
+      </Suspense>
     );
   }
 
@@ -169,8 +253,6 @@ export default function App() {
       />
 
       <main className="public-main-content" style={{ flex: 1, paddingTop: '72px' }}>
-
-
         {activeTab === 'home' && (
           <CustomerHome
             onStartBooking={handleStartBooking}
@@ -187,38 +269,46 @@ export default function App() {
         )}
 
         {activeTab === 'booking' && (
-          <BookingFlow
-            initialVehicle={selectedVehicle}
-            preselectedItem={preselectedItem}
-            onBookingComplete={handleBookingComplete}
-            onTrackLive={handleTrackLive}
-            onBackToHome={() => changeTab('home')}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <BookingFlow
+              initialVehicle={selectedVehicle}
+              preselectedItem={preselectedItem}
+              onBookingComplete={handleBookingComplete}
+              onTrackLive={handleTrackLive}
+              onBackToHome={() => changeTab('home')}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'track' && (
-          <TrackBooking
-            activeCode={activeBookingCode}
-            onBackToHome={() => changeTab('home')}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <TrackBooking
+              activeCode={activeBookingCode}
+              onBackToHome={() => changeTab('home')}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'crm' && (
-          <CustomerPortal
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
-            onSignOut={handleSignOut}
-            onBackToHome={() => changeTab('home')}
-          />
+          <Suspense fallback={<PageLoader />}>
+            <CustomerPortal
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              onSignOut={handleSignOut}
+              onBackToHome={() => changeTab('home')}
+            />
+          </Suspense>
         )}
       </main>
 
-      <SmartLeadPopup onStartBookingWithOffer={(offerCode) => {
-        setPreselectedItem({ name: `Offer (${offerCode})`, price: 0 });
-        changeTab('booking');
-      }} />
+      <Suspense fallback={null}>
+        <SmartLeadPopup onStartBookingWithOffer={(offerCode) => {
+          setPreselectedItem({ name: `Offer (${offerCode})`, price: 0 });
+          changeTab('booking');
+        }} />
+      </Suspense>
 
-      <Footer onOpenOwnerPortal={() => setActiveTab('admin')} />
+      <Footer />
     </div>
   );
 }

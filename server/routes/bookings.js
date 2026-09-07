@@ -5,26 +5,95 @@ const Customer = require('../models/Customer');
 const Coupon = require('../models/Coupon');
 const Bay = require('../models/Bay');
 
-// GET all bookings (Admin) with filter options
+// GET all bookings (Admin) with filter options (Multi-Year Date Range, Search & Sort)
 router.get('/', async (req, res) => {
   try {
-    const { status, date, search } = req.query;
+    const { status, date, startDate, endDate, from, to, search, paymentStatus, sortBy, sortOrder } = req.query;
     let query = {};
-    if (status && status !== 'all') query.status = status;
-    if (date) query.date = date;
-    if (search) {
+
+    // Status filter
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    // Payment Status filter
+    if (paymentStatus && paymentStatus !== 'all') {
+      query.paymentStatus = paymentStatus;
+    }
+
+    // Exact Date filter
+    if (date) {
+      query.date = date;
+    }
+
+    // Date Range (From - To) for multi-month / multi-year filtering
+    const fromDate = startDate || from;
+    const toDate = endDate || to;
+    if (fromDate || toDate) {
+      query.date = {};
+      if (fromDate) query.date.$gte = fromDate;
+      if (toDate) query.date.$lte = toDate;
+    }
+
+    // Global Search across customer, phone, trackingCode, vehicle & service
+    if (search && search.trim().length > 0) {
+      const s = search.trim();
       query.$or = [
-        { customerName: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { trackingCode: { $regex: search, $options: 'i' } },
-        { vehicleNumber: { $regex: search, $options: 'i' } },
-        { vehicleBrand: { $regex: search, $options: 'i' } },
-        { vehicleModel: { $regex: search, $options: 'i' } }
+        { customerName: { $regex: s, $options: 'i' } },
+        { phone: { $regex: s, $options: 'i' } },
+        { trackingCode: { $regex: s, $options: 'i' } },
+        { bookingId: { $regex: s, $options: 'i' } },
+        { vehicleNumber: { $regex: s, $options: 'i' } },
+        { vehicleModel: { $regex: s, $options: 'i' } },
+        { serviceName: { $regex: s, $options: 'i' } },
+        { packageName: { $regex: s, $options: 'i' } }
       ];
     }
 
-    const bookings = await Booking.find(query).sort({ createdAt: -1 });
+    // Sorting (Default: Date & createdAt descending)
+    let sortObj = { date: -1, createdAt: -1 };
+    if (sortBy === 'amount') {
+      sortObj = { totalAmount: sortOrder === 'asc' ? 1 : -1 };
+    } else if (sortBy === 'name') {
+      sortObj = { customerName: sortOrder === 'desc' ? -1 : 1 };
+    } else if (sortBy === 'date_asc') {
+      sortObj = { date: 1, createdAt: 1 };
+    }
+
+    const bookings = await Booking.find(query).sort(sortObj);
     res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET complete lifetime multi-year history for a customer by phone / vehicle
+router.get('/customer-timeline/:phone', async (req, res) => {
+  try {
+    const rawPhone = req.params.phone.replace(/\D/g, '');
+    const cleanLast10 = rawPhone.slice(-10);
+
+    const history = await Booking.find({
+      $or: [
+        { phone: { $regex: cleanLast10 } },
+        { vehicleNumber: { $regex: req.params.phone, $options: 'i' } }
+      ]
+    }).sort({ date: -1, createdAt: -1 });
+
+    const totalSpent = history.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    const vehiclesUsed = [...new Set(history.map(b => b.vehicleNumber).filter(Boolean))];
+    const servicesTaken = [...new Set(history.map(b => b.serviceName || b.packageName).filter(Boolean))];
+
+    res.json({
+      phone: rawPhone,
+      totalVisits: history.length,
+      totalSpent,
+      vehicles: vehiclesUsed,
+      services: servicesTaken,
+      firstVisit: history.length > 0 ? history[history.length - 1].date : null,
+      latestVisit: history.length > 0 ? history[0].date : null,
+      bookings: history
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -65,18 +134,23 @@ router.get('/slots', async (req, res) => {
   }
 });
 
-// GET Live Bay Control status grid
+// GET Live Bay Control status grid (Exactly 2 Bays)
 router.get('/bays', async (req, res) => {
   try {
+    // Clean up any extra bays beyond 2
+    await Bay.deleteMany({ bayNumber: { $gt: 2 } });
+
     let bays = await Bay.find({}).populate('currentBooking').sort({ bayNumber: 1 });
     if (bays.length === 0) {
-      // Seed default 4 bays if none exist
+      // Seed exactly 2 bays
       bays = await Bay.insertMany([
-        { bayNumber: 1, name: 'BAY 1', type: 'Express Wash', status: 'available' },
-        { bayNumber: 2, name: 'BAY 2', type: 'Steam & Interior', status: 'available' },
-        { bayNumber: 3, name: 'BAY 3', type: 'Detailing & Polish', status: 'available' },
-        { bayNumber: 4, name: 'BAY 4', type: 'Ceramic Shield', status: 'available' }
+        { bayNumber: 1, name: 'Bay 1', type: 'Express & Foam Wash', status: 'available' },
+        { bayNumber: 2, name: 'Bay 2', type: 'Steam & Detailing', status: 'available' }
       ]);
+    } else if (bays.length === 1) {
+      const bay2 = new Bay({ bayNumber: 2, name: 'Bay 2', type: 'Steam & Detailing', status: 'available' });
+      await bay2.save();
+      bays = await Bay.find({}).populate('currentBooking').sort({ bayNumber: 1 });
     }
     res.json(bays);
   } catch (err) {
@@ -108,16 +182,49 @@ router.get('/track/:code', async (req, res) => {
   }
 });
 
+// Helper function: Generate sequential yearly invoice number (e.g. CW2026-0001, CW2027-0001)
+async function generateYearlyInvoiceNumber(bookingDateStr) {
+  const year = (bookingDateStr ? bookingDateStr.slice(0, 4) : new Date().getFullYear().toString()) || '2026';
+  const yearPrefix = `CW${year}-`;
+  
+  // Find latest booking for this specific year
+  const latestBooking = await Booking.findOne({
+    invoiceNumber: { $regex: `^CW${year}-` }
+  }).sort({ invoiceNumber: -1 });
+
+  let nextSeq = 1;
+  if (latestBooking && latestBooking.invoiceNumber) {
+    const parts = latestBooking.invoiceNumber.split('-');
+    if (parts.length === 2) {
+      const parsed = parseInt(parts[1], 10);
+      if (!isNaN(parsed)) {
+        nextSeq = parsed + 1;
+      }
+    }
+  } else {
+    // If none has invoiceNumber yet, count documents for this year
+    const countForYear = await Booking.countDocuments({
+      date: { $regex: `^${year}` }
+    });
+    nextSeq = countForYear > 0 ? countForYear + 1 : 1;
+  }
+
+  const paddedSeq = String(nextSeq).padStart(4, '0');
+  return `${yearPrefix}${paddedSeq}`;
+}
+
 // POST Create new customer booking (5-Step Flow)
 router.post('/', async (req, res) => {
   try {
     const {
       customerName, phone, email, vehicleType, vehicleNumber, vehicleBrand, vehicleModel, vehicleColor,
-      serviceName, packageName, addons, date, slotTime, paymentMode, couponCode, bookingSource
+      serviceName, packageName, addons, date, slotTime, paymentMode, paymentTiming, couponCode, bookingSource
     } = req.body;
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const trackingCode = `CW-${randomNum}`;
+    const bookingDateStr = date || new Date().toISOString().split('T')[0];
+    const invoiceNumber = await generateYearlyInvoiceNumber(bookingDateStr);
 
     let totalAmount = req.body.totalAmount || req.body.finalAmount || 0;
     let discountAmount = 0;
@@ -140,9 +247,13 @@ router.post('/', async (req, res) => {
     const brandName = vehicleBrand || 'Hyundai';
     const modelName = vehicleModel || vehicleType || 'Creta';
 
+    const isPayAfter = paymentTiming === 'Pay After Service' || paymentMode === 'Cash';
+    const isPaid = !isPayAfter && (paymentMode === 'Online' || paymentMode === 'UPI' || paymentMode === 'Card');
+
     const newBooking = new Booking({
       bookingId: trackingCode,
       trackingCode,
+      invoiceNumber,
       customerName,
       phone,
       email,
@@ -160,12 +271,14 @@ router.post('/', async (req, res) => {
       totalAmount,
       coupon: couponCode ? couponCode.toUpperCase() : '',
       couponApplied: couponCode ? couponCode.toUpperCase() : '',
-      bookingDate: date || new Date().toISOString().split('T')[0],
-      date: date || new Date().toISOString().split('T')[0],
+      bookingDate: bookingDateStr,
+      date: bookingDateStr,
       slotTime: slotTime || '10:00 AM',
       timeSlot: slotTime || '10:00 AM',
+      paymentTiming: paymentTiming || (paymentMode === 'Cash' ? 'Pay After Service' : 'Pay Now'),
       paymentMode: paymentMode || 'Online',
-      paymentStatus: paymentMode === 'Cash' ? 'Pending' : 'Paid',
+      paymentStatus: isPaid ? 'Paid' : 'Pending',
+      paidAt: isPaid ? new Date() : null,
       status: 'confirmed',
       assignedBay: 'BAY 1',
       bayAssigned: 'BAY 1',
@@ -254,9 +367,13 @@ router.post('/walkin', async (req, res) => {
     const brandName = vehicleBrand || 'Tata';
     const modelName = vehicleModel || vehicleType || 'Nexon';
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const invoiceNumber = await generateYearlyInvoiceNumber(todayStr);
+
     const walkInBooking = new Booking({
       bookingId: trackingCode,
       trackingCode,
+      invoiceNumber,
       customerName: customerName || 'Walk-in Customer',
       phone: phone || '+91 9900000000',
       vehicleType: vehicleType || 'Sedan',
@@ -334,6 +451,46 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// PATCH Mark payment completed anytime (Pay Now / Pay After Service / Bay Collection)
+router.patch('/:id/pay', async (req, res) => {
+  try {
+    const { paymentMode, paymentStatus } = req.body;
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      {
+        paymentMode: paymentMode || 'UPI',
+        paymentStatus: paymentStatus || 'Paid',
+        paidAt: new Date()
+      },
+      { new: true }
+    );
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ message: 'Payment recorded successfully', booking });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PATCH Mark payment completed by Tracking Code (Customer Tracking / Invoice portal)
+router.patch('/track/:code/pay', async (req, res) => {
+  try {
+    const { paymentMode, paymentStatus } = req.body;
+    const booking = await Booking.findOneAndUpdate(
+      { trackingCode: req.params.code.toUpperCase() },
+      {
+        paymentMode: paymentMode || 'UPI',
+        paymentStatus: paymentStatus || 'Paid',
+        paidAt: new Date()
+      },
+      { new: true }
+    );
+    if (!booking) return res.status(404).json({ error: 'Booking tracking code not found' });
+    res.json({ message: 'Payment confirmed successfully', booking });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ABANDONED BOOKING RECOVERY API: Capture Draft Lead
 router.post('/abandoned', async (req, res) => {
   try {
@@ -406,6 +563,17 @@ router.post('/abandoned/:id/send-offer', async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE Booking by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndDelete(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json({ message: 'Booking deleted successfully', id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

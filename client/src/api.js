@@ -9,6 +9,22 @@ const api = axiosLib.create({
   }
 });
 
+// Automatic JWT Authorization Header Attachment
+api.interceptors.request.use((config) => {
+  const adminToken = localStorage.getItem('carwash_admin_token');
+  if (adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+// Owner & Admin Authentication
+export const loginAdmin = (username, password) => api.post('/admin/auth/login', { username, password });
+export const verifyAdminToken = () => api.get('/admin/auth/verify');
+export const changeAdminPassword = (currentPassword, newPassword) => api.post('/admin/auth/change-password', { currentPassword, newPassword });
+
 // Services & Packages Management
 export const getServices = (vehicleType) => api.get('/services', { params: { vehicleType } });
 export const getPackages = (vehicleType) => api.get('/services/packages', { params: { vehicleType } });
@@ -16,6 +32,7 @@ export const getAddons = () => api.get('/services/addons');
 export const createService = (serviceData) => api.post('/services', serviceData);
 export const updateService = (id, serviceData) => api.put(`/services/${id}`, serviceData);
 export const deleteService = (id) => api.delete(`/services/${id}`);
+export const uploadServiceImage = (imageData) => api.post('/services/upload', { image: imageData });
 
 export const createPackage = (pkgData) => api.post('/services/packages', pkgData);
 export const updatePackage = (id, pkgData) => api.put(`/services/packages/${id}`, pkgData);
@@ -26,15 +43,19 @@ export const createBooking = (bookingData) => api.post('/bookings', bookingData)
 export const createWalkInBooking = (walkInData) => api.post('/bookings/walkin', walkInData);
 export const getBookings = (params) => api.get('/bookings', { params });
 export const trackBooking = (code) => api.get(`/bookings/track/${code}`);
+export const getCustomerTimeline = (phone) => api.get(`/bookings/customer-timeline/${phone}`);
 export const updateBookingStatus = (id, data) => api.patch(`/bookings/${id}/status`, data);
+export const deleteBooking = (id) => api.delete(`/bookings/${id}`);
 export const getSlotsAvailability = (date) => api.get('/bookings/slots', { params: { date } });
 
 export const getBays = () => api.get('/bookings/bays');
 export const updateBayStatus = (id, data) => api.put(`/bookings/bays/${id}`, data);
+export const payBooking = (id, data) => api.patch(`/bookings/${id}/pay`, data);
+export const payBookingByCode = (code, data) => api.patch(`/bookings/track/${code}/pay`, data);
 
 // Customer Authentication & PIN Reset
-export const checkPhoneExists = (phone) => api.post('/crm/auth/check-phone', { phone });
-export const loginCustomer = (phone, pin) => api.post('/crm/auth/login', { phone, pin });
+export const checkPhoneExists = (identifier) => api.post('/crm/auth/check-phone', { identifier, phone: identifier });
+export const loginCustomer = (identifier, pin) => api.post('/crm/auth/login', { identifier, phone: identifier, pin, password: pin });
 export const signupCustomer = (data) => api.post('/crm/auth/signup', data);
 export const resetCustomerPin = (phone, newPin) => api.post(`/crm/customers/${phone}/reset-pin`, { newPin });
 
@@ -74,8 +95,12 @@ export const getExpenses = () => api.get('/analytics/expenses');
 export const addExpense = (data) => api.post('/analytics/expenses', data);
 export const deleteExpense = (id) => api.delete(`/analytics/expenses/${id}`);
 
-// Staff & Abandoned Recovery
+// Staff Management
 export const getStaff = () => api.get('/staff');
+export const createStaff = (data) => api.post('/staff', data);
+export const updateStaff = (id, data) => api.put(`/staff/${id}`, data);
+export const deleteStaff = (id) => api.delete(`/staff/${id}`);
+
 export const getAbandonedLeads = () => api.get('/marketing/abandoned');
 export const sendRecoveryOffer = (id) => api.post(`/marketing/abandoned/${id}/recover`);
 

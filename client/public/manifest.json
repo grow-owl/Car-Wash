@@ -1,0 +1,29 @@
+{
+  "short_name": "CAR WASH",
+  "name": "CAR WASH - Premium Auto Detailing & Car Spa",
+  "description": "Book high-pressure hydrophobic car wash, ceramic coating, steam detailing, and track live bay queue in Siliguri.",
+  "start_url": "/",
+  "background_color": "#003135",
+  "theme_color": "#003135",
+  "display": "standalone",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "32x32"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}

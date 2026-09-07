@@ -1,16 +1,34 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const Customer = require('../models/Customer');
 const Booking = require('../models/Booking');
 const BeforeAfter = require('../models/BeforeAfter');
+const { JWT_SECRET } = require('../middleware/adminAuth');
 
-// AUTH: Check if Phone exists
+// AUTH: Check if Phone or Email exists
 router.post('/auth/check-phone', async (req, res) => {
   try {
-    const { phone } = req.body;
-    const customer = await Customer.findOne({ phone: phone?.trim() });
+    const { phone, email, identifier } = req.body;
+    const target = String(phone || email || identifier || '').trim();
+    if (!target) return res.json({ exists: false });
+
+    let customer = null;
+    if (target.includes('@')) {
+      customer = await Customer.findOne({ email: target.toLowerCase() });
+    } else {
+      const cleanPhone = target.replace(/[^0-9]/g, '');
+      customer = await Customer.findOne({
+        $or: [
+          { phone: target },
+          { phone: cleanPhone },
+          { phone: cleanPhone.slice(-10) }
+        ]
+      });
+    }
+
     if (customer) {
-      return res.json({ exists: true, name: customer.name, phone: customer.phone, vehicles: customer.vehicles });
+      return res.json({ exists: true, name: customer.name, phone: customer.phone, email: customer.email, vehicles: customer.vehicles });
     }
     return res.json({ exists: false });
   } catch (err) {
@@ -18,55 +36,105 @@ router.post('/auth/check-phone', async (req, res) => {
   }
 });
 
-// AUTH: Login with Phone & Password/PIN
+// AUTH: Login with Phone OR Email & Password/PIN
 router.post('/auth/login', async (req, res) => {
   try {
-    const { phone, pin } = req.body;
-    const customer = await Customer.findOne({ phone: phone?.trim() });
+    const { phone, email, identifier, pin, password } = req.body;
+    const loginId = String(identifier || phone || email || '').trim();
+    const inputPass = String(password || pin || '').trim();
+
+    if (!loginId || !inputPass) {
+      return res.status(400).json({ error: 'Please enter your Mobile Number / Email and Password.' });
+    }
+
+    let customer = null;
+    if (loginId.includes('@')) {
+      customer = await Customer.findOne({ email: loginId.toLowerCase() });
+    } else {
+      const cleanPhone = loginId.replace(/[^0-9]/g, '');
+      customer = await Customer.findOne({
+        $or: [
+          { phone: loginId },
+          { phone: cleanPhone },
+          { phone: cleanPhone.slice(-10) },
+          { email: loginId.toLowerCase() }
+        ]
+      });
+    }
+
     if (!customer) {
-      return res.status(404).json({ error: 'Customer account not found. Please sign up during booking.' });
+      return res.status(404).json({ error: 'Customer account not found. Please create an account.' });
     }
 
-    const inputPin = String(pin || '').trim();
-    const storedPin = String(customer.pin || customer.pinHash || '1234').trim();
-
-    if (inputPin !== storedPin && inputPin !== '1234') {
-      return res.status(401).json({ error: 'Invalid PIN / Password. Please try again or ask staff for PIN reset.' });
+    const isMatch = await customer.comparePassword(inputPass);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid Password or PIN. Please check your credentials.' });
     }
+
+    // Generate Customer JWT Session Token
+    const token = jwt.sign(
+      {
+        id: customer._id,
+        phone: customer.phone,
+        email: customer.email,
+        name: customer.name,
+        role: 'customer'
+      },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
 
     const bookings = await Booking.find({ phone: customer.phone }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
       message: 'Login successful',
+      token,
       customer,
       bookings
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Customer login error:', err);
+    res.status(500).json({ error: 'Internal server error during login' });
   }
 });
 
-// AUTH: Signup / Register Customer with Name, Phone, Password (Min 6 chars)
+// AUTH: Signup / Register Customer with Name, Phone, Email, Password (Min 6 chars)
 router.post('/auth/signup', async (req, res) => {
   try {
-    const { name, phone, pin, password, email, vehicle } = req.body;
+    const { name, phone, email, pin, password, vehicle } = req.body;
     const pwdVal = String(password || pin || '').trim();
+    const cleanPhone = String(phone || '').trim();
+    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
+
+    if (!cleanPhone) {
+      return res.status(400).json({ error: 'Mobile number is required.' });
+    }
+
     if (!pwdVal || pwdVal.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
     }
 
-    let customer = await Customer.findOne({ phone: phone?.trim() });
-    if (customer) {
-      return res.status(400).json({ error: 'Account already exists for this phone number. Please login.' });
+    // Check existing phone
+    let existing = await Customer.findOne({ phone: cleanPhone });
+    if (existing) {
+      return res.status(400).json({ error: 'An account already exists with this mobile number. Please log in.' });
     }
 
-    customer = new Customer({
-      name: name?.trim() || 'New Customer',
-      phone: phone?.trim(),
+    // Check existing email if provided
+    if (cleanEmail) {
+      const emailExisting = await Customer.findOne({ email: cleanEmail });
+      if (emailExisting) {
+        return res.status(400).json({ error: 'An account already exists with this email address. Please log in.' });
+      }
+    }
+
+    const customer = new Customer({
+      name: name?.trim() || 'Valued Customer',
+      phone: cleanPhone,
+      email: cleanEmail,
+      password: pwdVal,
       pin: pwdVal,
-      pinHash: pwdVal,
-      email: email || '',
       loyaltyPoints: 50,
       vehicles: vehicle ? [{
         regNumber: (vehicle.regNumber || vehicle.number || 'WB-74-AX-1000').toUpperCase().trim(),
@@ -79,9 +147,29 @@ router.post('/auth/signup', async (req, res) => {
     });
 
     await customer.save();
-    res.status(201).json({ success: true, message: 'Account created successfully', customer });
+
+    // Generate Customer JWT Session Token
+    const token = jwt.sign(
+      {
+        id: customer._id,
+        phone: customer.phone,
+        email: customer.email,
+        name: customer.name,
+        role: 'customer'
+      },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      customer
+    });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Customer signup error:', err);
+    res.status(400).json({ error: err.message || 'Failed to create account.' });
   }
 });
 

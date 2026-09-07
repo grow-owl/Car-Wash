@@ -88,8 +88,8 @@ export default function SmartUpsellModal({ isOpen, onClose, addons, selectedAddo
                     </div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{addon.description}</div>
                     {addon.recommendationReason && (
-                      <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontStyle: 'italic', marginTop: '2px' }}>
-                        💡 {addon.recommendationReason}
+                      <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                        {addon.recommendationReason}
                       </div>
                     )}
                   </div>

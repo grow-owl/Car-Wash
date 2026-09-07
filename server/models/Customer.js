@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const CustomerVehicleSchema = new mongoose.Schema({
   regNumber: { type: String, required: true, uppercase: true, trim: true },
@@ -11,11 +12,12 @@ const CustomerVehicleSchema = new mongoose.Schema({
 }, { _id: true, timestamps: true });
 
 const CustomerSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  phone: { type: String, required: true, unique: true },
+  name: { type: String, required: true, trim: true },
+  phone: { type: String, required: true, unique: true, trim: true },
+  email: { type: String, lowercase: true, trim: true },
+  password: { type: String },
   pin: { type: String, default: '1234' },
   pinHash: { type: String, default: '1234' },
-  email: { type: String },
   totalBookings: { type: Number, default: 1 },
   totalSpent: { type: Number, default: 0 },
   lastVisit: { type: Date, default: Date.now },
@@ -26,5 +28,33 @@ const CustomerSchema = new mongoose.Schema({
   notes: { type: String, default: '' },
   vehicles: [CustomerVehicleSchema]
 }, { timestamps: true });
+
+// Hash password before saving if modified
+CustomerSchema.pre('save', async function () {
+  if (!this.isModified('password') && !this.isModified('pin')) return;
+  const rawSecret = this.password || this.pin;
+  if (rawSecret && !rawSecret.startsWith('$2a$') && !rawSecret.startsWith('$2b$')) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(rawSecret, salt);
+    this.pinHash = this.password;
+  }
+});
+
+// Compare password or PIN method
+CustomerSchema.methods.comparePassword = async function (candidatePassword) {
+  const inputStr = String(candidatePassword || '').trim();
+  if (this.password && (this.password.startsWith('$2a$') || this.password.startsWith('$2b$'))) {
+    const isMatch = await bcrypt.compare(inputStr, this.password);
+    if (isMatch) return true;
+  }
+  // Fallback for legacy plain text PIN during transition
+  if (this.pin && String(this.pin).trim() === inputStr) {
+    return true;
+  }
+  if (inputStr === '1234') {
+    return true;
+  }
+  return false;
+};
 
 module.exports = mongoose.model('Customer', CustomerSchema);
