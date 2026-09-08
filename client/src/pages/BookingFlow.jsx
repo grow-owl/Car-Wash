@@ -183,11 +183,12 @@ export default function BookingFlow({
 
       const res = await validateCoupon(couponCode.trim(), currentTotal);
       if (res.data.valid) {
-        setCouponDiscount(res.data.discount);
-        setCouponStatus(`Success! ₹${res.data.discount} discount applied.`);
+        const discountAmt = res.data.discount !== undefined ? res.data.discount : (res.data.discountCalculated || res.data.value || 0);
+        setCouponDiscount(discountAmt);
+        setCouponStatus(`🎉 Success! ₹${discountAmt} discount applied (${res.data.code || couponCode.toUpperCase().trim()}).`);
       } else {
         setCouponDiscount(0);
-        setCouponStatus(res.data.message || 'Invalid coupon code');
+        setCouponStatus(res.data.message || res.data.error || 'Invalid coupon code');
       }
     } catch (err) {
       setCouponDiscount(0);

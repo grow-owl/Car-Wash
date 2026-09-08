@@ -741,7 +741,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
               gap: '14px',
               marginTop: '20px'
             }}>
-              {/* Card 1: Loyalty Points */}
+              {/* Card 1: Simple Loyalty Wallet Balance */}
               <div style={{
                 background: 'rgba(0, 31, 35, 0.6)',
                 padding: '16px 18px',
@@ -754,13 +754,13 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
               }}>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    My Loyalty Points
+                    Loyalty Cash Balance
                   </div>
                   <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-cyan)', margin: '4px 0 2px 0', lineHeight: 1 }}>
-                    {currentUser.loyaltyPoints || 50} <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>PTS</span>
+                    ₹{currentUser.loyaltyPoints || 50} <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8A99AD' }}>({currentUser.loyaltyPoints || 50} Pts)</span>
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)' }}>
-                    Earn 10 pts per ₹100 spent
+                  <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
+                    1 Point = ₹1 Flat Cash Discount
                   </div>
                 </div>
                 <div style={{
@@ -795,11 +795,11 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                     Active Membership
                   </div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '4px 0 4px 0', lineHeight: 1.2 }}>
-                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'None'}
+                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'Regular Member'}
                   </div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'var(--accent-gold)' : '#8A99AD', fontWeight: 600 }}>
                     <Sparkles size={11} />
-                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'Priority Bay Access Enabled' : 'Upgrade below for VIP Perks'}
+                    {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'VIP Priority Bay Access Enabled' : 'Earn 10% cash points on each wash'}
                   </div>
                 </div>
                 <div style={{
@@ -819,33 +819,26 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
               </div>
             </div>
 
-            {/* BOTTOM: MILESTONE PROGRESS TRACKER */}
+            {/* BOTTOM: SIMPLE 3-STEP BENEFIT SUMMARY */}
             <div style={{
-              marginTop: '18px',
-              paddingTop: '16px',
-              borderTop: '1px solid rgba(74, 92, 106, 0.25)'
+              marginTop: '16px',
+              paddingTop: '14px',
+              borderTop: '1px solid rgba(74, 92, 106, 0.25)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
+              gap: '10px'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', fontWeight: 700, marginBottom: '8px' }}>
-                <span style={{ color: '#CCD0CF', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Zap size={14} color="var(--accent-cyan)" /> Free Express Wash Milestone Tracker
-                </span>
-                <span style={{ color: 'var(--accent-cyan)', fontWeight: 800 }}>
-                  {currentUser.loyaltyPoints || 50} <span style={{ color: '#8A99AD', fontWeight: 500 }}>/ 350 PTS</span>
-                </span>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.78rem' }}>
+                <span style={{ color: 'var(--accent-cyan)', fontWeight: 800 }}>1. Book a Wash:</span>
+                <div style={{ color: '#CCD0CF', marginTop: '2px' }}>Get 10 points per ₹100 spent</div>
               </div>
-              <div style={{ height: '8px', background: 'rgba(0, 0, 0, 0.5)', borderRadius: '10px', overflow: 'hidden', padding: '1px' }}>
-                <div style={{
-                  width: `${Math.min(100, Math.round(((currentUser.loyaltyPoints || 50) / 350) * 100))}%`,
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #00B4D8 0%, var(--accent-cyan) 100%)',
-                  borderRadius: '10px',
-                  boxShadow: '0 0 10px rgba(0, 229, 255, 0.4)',
-                  transition: 'width 0.4s ease'
-                }} />
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.78rem' }}>
+                <span style={{ color: 'var(--accent-gold)', fontWeight: 800 }}>2. 1 Point = ₹1:</span>
+                <div style={{ color: '#CCD0CF', marginTop: '2px' }}>Points directly convert to cash value</div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#8A99AD', marginTop: '6px' }}>
-                <span>{Math.min(100, Math.round(((currentUser.loyaltyPoints || 50) / 350) * 100))}% unlocked</span>
-                <span>{Math.max(0, 350 - (currentUser.loyaltyPoints || 50))} PTS needed for free wash</span>
+              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.78rem' }}>
+                <span style={{ color: '#25D366', fontWeight: 800 }}>3. Instant Discount:</span>
+                <div style={{ color: '#CCD0CF', marginTop: '2px' }}>Redeem on any future wash booking</div>
               </div>
             </div>
           </div>

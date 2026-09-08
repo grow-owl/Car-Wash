@@ -44,12 +44,15 @@ router.post('/coupons/validate', async (req, res) => {
       discount = coupon.value;
     }
 
+    const calculatedDiscount = Math.min(discount, amount);
+
     res.json({
       valid: true,
       code: coupon.code,
       discountType: coupon.discountType,
       value: coupon.value,
-      discountCalculated: Math.min(discount, amount),
+      discount: calculatedDiscount,
+      discountCalculated: calculatedDiscount,
       description: coupon.description
     });
   } catch (err) {

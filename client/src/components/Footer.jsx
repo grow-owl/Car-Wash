@@ -109,10 +109,12 @@ export default function Footer({ onOpenOwnerPortal }) {
             onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'scale(1)'; }}
           >
             <img
-              src="/growowl-logo.png"
+              src="/growowl-logo.webp"
               alt="GrowOwl"
+              width="80"
+              height="16"
               style={{
-                height: '14px',
+                height: '16px',
                 width: 'auto',
                 objectFit: 'contain',
                 display: 'inline-block',
