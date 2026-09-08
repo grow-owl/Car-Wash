@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, MessageSquare, Trash2, X, Eye, EyeOff, Lock, TrendingUp, DollarSign,
   Upload, Image, Loader2, Calendar, Clock, Download, History, User, Car, Filter,
-  ArrowUpDown, CheckCircle2, ShieldCheck, Tag, Info, Phone, ExternalLink, RefreshCw
+  ArrowUpDown, CheckCircle2, ShieldCheck, Tag, Info, Phone, ExternalLink, RefreshCw,
+  Crown, Award, Sparkles
 } from 'lucide-react';
 import {
   getAnalytics, getBookings, updateBookingStatus, createWalkInBooking, deleteBooking,
   getCustomers, getStaff, createStaff, updateStaff, deleteStaff, getExpenses, addExpense, deleteExpense,
   getCoupons, createCoupon, deleteCoupon, 
   getServices, createService, updateService, deleteService, uploadServiceImage,
-  getBays, updateBayStatus, getLeads, getCustomerTimeline
+  getBays, updateBayStatus, getLeads, getCustomerTimeline, getMembershipSubscriptions
 } from '../api';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 
@@ -29,6 +30,7 @@ export default function AdminDashboard({
   const [expenses, setExpenses] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [leads, setLeads] = useState([]);
+  const [membershipSubscriptions, setMembershipSubscriptions] = useState([]);
 
   // Internal Sub-tabs
   const [crmSubTab, setCrmSubTab] = useState('customers');
@@ -137,7 +139,7 @@ export default function AdminDashboard({
   const fetchAllAdminData = async () => {
     setIsRefreshing(true);
     try {
-      const [anaRes, bookRes, custRes, stfRes, expRes, cpnRes, svcRes, bayRes, leadRes] = await Promise.all([
+      const [anaRes, bookRes, custRes, stfRes, expRes, cpnRes, svcRes, bayRes, leadRes, memSubRes] = await Promise.all([
         getAnalytics(),
         getBookings(),
         getCustomers(),
@@ -146,7 +148,8 @@ export default function AdminDashboard({
         getCoupons(),
         getServices(),
         getBays(),
-        getLeads()
+        getLeads(),
+        getMembershipSubscriptions().catch(() => ({ data: [] }))
       ]);
       setAnalytics(anaRes.data);
       setBookings(bookRes.data || []);
@@ -157,6 +160,7 @@ export default function AdminDashboard({
       setServices(svcRes.data || []);
       setBays(bayRes.data || []);
       if (leadRes && leadRes.data) setLeads(leadRes.data);
+      if (memSubRes && memSubRes.data) setMembershipSubscriptions(memSubRes.data);
       setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (err) {
       console.error('Error loading data:', err);
@@ -1154,22 +1158,30 @@ export default function AdminDashboard({
                               outline: 'none'
                             }}
                           >
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="vehicle_received">Vehicle Received</option>
-                            <option value="washing">High Pressure Wash</option>
-                            <option value="detailing">Interior & Polish</option>
-                            <option value="quality_check">Quality Check</option>
-                            <option value="ready">Ready for Pickup</option>
-                            <option value="completed">Completed / Delivered</option>
+                            <option value="confirmed">1. Booking Confirmed</option>
+                            <option value="vehicle_received">2. Vehicle Received</option>
+                            <option value="in_progress">3. Service In Progress</option>
+                            <option value="quality_check">4. Quality Check</option>
+                            <option value="ready_for_pickup">5. Ready for Pickup</option>
+                            <option value="completed">6. Completed</option>
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </td>
                         <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-gold)' }}>
                           ₹{b.totalAmount}
-                          <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700 }}>
-                            {b.paymentStatus || 'Pending'}
+                          <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                            <span>{b.paymentStatus || 'Pending'}</span>
+                            {b.paymentMode && (
+                              <span style={{ fontSize: '0.62rem', background: 'rgba(0, 210, 180, 0.15)', color: 'var(--accent-aqua)', padding: '1px 4px', borderRadius: '4px' }}>
+                                {b.paymentMode}
+                              </span>
+                            )}
                           </div>
+                          {b.razorpayPaymentId && (
+                            <div style={{ fontSize: '0.6rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
+                              {b.razorpayPaymentId}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '10px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
@@ -1253,11 +1265,11 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* 4. TAB: CUSTOMERS & LEADS */}
+      {/* 4. TAB: CUSTOMERS, MEMBERSHIPS & LEADS */}
       {activeSubTab === 'crm' && (
         <div className="glass-panel" style={{ padding: '18px', borderRadius: '14px' }}>
           
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setCrmSubTab('customers')}
               style={{
@@ -1272,6 +1284,24 @@ export default function AdminDashboard({
               }}
             >
               Customers ({customers.length})
+            </button>
+            <button
+              onClick={() => setCrmSubTab('memberships')}
+              style={{
+                background: crmSubTab === 'memberships' ? 'var(--accent-gold)' : 'rgba(255, 195, 0, 0.08)',
+                color: crmSubTab === 'memberships' ? '#06141B' : 'var(--accent-gold)',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                border: crmSubTab === 'memberships' ? 'none' : '1px solid rgba(255, 195, 0, 0.3)',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              <Crown size={14} /> VIP Members ({membershipSubscriptions.length})
             </button>
             <button
               onClick={() => setCrmSubTab('leads')}
@@ -1290,30 +1320,212 @@ export default function AdminDashboard({
             </button>
           </div>
 
-          {crmSubTab === 'customers' ? (
+          {crmSubTab === 'customers' && (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
-                    <th style={{ padding: '8px' }}>Name</th>
-                    <th style={{ padding: '8px' }}>Phone</th>
-                    <th style={{ padding: '8px' }}>Visits</th>
-                    <th style={{ padding: '8px' }}>Points</th>
+                    <th style={{ padding: '10px 8px' }}>Name</th>
+                    <th style={{ padding: '10px 8px' }}>Phone</th>
+                    <th style={{ padding: '10px 8px' }}>Membership</th>
+                    <th style={{ padding: '10px 8px' }}>Visits</th>
+                    <th style={{ padding: '10px 8px' }}>Points</th>
+                    <th style={{ padding: '10px 8px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((c) => (
-                    <tr key={c._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                      <td style={{ padding: '8px', fontWeight: 600 }}>{c.name}</td>
-                      <td style={{ padding: '8px', color: 'var(--ice-tint)' }}>{c.phone}</td>
-                      <td style={{ padding: '8px' }}>{c.totalVisits || c.totalBookings || 1}</td>
-                      <td style={{ padding: '8px', fontWeight: 700, color: 'var(--accent-gold)' }}>{c.loyaltyPoints || 0}</td>
-                    </tr>
-                  ))}
+                  {customers.map((c) => {
+                    const isVip = c.membershipTier && c.membershipTier.toLowerCase() !== 'regular' && c.membershipTier.toLowerCase() !== 'bronze';
+                    return (
+                      <tr key={c._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                        <td style={{ padding: '10px 8px', fontWeight: 600 }}>{c.name}</td>
+                        <td style={{ padding: '10px 8px', color: 'var(--ice-tint)' }}>{c.phone}</td>
+                        <td style={{ padding: '10px 8px' }}>
+                          {isVip ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              background: 'rgba(255, 195, 0, 0.15)',
+                              color: 'var(--accent-gold)',
+                              fontWeight: 800,
+                              fontSize: '0.72rem',
+                              border: '1px solid rgba(255, 195, 0, 0.3)'
+                            }}>
+                              <Crown size={12} /> {c.membershipTier}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--ice-tint)', fontSize: '0.75rem' }}>
+                              Regular
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '10px 8px' }}>{c.totalVisits || c.totalBookings || 1}</td>
+                        <td style={{ padding: '10px 8px', fontWeight: 700, color: 'var(--accent-gold)' }}>{c.loyaltyPoints || 0} pts</td>
+                        <td style={{ padding: '10px 8px' }}>
+                          <button
+                            onClick={() => handleOpenCustomerTimeline(c.phone, c.name)}
+                            style={{
+                              padding: '4px 10px',
+                              background: 'rgba(0, 229, 255, 0.12)',
+                              border: '1px solid var(--accent-cyan)',
+                              color: 'var(--accent-cyan)',
+                              borderRadius: '6px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <History size={12} /> Wash History
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          ) : (
+          )}
+
+          {crmSubTab === 'memberships' && (
+            <div>
+              {/* VIP Metric Cards */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+                marginBottom: '18px'
+              }}>
+                <div style={{ background: 'rgba(255, 195, 0, 0.08)', border: '1px solid rgba(255, 195, 0, 0.3)', padding: '14px 16px', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Crown size={14} /> ACTIVE VIP MEMBERS
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFFFFF', marginTop: '4px' }}>
+                    {membershipSubscriptions.filter(s => s.status === 'active').length}
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(0, 229, 255, 0.08)', border: '1px solid rgba(0, 229, 255, 0.3)', padding: '14px 16px', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={14} /> TOTAL VIP PASS REVENUE
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#00E5FF', marginTop: '4px' }}>
+                    ₹{membershipSubscriptions.reduce((acc, s) => acc + (Number(s.price) || 0), 0)}
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(37, 211, 102, 0.08)', border: '1px solid rgba(37, 211, 102, 0.3)', padding: '14px 16px', borderRadius: '10px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#25D366', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheck size={14} /> ALL-TIME PASS PURCHASES
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#FFFFFF', marginTop: '4px' }}>
+                    {membershipSubscriptions.length} Passes
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscriptions Table */}
+              {membershipSubscriptions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--ice-tint)' }}>
+                  <Crown size={36} color="var(--accent-gold)" style={{ opacity: 0.6, marginBottom: '8px' }} />
+                  <p style={{ margin: 0, fontWeight: 700, color: '#FFFFFF' }}>No VIP Membership purchases yet.</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>When customers buy Silver, Gold, or Platinum passes from Customer Portal, they will show up here.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
+                        <th style={{ padding: '10px 8px' }}>Customer</th>
+                        <th style={{ padding: '10px 8px' }}>Phone</th>
+                        <th style={{ padding: '10px 8px' }}>Plan</th>
+                        <th style={{ padding: '10px 8px' }}>Amount</th>
+                        <th style={{ padding: '10px 8px' }}>Validity</th>
+                        <th style={{ padding: '10px 8px' }}>Payment Mode</th>
+                        <th style={{ padding: '10px 8px' }}>Payment ID</th>
+                        <th style={{ padding: '10px 8px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {membershipSubscriptions.map((sub) => {
+                        const isExpired = sub.expiryDate && new Date(sub.expiryDate) < new Date();
+                        const startDateStr = sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A';
+                        const expiryDateStr = sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString() : 'N/A';
+                        
+                        return (
+                          <tr key={sub._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                            <td style={{ padding: '10px 8px', fontWeight: 700, color: '#FFFFFF' }}>
+                              {sub.customerName}
+                            </td>
+                            <td style={{ padding: '10px 8px', color: 'var(--ice-tint)' }}>
+                              <a
+                                href={`https://wa.me/${(sub.phone || '').replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ color: '#25D366', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}
+                              >
+                                <MessageSquare size={12} /> {sub.phone}
+                              </a>
+                            </td>
+                            <td style={{ padding: '10px 8px' }}>
+                              <span style={{
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 195, 0, 0.12)',
+                                border: '1px solid var(--accent-gold)',
+                                color: 'var(--accent-gold)',
+                                fontWeight: 800,
+                                fontSize: '0.78rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <Crown size={12} /> {sub.membershipPlan}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 8px', fontWeight: 800, color: '#00E5FF' }}>
+                              ₹{sub.price}
+                            </td>
+                            <td style={{ padding: '10px 8px', fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
+                              <div>{startDateStr} - {expiryDateStr}</div>
+                            </td>
+                            <td style={{ padding: '10px 8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: sub.paymentMode === 'Online' ? 'var(--accent-cyan)' : '#FFFFFF' }}>
+                                {sub.paymentMode || 'Online'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 8px', fontSize: '0.72rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
+                              {sub.razorpayPaymentId || sub.paymentStatus || 'Paid'}
+                            </td>
+                            <td style={{ padding: '10px 8px' }}>
+                              <span style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                background: !isExpired && sub.status === 'active' ? 'rgba(37, 211, 102, 0.15)' : 'rgba(255, 89, 100, 0.15)',
+                                color: !isExpired && sub.status === 'active' ? '#25D366' : '#FF5964',
+                                border: !isExpired && sub.status === 'active' ? '1px solid #25D366' : '1px solid #FF5964'
+                              }}>
+                                {!isExpired && sub.status === 'active' ? 'ACTIVE' : 'EXPIRED'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {crmSubTab === 'leads' && (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>

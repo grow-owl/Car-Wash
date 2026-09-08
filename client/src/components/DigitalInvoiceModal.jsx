@@ -350,6 +350,15 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
                     <td style={{ padding: '1px 3px', fontWeight: 700 }}>:</td>
                     <td style={{ padding: '1px 6px', textAlign: 'left', fontWeight: 600 }}>{paymentMode}</td>
                   </tr>
+                  {booking.razorpayPaymentId && (
+                    <tr>
+                      <td style={{ padding: '1px 6px', fontWeight: 700, textAlign: 'left', color: '#0F2C3F' }}>Razorpay Txn</td>
+                      <td style={{ padding: '1px 3px', fontWeight: 700 }}>:</td>
+                      <td style={{ padding: '1px 6px', textAlign: 'left', fontWeight: 700, color: '#0284C7', fontFamily: 'monospace', fontSize: '0.72rem' }}>
+                        {booking.razorpayPaymentId}
+                      </td>
+                    </tr>
+                  )}
                   <tr>
                     <td style={{ padding: '1px 6px', fontWeight: 700, textAlign: 'left', color: '#0F2C3F' }}>Status</td>
                     <td style={{ padding: '1px 3px', fontWeight: 700 }}>:</td>

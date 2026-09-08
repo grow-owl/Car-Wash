@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Lock, Car, Plus, Key, Zap, MapPin } from 'lucide-react';
-import { getMemberships, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle } from '../api';
+import { getMemberships, subscribeMembership, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle, createRazorpayOrder, verifyRazorpayPayment, reportPaymentFailure } from '../api';
+import { launchRazorpayCheckout } from '../utils/razorpay';
 import { cleanText } from '../utils/cleanText';
 import SectionDivider from '../components/SectionDivider';
 
@@ -14,13 +15,16 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   const updateCustomerState = (user) => {
     setLocalUser(user);
     if (propSetUser) propSetUser(user);
+    if (user) {
+      localStorage.setItem('carwash_customer', JSON.stringify(user));
+    }
   };
 
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Login form state (empty placeholders)
+  // Login form state
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPin, setLoginPin] = useState('');
 
@@ -36,6 +40,15 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   const [newVehReg, setNewVehReg] = useState('');
   const [newVehModel, setNewVehModel] = useState('');
   const [vehMsg, setVehMsg] = useState('');
+
+  // Buy Membership State
+  const [selectedPlanForBuy, setSelectedPlanForBuy] = useState(null);
+  const [buyName, setBuyName] = useState('');
+  const [buyPhone, setBuyPhone] = useState('');
+  const [buyEmail, setBuyEmail] = useState('');
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [buyError, setBuyError] = useState('');
+  const [membershipToast, setMembershipToast] = useState('');
 
   // Gift card & Referral states
   const [giftVal, setGiftVal] = useState(1000);
@@ -216,6 +229,108 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
       setTimeout(() => setVehMsg(''), 3000);
     } catch (err) {
       setVehMsg('Failed to add vehicle.');
+    }
+  };
+
+  // BUY MEMBERSHIP MODAL HANDLERS
+  const handleOpenBuyMembershipModal = (plan) => {
+    setSelectedPlanForBuy(plan);
+    setBuyName(currentUser?.name || '');
+    setBuyPhone(currentUser?.phone || '');
+    setBuyEmail(currentUser?.email || '');
+    setBuyError('');
+  };
+
+  const handleConfirmBuyMembership = async (e) => {
+    if (e) e.preventDefault();
+    if (!buyPhone || !buyName) {
+      setBuyError('Please provide your Full Name and Mobile Number.');
+      return;
+    }
+    const cleanPhone = buyPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setBuyError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setBuyLoading(true);
+    setBuyError('');
+
+    try {
+      const planPrice = selectedPlanForBuy.priceMonthly || 299;
+      
+      // Step 1: Create Razorpay Order
+      const orderRes = await createRazorpayOrder({
+        amount: planPrice,
+        currency: 'INR',
+        notes: {
+          membershipPlan: selectedPlanForBuy.name,
+          customerName: buyName,
+          phone: cleanPhone
+        }
+      });
+
+      const { orderId, amount, currency, keyId } = orderRes.data;
+
+      // Step 2: Open Razorpay Checkout Popup
+      await launchRazorpayCheckout({
+        keyId,
+        orderId,
+        amount,
+        currency,
+        customerName: buyName,
+        phone: cleanPhone,
+        email: buyEmail || '',
+        description: `Activate ${selectedPlanForBuy.name} (30 Days)`,
+        onSuccess: async (rzpResponse) => {
+          try {
+            // Step 3: Activate Membership on Backend
+            const subRes = await subscribeMembership({
+              phone: cleanPhone,
+              name: buyName,
+              email: buyEmail,
+              membershipName: selectedPlanForBuy.name,
+              price: planPrice,
+              razorpayPaymentId: rzpResponse.razorpay_payment_id,
+              razorpayOrderId: rzpResponse.razorpay_order_id,
+              paymentMode: 'Razorpay'
+            });
+
+            if (subRes.data?.customer) {
+              updateCustomerState(subRes.data.customer);
+            } else {
+              const updated = {
+                ...(currentUser || {}),
+                name: buyName,
+                phone: cleanPhone,
+                membershipStatus: selectedPlanForBuy.name,
+                loyaltyPoints: ((currentUser?.loyaltyPoints || 0) + 150)
+              };
+              updateCustomerState(updated);
+            }
+
+            setSelectedPlanForBuy(null);
+            setMembershipToast(`🎉 Congratulations! ${selectedPlanForBuy.name} is now ACTIVE. 150 bonus loyalty points added!`);
+            setTimeout(() => setMembershipToast(''), 8000);
+          } catch (actErr) {
+            console.error('Activation error:', actErr);
+            alert(actErr.response?.data?.error || 'Membership payment received. Syncing with account...');
+          } finally {
+            setBuyLoading(false);
+          }
+        },
+        onFailure: (failErr) => {
+          setBuyError(failErr?.description || 'Payment was cancelled or failed. You can try again.');
+          setBuyLoading(false);
+        },
+        onDismiss: () => {
+          setBuyLoading(false);
+        }
+      });
+    } catch (err) {
+      console.error('Membership order error:', err);
+      setBuyError(err.response?.data?.error || 'Failed to initiate VIP pass payment.');
+      setBuyLoading(false);
     }
   };
 
@@ -1034,25 +1149,68 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
           <SectionDivider variant="gold" icon="award" badge="VIP MEMBERSHIPS" spacing="default" />
 
+          {/* TOAST ALERT */}
+          {membershipToast && (
+            <div style={{
+              background: 'rgba(0, 210, 180, 0.2)',
+              border: '1px solid var(--accent-aqua)',
+              padding: '14px 20px',
+              borderRadius: '12px',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '24px',
+              fontSize: '0.92rem',
+              boxShadow: '0 8px 30px rgba(0, 210, 180, 0.3)'
+            }}>
+              <Sparkles size={22} color="var(--accent-aqua)" />
+              <strong>{membershipToast}</strong>
+            </div>
+          )}
+
           {/* MEMBERSHIP PLANS */}
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Monthly VIP Membership Passes</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+              Subscribe to unlimited car washes, exclusive detailing discounts & priority bay queue access.
+            </p>
           </div>
 
           <div className="grid-3" style={{ marginBottom: '60px' }}>
             {(memberships.length > 0 ? memberships : defaultMemberships).map((m, i) => {
               const currentPrice = m.priceMonthly ?? (i === 0 ? 199 : i === 1 ? 299 : 449);
               const cutPrice = m.originalPrice ?? (i === 0 ? 249 : i === 1 ? 399 : 599);
+              const isCurrentActivePlan = currentUser?.membershipStatus === m.name;
 
               return (
                 <div key={i} className="glass-panel" style={{
                   padding: '28px 24px',
                   position: 'relative',
-                  border: m.isPopular ? '2px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.3)',
-                  background: m.isPopular ? 'rgba(0, 49, 53, 0.85)' : 'rgba(6, 26, 36, 0.7)',
-                  borderRadius: '16px'
+                  border: isCurrentActivePlan
+                    ? '2px solid #25D366'
+                    : m.isPopular
+                      ? '2px solid var(--accent-cyan)'
+                      : '1px solid rgba(74, 92, 106, 0.3)',
+                  background: isCurrentActivePlan
+                    ? 'rgba(0, 49, 53, 0.9)'
+                    : m.isPopular
+                      ? 'rgba(0, 49, 53, 0.85)'
+                      : 'rgba(6, 26, 36, 0.7)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}>
-                  {m.isPopular && (
+                  {isCurrentActivePlan ? (
+                    <div style={{
+                      position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)',
+                      background: '#25D366', color: '#06141B', padding: '3px 14px', borderRadius: '20px',
+                      fontWeight: 900, fontSize: '0.72rem', letterSpacing: '0.04em'
+                    }}>
+                      ✓ YOUR ACTIVE PLAN
+                    </div>
+                  ) : m.isPopular ? (
                     <div style={{
                       position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)',
                       background: 'var(--accent-cyan)', color: '#06141B', padding: '3px 14px', borderRadius: '20px',
@@ -1060,31 +1218,191 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                     }}>
                       MOST POPULAR VIP
                     </div>
-                  )}
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: '#FFFFFF' }}>{m.name}</h3>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
-                    <span style={{ fontSize: '1.1rem', color: '#8A99AD', textDecoration: 'line-through', fontWeight: 600 }}>
-                      ₹{cutPrice}
-                    </span>
-                    <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
-                      ₹{currentPrice}<span style={{ fontSize: '0.85rem', color: '#8A99AD', fontWeight: 500 }}>/mo</span>
-                    </span>
+                  ) : null}
+
+                  <div>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px', color: '#FFFFFF' }}>{m.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '14px' }}>
+                      <span style={{ fontSize: '1.1rem', color: '#8A99AD', textDecoration: 'line-through', fontWeight: 600 }}>
+                        ₹{cutPrice}
+                      </span>
+                      <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--accent-cyan)' }}>
+                        ₹{currentPrice}<span style={{ fontSize: '0.85rem', color: '#8A99AD', fontWeight: 500 }}>/mo</span>
+                      </span>
+                    </div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.86rem', color: '#CCD0CF' }}>
+                      {(m.perks || m.features || []).map((f, fi) => (
+                        <li key={fi} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Check size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} /> {f}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.86rem', color: '#CCD0CF' }}>
-                    {(m.perks || m.features || []).map((f, fi) => (
-                      <li key={fi} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Check size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px', fontWeight: 800, borderRadius: '10px' }}>
-                    Select {m.name}
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBuyMembershipModal({ ...m, priceMonthly: currentPrice, originalPrice: cutPrice })}
+                    className={isCurrentActivePlan ? 'btn-secondary' : 'btn-primary'}
+                    style={{
+                      width: '100%',
+                      justifyContent: 'center',
+                      padding: '12px',
+                      fontWeight: 800,
+                      borderRadius: '10px',
+                      background: isCurrentActivePlan ? 'rgba(37, 211, 102, 0.2)' : 'var(--accent-aqua)',
+                      color: isCurrentActivePlan ? '#25D366' : '#003135',
+                      border: isCurrentActivePlan ? '1px solid #25D366' : 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isCurrentActivePlan ? 'Renew / Extend Pass' : `Select ${m.name}`}
                   </button>
                 </div>
               );
             })}
           </div>
         </>
+      )}
+
+      {/* BUY VIP MEMBERSHIP PASS MODAL */}
+      {selectedPlanForBuy && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          background: 'rgba(6, 20, 27, 0.88)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #003135 0%, #06212b 100%)',
+            border: '1px solid var(--accent-aqua)',
+            borderRadius: '18px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '28px',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 210, 180, 0.2)',
+            color: '#FFFFFF'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <span className="badge badge-aqua" style={{ fontSize: '0.7rem' }}>VIP MEMBERSHIP PASS</span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '4px 0 0 0' }}>{selectedPlanForBuy.name}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedPlanForBuy(null)}
+                style={{ background: 'transparent', border: 'none', color: '#CCD0CF', fontSize: '22px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(0, 49, 53, 0.6)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '12px',
+              padding: '14px 16px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ color: 'var(--ice-tint)', fontSize: '0.85rem' }}>Monthly Subscription:</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--accent-aqua)' }}>
+                  ₹{selectedPlanForBuy.priceMonthly}
+                </span>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#CCD0CF' }}>
+                Valid for 30 days &bull; Includes 150 VIP Bonus Loyalty Points
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmBuyMembership} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Rahul Sharma"
+                  value={buyName}
+                  onChange={(e) => setBuyName(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+                  Mobile Number (for VIP identification) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="e.g. 9876543210"
+                  value={buyPhone}
+                  onChange={(e) => setBuyPhone(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+                  Email Address (Optional)
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. rahul@example.com"
+                  value={buyEmail}
+                  onChange={(e) => setBuyEmail(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              {buyError && (
+                <div style={{
+                  background: 'rgba(224, 114, 90, 0.15)',
+                  border: '1px solid #e0725a',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  color: '#e0725a',
+                  fontSize: '0.78rem'
+                }}>
+                  {buyError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlanForBuy(null)}
+                  className="btn-secondary"
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={buyLoading}
+                  className="btn-primary"
+                  style={{
+                    flex: 2,
+                    padding: '12px',
+                    background: 'var(--accent-aqua)',
+                    color: '#003135',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    border: 'none',
+                    cursor: buyLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {buyLoading ? 'Processing...' : `Pay ₹${selectedPlanForBuy.priceMonthly} Online`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>

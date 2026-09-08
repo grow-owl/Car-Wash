@@ -53,6 +53,12 @@ export const updateBayStatus = (id, data) => api.put(`/bookings/bays/${id}`, dat
 export const payBooking = (id, data) => api.patch(`/bookings/${id}/pay`, data);
 export const payBookingByCode = (code, data) => api.patch(`/bookings/track/${code}/pay`, data);
 
+// Razorpay Payment Gateway Endpoints
+export const getRazorpayConfig = () => api.get('/payment/config');
+export const createRazorpayOrder = (data) => api.post('/payment/create-order', data);
+export const verifyRazorpayPayment = (data) => api.post('/payment/verify', data);
+export const reportPaymentFailure = (data) => api.post('/payment/failure', data);
+
 // Customer Authentication & PIN Reset
 export const checkPhoneExists = (identifier) => api.post('/crm/auth/check-phone', { identifier, phone: identifier });
 export const loginCustomer = (identifier, pin) => api.post('/crm/auth/login', { identifier, phone: identifier, pin, password: pin });
@@ -86,6 +92,7 @@ export const toggleCouponStatus = (id) => api.patch(`/marketing/coupons/${id}/to
 export const deleteCoupon = (id) => api.delete(`/marketing/coupons/${id}`);
 export const getMemberships = () => api.get('/marketing/memberships');
 export const subscribeMembership = (data) => api.post('/marketing/memberships/subscribe', data);
+export const getMembershipSubscriptions = () => api.get('/marketing/memberships/subscriptions');
 export const getGiftCards = () => api.get('/marketing/giftcards');
 export const buyGiftCard = (data) => api.post('/marketing/giftcards/buy', data);
 

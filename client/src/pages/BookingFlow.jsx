@@ -10,7 +10,11 @@ import {
   ArrowRight,
   ArrowLeft,
   Tag,
-  Info
+  Info,
+  CreditCard,
+  Smartphone,
+  Lock,
+  Wallet
 } from 'lucide-react';
 import {
   getServices,
@@ -21,8 +25,12 @@ import {
   createBooking,
   checkPhoneExists,
   captureAbandonedBooking,
-  createLead
+  createLead,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  reportPaymentFailure
 } from '../api';
+import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import { cleanText } from '../utils/cleanText';
 
@@ -65,10 +73,14 @@ export default function BookingFlow({
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponStatus, setCouponStatus] = useState('');
 
+  // Payment Method Selection: 'razorpay' | 'pay_after'
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
+
   // Confirmation Modal
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   const primary3Packages = [
     {
@@ -148,34 +160,38 @@ export default function BookingFlow({
       setSlots(slotsData);
 
       // Auto-select first available slot if currently selected slot is full or not in list
-      const currentSelectedSlotData = slotsData.find(s => s.slotTime === selectedSlot);
-      if (!currentSelectedSlotData || !currentSelectedSlotData.available) {
-        const firstAvail = slotsData.find(s => s.available);
-        if (firstAvail) {
-          setSelectedSlot(firstAvail.slotTime);
+      const currentSlotObj = slotsData.find(s => s.slotTime === selectedSlot);
+      if (!currentSlotObj || !currentSlotObj.available) {
+        const firstAvailable = slotsData.find(s => s.available);
+        if (firstAvailable) {
+          setSelectedSlot(firstAvailable.slotTime);
         }
       }
-
-      if (!selectedService && !preselectedItem) {
-        setSelectedService(primary3Packages[1]);
-      }
     } catch (err) {
-      console.error('Error loading booking data:', err);
-      if (!selectedService && !preselectedItem) setSelectedService(primary3Packages[1]);
+      console.error('Error fetching data for booking wizard:', err);
     }
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
+  const handleApplyCoupon = async (e) => {
+    if (e) e.preventDefault();
+    if (!couponCode.trim()) return;
+
     try {
-      const basePrice = calculateBaseTotal();
-      const res = await validateCoupon(couponCode, basePrice);
+      const baseTotal = calculateBaseTotal();
+      const addonsTotal = selectedAddons.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+      const currentTotal = baseTotal + addonsTotal;
+
+      const res = await validateCoupon(couponCode.trim(), currentTotal);
       if (res.data.valid) {
-        setCouponDiscount(res.data.discountCalculated);
-        setCouponStatus(`Success: ₹${res.data.discountCalculated} discount applied!`);
+        setCouponDiscount(res.data.discount);
+        setCouponStatus(`Success! ₹${res.data.discount} discount applied.`);
+      } else {
+        setCouponDiscount(0);
+        setCouponStatus(res.data.message || 'Invalid coupon code');
       }
     } catch (err) {
-      setCouponStatus(err.response?.data?.error || 'Invalid Coupon Code');
+      setCouponDiscount(0);
+      setCouponStatus(err.response?.data?.error || 'Coupon could not be applied');
     }
   };
 
@@ -206,9 +222,10 @@ export default function BookingFlow({
     return total > 0 ? total : 0;
   };
 
-  // Single-click slot confirmation (Direct Booking without payment gateway barrier)
+  // Complete Booking & Razorpay Payment Lifecycle
   const handleConfirmBookingSubmit = async (e) => {
     if (e) e.preventDefault();
+    setPaymentError('');
 
     if (!customerName || !phone || !vehicleNumber) {
       alert('Please fill in Customer Name, Phone Number, and Vehicle Registration Number.');
@@ -226,7 +243,10 @@ export default function BookingFlow({
         ? (selectedCustomServices.map(s => s.name).join(' + ') || 'Custom Wash Combo')
         : (selectedService?.name || selectedService?.title || 'Pro Wash Package');
 
-      const payload = {
+      const isPayOnline = paymentMethod === 'razorpay';
+      const finalAmount = calculateFinalTotal();
+
+      const bookingPayload = {
         customerName: cleanText(customerName),
         phone: phone.replace(/\D/g, ''),
         email: email || 'customer@example.com',
@@ -238,25 +258,116 @@ export default function BookingFlow({
         addons: selectedAddons.map(a => ({ name: cleanText(a.name), price: Number(a.price) })),
         date: selectedDate,
         slotTime: selectedSlot,
-        totalAmount: calculateFinalTotal(),
+        totalAmount: finalAmount,
         discountAmount: couponDiscount,
         couponApplied: couponDiscount > 0 ? couponCode : '',
-        paymentTiming: 'Pay After Service',
-        paymentMode: 'Pay at Center',
-        paymentStatus: 'Pending'
+        paymentTiming: isPayOnline ? 'Pay Now' : 'Pay After Service',
+        paymentMode: isPayOnline ? 'Razorpay' : 'Pay at Center',
+        paymentStatus: 'Pending',
+        status: 'confirmed'
       };
 
-      const res = await createBooking(payload);
-      setConfirmedBooking(res.data);
-      setShowInvoiceModal(true);
+      // Step 1: Create Booking in backend database
+      const bookingRes = await createBooking(bookingPayload);
+      const createdBooking = bookingRes.data.booking || bookingRes.data;
+      const trackingCode = createdBooking.trackingCode;
 
-      if (onBookingComplete) {
-        onBookingComplete(res.data.trackingCode);
+      // Case A: Pay After Service
+      if (!isPayOnline) {
+        setConfirmedBooking(createdBooking);
+        setShowInvoiceModal(true);
+        if (onBookingComplete) onBookingComplete(trackingCode);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Case B: Pay Online via Razorpay
+      try {
+        // Step 2: Create Razorpay Order
+        const orderRes = await createRazorpayOrder({
+          trackingCode,
+          amount: finalAmount,
+          currency: 'INR',
+          notes: {
+            customerName: cleanText(customerName),
+            phone: phone.replace(/\D/g, ''),
+            vehicleNumber: vehicleNumber.toUpperCase().trim(),
+            serviceName: cleanText(serviceNameVal)
+          }
+        });
+
+        const { orderId, amount, currency, keyId } = orderRes.data;
+
+        // Step 3: Launch Razorpay Checkout Popup
+        await launchRazorpayCheckout({
+          keyId,
+          orderId,
+          amount,
+          currency,
+          customerName: cleanText(customerName),
+          phone: phone.replace(/\D/g, ''),
+          email: email || '',
+          description: `${cleanText(serviceNameVal)} - Slot: ${selectedSlot}`,
+          onSuccess: async (rzpResponse) => {
+            try {
+              // Step 4: Verify HMAC SHA256 Signature on Backend
+              const verifyRes = await verifyRazorpayPayment({
+                razorpay_order_id: rzpResponse.razorpay_order_id,
+                razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                razorpay_signature: rzpResponse.razorpay_signature,
+                trackingCode
+              });
+
+              const verifiedBooking = verifyRes.data.booking || {
+                ...createdBooking,
+                paymentStatus: 'Paid',
+                paymentMode: 'Razorpay',
+                razorpayPaymentId: rzpResponse.razorpay_payment_id,
+                razorpayOrderId: rzpResponse.razorpay_order_id
+              };
+
+              setConfirmedBooking(verifiedBooking);
+              setShowInvoiceModal(true);
+
+              if (onBookingComplete) {
+                onBookingComplete(trackingCode);
+              }
+            } catch (vErr) {
+              console.error('Verification error:', vErr);
+              alert(vErr.response?.data?.error || 'Payment received, but confirmation sync is in progress. Check tracking portal.');
+              setConfirmedBooking(createdBooking);
+              setShowInvoiceModal(true);
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+          onFailure: async (failErr) => {
+            console.warn('Razorpay payment failed:', failErr);
+            setPaymentError(failErr?.description || 'Payment was not completed. You can try again or choose Pay After Service.');
+            try {
+              await reportPaymentFailure({
+                trackingCode,
+                error: failErr
+              });
+            } catch (e) {}
+            setIsSubmitting(false);
+          },
+          onDismiss: () => {
+            setIsSubmitting(false);
+            setPaymentError('Razorpay payment window closed. Your appointment is reserved. You can complete payment now or pay at the center.');
+          }
+        });
+      } catch (orderErr) {
+        console.error('Order creation error:', orderErr);
+        // Fallback to confirmed booking with pending payment if order fails
+        setConfirmedBooking(createdBooking);
+        setShowInvoiceModal(true);
+        if (onBookingComplete) onBookingComplete(trackingCode);
+        setIsSubmitting(false);
       }
     } catch (err) {
       console.error('Booking submission error:', err);
       alert(err.response?.data?.error || 'Failed to submit booking. Please verify your details or select another slot.');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -1046,23 +1157,115 @@ export default function BookingFlow({
                       <span>₹{calculateFinalTotal()}</span>
                     </div>
 
-                    {/* Pay After Service Assurance Badge */}
-                    <div style={{
-                      marginTop: '14px',
-                      background: 'rgba(0, 229, 255, 0.08)',
-                      border: '1px solid var(--accent-cyan)',
-                      borderRadius: '8px',
-                      padding: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '0.78rem',
-                      color: 'var(--ice-tint)'
-                    }}>
-                      <ShieldCheck size={18} style={{ color: 'var(--accent-cyan)', flexShrink: 0 }} />
-                      <span>
-                        <strong>Pay After Service:</strong> No upfront payment required. Pay via Cash, UPI or Card at the service center after your car wash.
-                      </span>
+                    {/* PAYMENT METHOD SELECTION */}
+                    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                        <Lock size={14} style={{ color: 'var(--accent-aqua)' }} /> Select Payment Option:
+                      </label>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {/* Option 1: Razorpay Online */}
+                        <div
+                          onClick={() => setPaymentMethod('razorpay')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: paymentMethod === 'razorpay' ? 'rgba(0, 210, 180, 0.15)' : 'rgba(10, 30, 39, 0.6)',
+                            border: paymentMethod === 'razorpay' ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={paymentMethod === 'razorpay'}
+                              onChange={() => setPaymentMethod('razorpay')}
+                              style={{ accentColor: 'var(--accent-aqua)', cursor: 'pointer' }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>Pay Online</span>
+                                <span className="badge badge-aqua" style={{ fontSize: '0.65rem', padding: '1px 6px' }}>FAST & SECURE</span>
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                                UPI (GPay/PhonePe/Paytm), Cards & NetBanking
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                            <Smartphone size={16} style={{ color: 'var(--accent-aqua)' }} />
+                            <CreditCard size={16} style={{ color: 'var(--accent-cyan)' }} />
+                          </div>
+                        </div>
+
+                        {/* Option 2: Pay After Service */}
+                        <div
+                          onClick={() => setPaymentMethod('pay_after')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: paymentMethod === 'pay_after' ? 'rgba(230, 176, 0, 0.15)' : 'rgba(10, 30, 39, 0.6)',
+                            border: paymentMethod === 'pay_after' ? '2px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={paymentMethod === 'pay_after'}
+                              onChange={() => setPaymentMethod('pay_after')}
+                              style={{ accentColor: 'var(--accent-gold)', cursor: 'pointer' }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#FFFFFF' }}>
+                                Pay After Service
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                                Pay at center via Cash or UPI after detailing is completed
+                              </div>
+                            </div>
+                          </div>
+                          <Wallet size={16} style={{ color: 'var(--accent-gold)' }} />
+                        </div>
+                      </div>
+
+                      {paymentError && (
+                        <div style={{
+                          marginTop: '10px',
+                          background: 'rgba(224, 114, 90, 0.15)',
+                          border: '1px solid #e0725a',
+                          borderRadius: '8px',
+                          padding: '8px 12px',
+                          fontSize: '0.78rem',
+                          color: '#e0725a',
+                          fontWeight: 600
+                        }}>
+                          {paymentError}
+                        </div>
+                      )}
+
+                      {/* Security Guarantee Badge */}
+                      <div style={{
+                        marginTop: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.74rem',
+                        color: 'var(--text-muted)'
+                      }}>
+                        <ShieldCheck size={14} style={{ color: 'var(--accent-aqua)' }} />
+                        <span>256-Bit SSL Encrypted & 100% Secure Payment</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1079,22 +1282,28 @@ export default function BookingFlow({
                   disabled={isSubmitting}
                   className="btn-primary"
                   style={{
-                    background: 'var(--accent-aqua)',
+                    background: paymentMethod === 'razorpay' ? 'var(--accent-aqua)' : 'var(--accent-gold)',
                     color: '#003135',
                     fontWeight: 800,
                     fontSize: '1.05rem',
                     border: 'none',
                     padding: '14px 40px',
                     borderRadius: '28px',
-                    cursor: 'pointer',
-                    boxShadow: '0 6px 25px rgba(15, 164, 175, 0.45)',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    boxShadow: paymentMethod === 'razorpay'
+                      ? '0 6px 25px rgba(0, 210, 180, 0.45)'
+                      : '0 6px 25px rgba(230, 176, 0, 0.4)',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}
                 >
                   <CheckCircle2 size={18} />
-                  {isSubmitting ? 'Confirming Appointment...' : `Confirm & Book Slot (₹${calculateFinalTotal()})`}
+                  {isSubmitting
+                    ? 'Processing...'
+                    : paymentMethod === 'razorpay'
+                      ? `Pay ₹${calculateFinalTotal()} Online`
+                      : `Confirm Appointment (₹${calculateFinalTotal()})`}
                 </button>
               </div>
             </form>

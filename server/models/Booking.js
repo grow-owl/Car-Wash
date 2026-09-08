@@ -34,12 +34,15 @@ const BookingSchema = new mongoose.Schema({
   timeSlot: { type: String },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'vehicle_received', 'washing', 'detailing', 'quality_check', 'ready', 'ready_for_pickup', 'completed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'vehicle_received', 'in_progress', 'service_in_progress', 'washing', 'detailing', 'quality_check', 'ready', 'ready_for_pickup', 'completed', 'cancelled'],
     default: 'confirmed'
   },
-  paymentMode: { type: String, enum: ['UPI', 'Card', 'Cash', 'Online'], default: 'Online' },
+  paymentMode: { type: String, enum: ['Razorpay', 'UPI', 'Card', 'Cash', 'Online', 'Pay at Center'], default: 'Razorpay' },
   paymentTiming: { type: String, enum: ['Pay Now', 'Pay After Service'], default: 'Pay Now' },
-  paymentStatus: { type: String, enum: ['Paid', 'Pending'], default: 'Paid' },
+  paymentStatus: { type: String, enum: ['Paid', 'Pending', 'Failed', 'Refunded'], default: 'Pending' },
+  razorpayOrderId: { type: String, sparse: true, index: true },
+  razorpayPaymentId: { type: String, sparse: true },
+  razorpaySignature: { type: String },
   paidAt: { type: Date },
   assignedBay: { type: String, default: 'BAY 1' },
   bayAssigned: { type: String, default: 'BAY 1' },

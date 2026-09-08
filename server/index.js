@@ -26,6 +26,7 @@ app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/staff', require('./routes/staff'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/payment', require('./routes/payment'));
 
 // Root Health Check
 app.get('/', (req, res) => {

@@ -289,8 +289,8 @@ router.post('/', async (req, res) => {
     const brandName = vehicleBrand || 'Hyundai';
     const modelName = vehicleModel || vehicleType || 'Creta';
 
-    const isPayAfter = paymentTiming === 'Pay After Service' || paymentMode === 'Cash';
-    const isPaid = !isPayAfter && (paymentMode === 'Online' || paymentMode === 'UPI' || paymentMode === 'Card');
+    const isPayAfter = paymentTiming === 'Pay After Service' || paymentMode === 'Cash' || paymentMode === 'Pay at Center';
+    const isPaid = req.body.paymentStatus === 'Paid' || (!isPayAfter && (paymentMode === 'Online' || paymentMode === 'UPI' || paymentMode === 'Card') && req.body.paymentStatus === 'Paid');
 
     const newBooking = new Booking({
       bookingId: trackingCode,
@@ -317,11 +317,13 @@ router.post('/', async (req, res) => {
       date: bookingDateStr,
       slotTime: targetSlot,
       timeSlot: targetSlot,
-      paymentTiming: paymentTiming || (paymentMode === 'Cash' ? 'Pay After Service' : 'Pay Now'),
-      paymentMode: paymentMode || 'Online',
-      paymentStatus: isPaid ? 'Paid' : 'Pending',
+      paymentTiming: paymentTiming || (isPayAfter ? 'Pay After Service' : 'Pay Now'),
+      paymentMode: paymentMode || (isPayAfter ? 'Pay at Center' : 'Razorpay'),
+      paymentStatus: isPaid ? 'Paid' : (req.body.paymentStatus || 'Pending'),
+      razorpayOrderId: req.body.razorpayOrderId || undefined,
+      razorpayPaymentId: req.body.razorpayPaymentId || undefined,
       paidAt: isPaid ? new Date() : null,
-      status: 'confirmed',
+      status: req.body.status || 'confirmed',
       assignedBay: allocatedBay,
       bayAssigned: allocatedBay,
       staffAssigned: allocatedBay === 'BAY 2' ? 'Vikram Singh' : 'Rahul Kumar',
@@ -474,15 +476,17 @@ router.post('/walkin', async (req, res) => {
 // Helper to build formal, clean WhatsApp status update message
 const buildStatusWhatsAppMessage = (booking, newStatus) => {
   const statusLabels = {
-    pending: 'Pending Confirmation',
+    pending: 'Booking Confirmed',
     confirmed: 'Booking Confirmed',
-    vehicle_received: 'Vehicle Received at Bay',
-    washing: 'High Pressure Foam Wash',
-    detailing: 'Interior & Paint Detailing',
-    quality_check: 'Final Quality Inspection',
+    vehicle_received: 'Vehicle Received',
+    in_progress: 'Service In Progress',
+    service_in_progress: 'Service In Progress',
+    washing: 'Service In Progress',
+    detailing: 'Service In Progress',
+    quality_check: 'Quality Check',
     ready: 'Ready for Pickup',
     ready_for_pickup: 'Ready for Pickup',
-    completed: 'Service Completed & Delivered',
+    completed: 'Completed',
     cancelled: 'Booking Cancelled'
   };
 

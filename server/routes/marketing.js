@@ -115,31 +115,128 @@ router.delete('/coupons/:id', async (req, res) => {
   }
 });
 
-// MEMBERSHIPS: List
+const MembershipSubscription = require('../models/MembershipSubscription');
+
+// MEMBERSHIPS: List available plans (with automatic seed if empty)
 router.get('/memberships', async (req, res) => {
   try {
-    const memberships = await Membership.find({});
+    let memberships = await Membership.find({});
+    if (memberships.length === 0) {
+      memberships = await Membership.insertMany([
+        {
+          name: 'Silver Shine Pass',
+          priceMonthly: 199,
+          originalPrice: 249,
+          includedWashes: 2,
+          discountPct: 10,
+          priorityBooking: true,
+          perks: ['2 Express Exterior Washes/mo', '10% off all detailing add-ons', 'Free tire dressing & gloss'],
+          isPopular: false
+        },
+        {
+          name: 'Gold Detailer Club',
+          priceMonthly: 299,
+          originalPrice: 399,
+          includedWashes: 4,
+          discountPct: 20,
+          priorityBooking: true,
+          perks: ['4 Ultimate Hydro-Washes/mo', '20% off ceramic coatings', 'Priority bay queue access', 'Free interior ozone sanitization'],
+          isPopular: true
+        },
+        {
+          name: 'Platinum VIP Unlimited',
+          priceMonthly: 449,
+          originalPrice: 599,
+          includedWashes: 99,
+          discountPct: 30,
+          priorityBooking: true,
+          perks: ['Unlimited Express Exterior washes', '2 Full Interior Spas/mo', '30% off all premium services', 'Dedicated account manager & detailer'],
+          isPopular: false
+        }
+      ]);
+    }
     res.json(memberships);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// MEMBERSHIPS: Subscribe
+// MEMBERSHIPS: Buy / Subscribe to VIP Pass
 router.post('/memberships/subscribe', async (req, res) => {
   try {
-    const { phone, name, email, membershipName } = req.body;
-    let customer = await Customer.findOne({ phone });
+    const { phone, name, email, membershipName, price, razorpayPaymentId, razorpayOrderId, paymentMode } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({ error: 'Valid customer phone number is required' });
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    const planName = membershipName || 'Gold Detailer Club';
+    const planPrice = Number(price || 299);
+    const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 Days Validity
+
+    // 1. Update Customer Record
+    let customer = await Customer.findOne({ phone: { $regex: cleanPhone } });
     if (!customer) {
-      customer = new Customer({ name, phone, email, membershipStatus: membershipName });
+      customer = new Customer({
+        name: name || 'VIP Member',
+        phone: cleanPhone,
+        email: email || '',
+        membershipStatus: planName,
+        membershipExpires: expiryDate,
+        loyaltyPoints: 150,
+        totalSpent: planPrice
+      });
     } else {
-      customer.membershipStatus = membershipName;
-      customer.loyaltyPoints += 100; // Membership bonus
+      if (name && !customer.name) customer.name = name;
+      if (email && !customer.email) customer.email = email;
+      customer.membershipStatus = planName;
+      customer.membershipExpires = expiryDate;
+      customer.loyaltyPoints = (customer.loyaltyPoints || 0) + 150; // VIP Activation Bonus
+      customer.totalSpent = (customer.totalSpent || 0) + planPrice;
     }
     await customer.save();
-    res.json({ message: `Successfully subscribed to ${membershipName}!`, customer });
+
+    // 2. Record in MembershipSubscription Collection
+    const subscription = new MembershipSubscription({
+      customer: customer._id,
+      customerName: customer.name,
+      phone: customer.phone,
+      email: customer.email || email || '',
+      membershipPlan: planName,
+      price: planPrice,
+      durationDays: 30,
+      startDate: new Date(),
+      expiryDate: expiryDate,
+      paymentMode: paymentMode || 'Razorpay',
+      paymentStatus: 'Paid',
+      razorpayPaymentId: razorpayPaymentId || `pay_sim_${Date.now()}`,
+      razorpayOrderId: razorpayOrderId || `order_sub_${Date.now()}`,
+      status: 'active'
+    });
+    await subscription.save();
+
+    console.log(`[VIP MEMBERSHIP ACTIVATED] Plan: ${planName} | Customer: ${customer.name} (${customer.phone}) | Paid: ₹${planPrice}`);
+
+    res.status(201).json({
+      success: true,
+      message: `Congratulations! Successfully activated ${planName} valid for 30 days.`,
+      customer,
+      subscription
+    });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    console.error('Error subscribing to membership:', err);
+    res.status(400).json({ error: err.message || 'Failed to activate VIP membership' });
+  }
+});
+
+// MEMBERSHIPS: Get All VIP Subscriptions for Owner Dashboard
+router.get('/memberships/subscriptions', async (req, res) => {
+  try {
+    const subscriptions = await MembershipSubscription.find({}).sort({ createdAt: -1 });
+    res.json(subscriptions);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
