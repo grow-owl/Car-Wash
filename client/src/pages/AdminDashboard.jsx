@@ -3,7 +3,7 @@ import {
   Plus, Search, MessageSquare, Trash2, X, Eye, EyeOff, Lock, TrendingUp, DollarSign,
   Upload, Image, Loader2, Calendar, Clock, Download, History, User, Car, Filter,
   ArrowUpDown, CheckCircle2, ShieldCheck, Tag, Info, Phone, ExternalLink, RefreshCw,
-  Crown, Award, Sparkles
+  Crown, Award, Sparkles, FileText
 } from 'lucide-react';
 import {
   getAnalytics, getBookings, updateBookingStatus, createWalkInBooking, deleteBooking,
@@ -1183,8 +1183,8 @@ export default function AdminDashboard({
                             </div>
                           )}
                         </td>
-                        <td style={{ padding: '10px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <td style={{ padding: '10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
                             {/* WhatsApp Direct 1-Click Link */}
                             {(() => {
                               const cleanPhone = (b.phone || '').replace(/\D/g, '');
@@ -1210,46 +1210,109 @@ export default function AdminDashboard({
                                   target="_blank"
                                   rel="noreferrer"
                                   style={{
-                                    padding: '4px 8px',
-                                    fontSize: '0.7rem',
-                                    borderRadius: '4px',
+                                    height: '30px',
+                                    padding: '0 10px',
+                                    fontSize: '0.74rem',
+                                    borderRadius: '6px',
                                     background: '#25D366',
                                     color: '#06141B',
+                                    border: '1px solid #25D366',
                                     fontWeight: 800,
                                     textDecoration: 'none',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '3px'
+                                    justifyContent: 'center',
+                                    gap: '5px',
+                                    boxSizing: 'border-box',
+                                    whiteSpace: 'nowrap',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
                                   }}
                                   title="Send instant WhatsApp status update to customer"
                                 >
-                                  <MessageSquare size={12} /> WhatsApp
+                                  <MessageSquare size={13} /> WhatsApp
                                 </a>
                               );
                             })()}
 
+                            {/* History Button */}
                             <button
+                              type="button"
                               onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                              className="btn-secondary"
-                              style={{ padding: '4px 8px', fontSize: '0.7rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                              style={{
+                                height: '30px',
+                                padding: '0 10px',
+                                fontSize: '0.74rem',
+                                borderRadius: '6px',
+                                background: 'rgba(0, 229, 255, 0.12)',
+                                border: '1px solid rgba(0, 229, 255, 0.35)',
+                                color: 'var(--accent-cyan)',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                boxSizing: 'border-box',
+                                whiteSpace: 'nowrap',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
                               title="View Customer Lifetime Timeline"
                             >
-                              <History size={12} /> History
+                              <History size={13} /> History
                             </button>
+
+                            {/* Invoice Button */}
                             <button
+                              type="button"
                               onClick={() => setInvoiceBooking(b)}
-                              className="btn-secondary"
-                              style={{ padding: '4px 8px', fontSize: '0.7rem', borderRadius: '4px' }}
+                              style={{
+                                height: '30px',
+                                padding: '0 10px',
+                                fontSize: '0.74rem',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 195, 0, 0.12)',
+                                border: '1px solid rgba(255, 195, 0, 0.35)',
+                                color: 'var(--accent-gold)',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                boxSizing: 'border-box',
+                                whiteSpace: 'nowrap',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                              title="View and Print Invoice"
                             >
-                              Invoice
+                              <FileText size={13} /> Invoice
                             </button>
+
+                            {/* Delete Button */}
                             <button
+                              type="button"
                               onClick={() => openDeleteConfirm(
                                 'Delete Booking?',
                                 `${code} - ${b.customerName}`,
                                 () => deleteBooking(b._id).then(fetchAllAdminData)
                               )}
-                              style={{ background: 'transparent', border: 'none', color: '#FF5964', cursor: 'pointer', padding: '2px' }}
+                              style={{
+                                height: '30px',
+                                width: '32px',
+                                padding: '0',
+                                borderRadius: '6px',
+                                background: 'rgba(255, 89, 100, 0.12)',
+                                border: '1px solid rgba(255, 89, 100, 0.35)',
+                                color: '#FF5964',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxSizing: 'border-box',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                              }}
+                              title="Delete Booking"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -2718,14 +2781,29 @@ export default function AdminDashboard({
                             </td>
                             <td style={{ padding: '10px', textAlign: 'center' }}>
                               <button
+                                type="button"
                                 onClick={() => {
                                   setShowTimelineModal(false);
                                   setInvoiceBooking(b);
                                 }}
-                                className="btn-secondary"
-                                style={{ padding: '4px 10px', fontSize: '0.72rem', borderRadius: '4px' }}
+                                style={{
+                                  height: '28px',
+                                  padding: '0 10px',
+                                  fontSize: '0.74rem',
+                                  borderRadius: '6px',
+                                  background: 'rgba(255, 195, 0, 0.12)',
+                                  border: '1px solid rgba(255, 195, 0, 0.35)',
+                                  color: 'var(--accent-gold)',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '4px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
                               >
-                                View
+                                <FileText size={12} /> View
                               </button>
                             </td>
                           </tr>
