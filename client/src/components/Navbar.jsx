@@ -98,7 +98,7 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
       WebkitBackdropFilter: 'blur(20px)',
       borderBottom: '1px solid rgba(74, 92, 106, 0.4)',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-      padding: '12px 32px',
+      padding: '10px clamp(14px, 3vw, 32px)',
       boxSizing: 'border-box'
     }}>
       <div style={{

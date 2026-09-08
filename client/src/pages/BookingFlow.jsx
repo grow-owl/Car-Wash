@@ -713,7 +713,7 @@ export default function BookingFlow({
               </div>
             )}
 
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
               <button
                 onClick={() => {
                   if (bookingMode === 'custom' && selectedCustomServices.length === 0) {
@@ -723,9 +723,9 @@ export default function BookingFlow({
                   setStep(2);
                 }}
                 className="btn-aqua"
-                style={{ padding: '14px 32px' }}
+                style={{ width: 'min(100%, 280px)', justifyContent: 'center' }}
               >
-                Next: Vehicle Selection <ArrowRight size={16} style={{ marginLeft: '6px' }} />
+                Next: Vehicle Selection <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -764,13 +764,13 @@ export default function BookingFlow({
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button onClick={() => setStep(1)} className="btn-secondary">
-                <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Back: Services
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <button onClick={() => setStep(1)} className="btn-secondary" style={{ flex: '1 1 140px', justifyContent: 'center' }}>
+                <ArrowLeft size={16} /> Back: Services
               </button>
 
-              <button onClick={() => setStep(3)} className="btn-aqua" style={{ padding: '14px 32px' }}>
-                Next: Slot & Confirmation <ArrowRight size={16} style={{ marginLeft: '6px' }} />
+              <button onClick={() => setStep(3)} className="btn-aqua" style={{ flex: '2 1 200px', justifyContent: 'center' }}>
+                Next: Slot & Details <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -797,7 +797,7 @@ export default function BookingFlow({
                   
                   {/* Date & Slot Pickers */}
                   <div style={{ background: 'rgba(0, 49, 53, 0.6)', padding: '18px', borderRadius: '14px', border: '1px solid var(--border-light)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '14px', marginBottom: '14px' }}>
                       <div>
                         <label style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Calendar size={14} /> Select Wash Date *
@@ -823,7 +823,10 @@ export default function BookingFlow({
                           border: '1px solid var(--accent-aqua)',
                           color: 'var(--accent-aqua)',
                           fontWeight: 800,
-                          fontSize: '0.92rem'
+                          fontSize: '0.92rem',
+                          minHeight: '44px',
+                          display: 'flex',
+                          alignItems: 'center'
                         }}>
                           {selectedSlot}
                         </div>
@@ -1272,9 +1275,9 @@ export default function BookingFlow({
               </div>
 
               {/* Form Actions */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '20px' }}>
-                <button type="button" onClick={() => setStep(2)} className="btn-secondary">
-                  <ArrowLeft size={16} style={{ marginRight: '6px' }} /> Back: Vehicle
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <button type="button" onClick={() => setStep(2)} className="btn-secondary" style={{ flex: '1 1 140px', justifyContent: 'center' }}>
+                  <ArrowLeft size={16} /> Back: Vehicle
                 </button>
 
                 <button
@@ -1285,9 +1288,9 @@ export default function BookingFlow({
                     background: paymentMethod === 'razorpay' ? 'var(--accent-aqua)' : 'var(--accent-gold)',
                     color: '#003135',
                     fontWeight: 800,
-                    fontSize: '1.05rem',
+                    fontSize: '1rem',
                     border: 'none',
-                    padding: '14px 40px',
+                    padding: '12px 24px',
                     borderRadius: '28px',
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     boxShadow: paymentMethod === 'razorpay'
@@ -1295,7 +1298,9 @@ export default function BookingFlow({
                       : '0 6px 25px rgba(230, 176, 0, 0.4)',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    justifyContent: 'center',
+                    gap: '8px',
+                    flex: '2 1 220px'
                   }}
                 >
                   <CheckCircle2 size={18} />
@@ -1303,7 +1308,7 @@ export default function BookingFlow({
                     ? 'Processing...'
                     : paymentMethod === 'razorpay'
                       ? `Pay ₹${calculateFinalTotal()} Online`
-                      : `Confirm Appointment (₹${calculateFinalTotal()})`}
+                      : `Confirm (₹${calculateFinalTotal()})`}
                 </button>
               </div>
             </form>

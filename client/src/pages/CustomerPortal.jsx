@@ -737,7 +737,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
             {/* MIDDLE STATS GRID: 2 BALANCED SIDE-BY-SIDE CARDS */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
               gap: '14px',
               marginTop: '20px'
             }}>
@@ -878,7 +878,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
             {/* Saved Vehicles Grid */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
               gap: '12px',
               marginBottom: '20px'
             }}>
@@ -925,7 +925,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
               </div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))',
                 gap: '10px',
                 alignItems: 'center'
               }}>
@@ -955,7 +955,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
           {/* REFERRAL SYSTEM & TRACKING */}
           <div className="glass-panel" style={{
-            padding: 'clamp(20px, 3.5vw, 36px)',
+            padding: 'clamp(16px, 3.5vw, 36px)',
             marginTop: '8px',
             marginBottom: '44px',
             border: '1px solid rgba(0, 229, 255, 0.3)',
@@ -966,8 +966,8 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
           }}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
-              gap: '28px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+              gap: '24px',
               alignItems: 'stretch'
             }}>
               {/* Left: Referral Code & Benefits */}
@@ -1281,9 +1281,11 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
             background: 'linear-gradient(135deg, #003135 0%, #06212b 100%)',
             border: '1px solid var(--accent-aqua)',
             borderRadius: '18px',
-            maxWidth: '460px',
+            maxWidth: 'min(95vw, 460px)',
             width: '100%',
-            padding: '28px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: 'clamp(18px, 4vw, 28px)',
             boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 210, 180, 0.2)',
             color: '#FFFFFF'
           }}>

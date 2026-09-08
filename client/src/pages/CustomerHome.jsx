@@ -157,8 +157,8 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 1. HERO SECTION */}
       <section style={{
         position: 'relative',
-        minHeight: '480px',
-        padding: '70px 0 80px 0',
+        minHeight: '420px',
+        padding: 'clamp(40px, 7vw, 75px) 0 clamp(40px, 7vw, 80px) 0',
         background: `linear-gradient(to right, rgba(6, 20, 27, 0.95) 0%, rgba(17, 33, 45, 0.82) 60%, rgba(37, 55, 69, 0.4) 100%), url('https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788800670/car-wash/banners/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
         alignItems: 'center',
@@ -168,32 +168,32 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           <div style={{ maxWidth: '580px' }}>
             
             <h1 style={{
-              fontSize: '3rem',
+              fontSize: 'clamp(1.85rem, 5vw, 3rem)',
               lineHeight: '1.15',
               fontWeight: 800,
-              marginBottom: '16px',
+              marginBottom: '14px',
               color: '#FFFFFF'
             }}>
               Premium Car Wash & Detailing
             </h1>
 
             <p style={{
-              fontSize: '1.05rem',
+              fontSize: 'clamp(0.9rem, 2vw, 1.05rem)',
               color: 'var(--ice-tint)',
-              marginBottom: '28px',
-              lineHeight: '1.6'
+              marginBottom: '24px',
+              lineHeight: '1.55'
             }}>
               High-pressure foam wash, 300°F steam interior sanitization & ceramic coatings.
             </p>
 
-            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+            <div className="hero-cta-group" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
                 onClick={() => onStartBooking(selectedVehicle)}
                 className="btn-primary"
                 style={{
-                  padding: '14px 30px',
+                  padding: '12px 26px',
                   borderRadius: '24px',
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px'
@@ -208,7 +208,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   if (servicesEl) servicesEl.scrollIntoView({ behavior: 'smooth' });
                 }}
                 className="btn-secondary"
-                style={{ borderRadius: '24px', padding: '14px 26px', fontSize: '0.95rem' }}
+                style={{ borderRadius: '24px', padding: '12px 24px', fontSize: '0.92rem' }}
               >
                 View Services
               </button>

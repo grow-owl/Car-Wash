@@ -371,12 +371,12 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             </div>
           </div>
 
-          {/* TWO-COLUMN DETAILS CONTAINER */}
+          {/* TWO-COLUMN DETAILS CONTAINER (RESPONSIVE GRID) */}
           <div style={{
             position: 'relative',
             zIndex: 1,
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
             border: '1.5px solid #BAE6FD',
             borderRadius: '6px',
             marginBottom: '12px',
@@ -456,10 +456,11 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             </div>
           </div>
 
-          {/* LINE ITEMS TABLE */}
-          <div style={{ position: 'relative', zIndex: 1, marginBottom: '12px' }}>
+          {/* LINE ITEMS TABLE (WITH TOUCH-SAFE HORIZONTAL SCROLL) */}
+          <div className="table-responsive" style={{ position: 'relative', zIndex: 1, marginBottom: '12px' }}>
             <table style={{
               width: '100%',
+              minWidth: '440px',
               borderCollapse: 'collapse',
               fontSize: '0.78rem',
               border: '1.5px solid #BAE6FD'
@@ -511,12 +512,12 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             </table>
           </div>
 
-          {/* BOTTOM SUMMARY & BRANDING SECTION */}
+          {/* BOTTOM SUMMARY & BRANDING SECTION (RESPONSIVE GRID) */}
           <div style={{
             position: 'relative',
             zIndex: 1,
             display: 'grid',
-            gridTemplateColumns: '1.2fr 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
             gap: '16px',
             alignItems: 'stretch',
             marginBottom: '12px'
