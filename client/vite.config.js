@@ -5,8 +5,11 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: {
+    target: 'es2020',
     cssCodeSplit: true,
+    cssMinify: true,
     chunkSizeWarningLimit: 600,
+    reportCompressedSize: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
