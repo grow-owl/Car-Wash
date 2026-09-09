@@ -97,11 +97,14 @@ export default function SectionDivider({
           border: variant === 'gold' ? '1px solid rgba(255, 195, 0, 0.45)' : '1px solid rgba(0, 229, 255, 0.45)',
           boxShadow: variant === 'gold' ? '0 0 14px rgba(255, 195, 0, 0.3)' : '0 0 14px rgba(0, 229, 255, 0.3)',
           borderRadius: badge ? '16px' : '50%',
-          padding: badge ? '3px 12px' : '5px',
-          display: 'flex',
+          padding: badge ? '4px 12px' : '5px',
+          display: 'inline-flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '6px',
-          backdropFilter: 'blur(6px)'
+          backdropFilter: 'blur(6px)',
+          whiteSpace: 'nowrap',
+          maxWidth: '92vw'
         }}>
           {centerIcon ? centerIcon : (
             <div style={{
@@ -109,17 +112,20 @@ export default function SectionDivider({
               height: '5px',
               borderRadius: '50%',
               background: variant === 'gold' ? '#FFC300' : 'var(--accent-cyan)',
-              boxShadow: variant === 'gold' ? '0 0 6px #FFC300' : '0 0 6px var(--accent-cyan)'
+              boxShadow: variant === 'gold' ? '0 0 6px #FFC300' : '0 0 6px var(--accent-cyan)',
+              flexShrink: 0
             }} />
           )}
 
           {badge && (
             <span style={{
-              fontSize: '0.68rem',
+              fontSize: '0.66rem',
               fontWeight: 800,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              color: variant === 'gold' ? '#FFC300' : 'var(--accent-cyan)'
+              color: variant === 'gold' ? '#FFC300' : 'var(--accent-cyan)',
+              whiteSpace: 'nowrap',
+              lineHeight: 1
             }}>
               {badge}
             </span>

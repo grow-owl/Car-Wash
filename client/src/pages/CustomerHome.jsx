@@ -161,8 +161,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
         padding: 'clamp(40px, 7vw, 75px) 0 clamp(40px, 7vw, 80px) 0',
         background: `linear-gradient(to right, rgba(6, 20, 27, 0.95) 0%, rgba(17, 33, 45, 0.82) 60%, rgba(37, 55, 69, 0.4) 100%), url('https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788800670/car-wash/banners/hero-bg.jpg') center/cover no-repeat`,
         display: 'flex',
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border-light)'
+        alignItems: 'center'
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ maxWidth: '580px' }}>
@@ -223,8 +222,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 2. BEFORE / AFTER SLIDER */}
       <section style={{
         background: '#11212D',
-        padding: '40px 0',
-        borderBottom: '1px solid var(--border-light)'
+        padding: '40px 0'
       }}>
         <div className="container">
           <BeforeAfterSlider />
@@ -236,8 +234,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 3. SERVICES CATALOG */}
       <section id="services-section" style={{
         background: '#06141B',
-        padding: '50px 0',
-        borderBottom: '1px solid var(--border-light)'
+        padding: '50px 0'
       }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '28px' }}>
@@ -366,8 +363,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 4. POPULAR WASH PACKAGES */}
       <section id="pricing-section" style={{
         background: '#11212D',
-        padding: '50px 0',
-        borderBottom: '1px solid var(--border-light)'
+        padding: '50px 0'
       }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -388,8 +384,9 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  border: pkg.isPopular ? '2px solid #FFC300' : '1px solid var(--border-light)',
-                  background: pkg.isPopular ? 'linear-gradient(135deg, rgba(37,55,69,0.95) 0%, rgba(17,33,45,0.95) 100%)' : 'var(--bg-glass-card)'
+                  border: (pkg.isPopular || pkg.title?.toLowerCase().includes('premium shine')) ? '2px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                  background: (pkg.isPopular || pkg.title?.toLowerCase().includes('premium shine')) ? 'linear-gradient(135deg, rgba(37,55,69,0.95) 0%, rgba(17,33,45,0.95) 100%)' : 'var(--bg-glass-card)',
+                  boxShadow: (pkg.isPopular || pkg.title?.toLowerCase().includes('premium shine')) ? '0 0 20px rgba(255, 195, 0, 0.22)' : 'none'
                 }}
               >
                 <div>

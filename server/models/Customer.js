@@ -25,6 +25,15 @@ const CustomerSchema = new mongoose.Schema({
   membershipStatus: { type: String, default: 'None' },
   membershipExpires: { type: Date },
   loyaltyPoints: { type: Number, default: 50 },
+  referralCode: { type: String, uppercase: true, trim: true },
+  referredBy: { type: String, uppercase: true, trim: true },
+  referrals: [{
+    friendName: { type: String },
+    phone: { type: String },
+    date: { type: String },
+    status: { type: String, default: 'Booking Confirmed' },
+    rewardEarned: { type: String, default: '50 Loyalty Points' }
+  }],
   notes: { type: String, default: '' },
   vehicles: [CustomerVehicleSchema]
 }, { timestamps: true });

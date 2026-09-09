@@ -12,8 +12,32 @@ router.post('/coupons/validate', async (req, res) => {
     const { code, amount } = req.body;
     if (!code) return res.status(400).json({ error: 'Coupon code required' });
 
-    let coupon = await Coupon.findOne({ code: code.toUpperCase() });
-    if (!coupon && code.toUpperCase() === 'FLAT20') {
+    const upperCode = code.toUpperCase().trim();
+
+    // Check if code is a Friend Referral Code (e.g. CARWASHDHIRAJ2026, CARWASHVIP1234, REF...)
+    let isReferralCode = upperCode.startsWith('CARWASH') || upperCode.startsWith('REF');
+    let referrerCustomer = null;
+    if (isReferralCode) {
+      referrerCustomer = await Customer.findOne({ referralCode: upperCode });
+    }
+
+    if (isReferralCode) {
+      const discount = Math.min(50, amount || 50);
+      return res.json({
+        valid: true,
+        code: upperCode,
+        discountType: 'flat',
+        value: 50,
+        discount,
+        discountCalculated: discount,
+        description: `Referral Benefit: ₹50 Flat Discount for 1st Wash!`,
+        isReferral: true,
+        referrerName: referrerCustomer?.name || 'Friend'
+      });
+    }
+
+    let coupon = await Coupon.findOne({ code: upperCode });
+    if (!coupon && upperCode === 'FLAT20') {
       coupon = new Coupon({
         code: 'FLAT20',
         discountType: 'percent',
@@ -25,7 +49,7 @@ router.post('/coupons/validate', async (req, res) => {
       await coupon.save();
     }
 
-    if (!coupon) return res.status(404).json({ error: 'Invalid coupon code' });
+    if (!coupon) return res.status(404).json({ error: 'Invalid coupon or referral code' });
 
     if (coupon.active === false) {
       return res.status(400).json({ error: 'This promo coupon has been deactivated or expired by owner' });

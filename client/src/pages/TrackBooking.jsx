@@ -85,6 +85,32 @@ export default function TrackBooking({ activeCode = '' }) {
     }
   ];
 
+  // Sync activeCode prop
+  useEffect(() => {
+    if (activeCode) {
+      setTrackingCode(activeCode.toUpperCase().trim());
+    }
+  }, [activeCode]);
+
+  // Auto-detect ?invoice=1 or ?track=... from URL to open Original Digital Invoice immediately
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash || '';
+    const trackParam = urlParams.get('track') || urlParams.get('code') || urlParams.get('booking');
+    const invoiceParam = urlParams.get('invoice');
+    const viewParam = urlParams.get('view');
+
+    if (trackParam) {
+      setTrackingCode(trackParam.toUpperCase().trim());
+    } else if (invoiceParam && invoiceParam !== '1' && invoiceParam !== 'true') {
+      setTrackingCode(invoiceParam.toUpperCase().trim());
+    }
+
+    if (invoiceParam === '1' || invoiceParam === 'true' || viewParam === 'invoice' || hash.includes('invoice')) {
+      setShowInvoiceModal(true);
+    }
+  }, []);
+
   // Auto-sync polling every 3.5s while on Live Track page for instant synchronization with Owner Dashboard!
   useEffect(() => {
     if (trackingCode) {
@@ -242,94 +268,88 @@ export default function TrackBooking({ activeCode = '' }) {
 
   return (
     <div className="container" style={{ paddingTop: '20px', paddingBottom: '70px', maxWidth: '960px' }}>
-      
-      {/* COMPACT CLEAN HEADER */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+         {/* TITLE & HEADER */}
+      <div style={{ textAlign: 'center', marginBottom: '18px' }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '6px',
-          background: 'rgba(0, 210, 180, 0.12)',
-          border: '1px solid var(--accent-aqua)',
-          padding: '4px 12px',
-          borderRadius: '20px',
-          fontSize: '0.72rem',
-          fontWeight: 800,
           color: 'var(--accent-aqua)',
-          letterSpacing: '0.05em',
+          fontSize: '0.68rem',
+          fontWeight: 800,
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
-          marginBottom: '6px'
+          marginBottom: '4px'
         }}>
-          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--accent-aqua)', boxShadow: '0 0 8px var(--accent-aqua)', animation: 'pulse 1.8s infinite' }} />
-          Live Bay Telemetry
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-aqua)', boxShadow: '0 0 6px var(--accent-aqua)' }} />
+          Live Telemetry
         </div>
 
-        <h1 className="track-header-title" style={{ fontSize: '1.9rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', margin: 0 }}>
+        <h1 className="track-header-title" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', margin: 0 }}>
           Vehicle Service Tracker
         </h1>
       </div>
 
       {/* SLEEK SEARCH BAR */}
-      <form onSubmit={handleSearch} className="track-search-wrapper">
+      <form onSubmit={handleSearch} className="track-search-wrapper" style={{ marginBottom: '16px' }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <input
             type="text"
             placeholder="Enter Tracking Code (e.g. CW-9669)"
             value={trackingCode}
             onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
-            className="input-field"
+            className="input-field track-search-input"
             style={{
-              paddingLeft: '42px',
+              paddingLeft: '44px',
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              fontWeight: 800,
-              fontSize: '0.92rem',
-              height: '44px',
-              background: 'rgba(0, 31, 35, 0.85)',
-              border: '1px solid rgba(0, 210, 180, 0.35)',
-              borderRadius: '10px'
+              letterSpacing: '0.06em',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              height: '40px',
+              background: 'rgba(0, 31, 35, 0.7)',
+              border: '1px solid rgba(0, 210, 180, 0.3)',
+              borderRadius: '8px'
             }}
           />
-          <Search size={18} color="var(--accent-aqua)" style={{ position: 'absolute', left: '14px', top: '13px' }} />
+          <Search size={16} color="var(--accent-aqua)" style={{ position: 'absolute', left: '14px', top: '12px' }} />
         </div>
         <button
           type="submit"
           className="btn-primary"
           style={{
-            padding: '0 22px',
-            height: '44px',
-            fontWeight: 800,
-            fontSize: '0.88rem',
-            borderRadius: '10px',
+            padding: '0 18px',
+            height: '40px',
+            fontWeight: 700,
+            fontSize: '0.84rem',
+            borderRadius: '8px',
             background: 'var(--accent-aqua)',
             color: '#003135',
             border: 'none',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 16px rgba(0, 210, 180, 0.3)'
+            gap: '5px'
           }}
         >
-          <Search size={16} /> Track
+          <Search size={14} /> Track
         </button>
       </form>
 
       {/* SUCCESS MESSAGE */}
       {paySuccessMsg && (
         <div style={{
-          background: 'rgba(0, 210, 180, 0.15)',
+          background: 'rgba(0, 210, 180, 0.12)',
           border: '1px solid var(--accent-aqua)',
-          padding: '12px 16px',
-          borderRadius: '10px',
+          padding: '10px 14px',
+          borderRadius: '8px',
           color: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          marginBottom: '18px',
-          fontSize: '0.85rem'
+          gap: '8px',
+          marginBottom: '14px',
+          fontSize: '0.8rem'
         }}>
-          <CheckCircle2 size={20} color="var(--accent-aqua)" />
+          <CheckCircle2 size={16} color="var(--accent-aqua)" />
           <span>{paySuccessMsg}</span>
         </div>
       )}
@@ -337,124 +357,104 @@ export default function TrackBooking({ activeCode = '' }) {
       {/* ERROR MESSAGE */}
       {error && (
         <div style={{
-          padding: '12px 16px',
-          background: 'rgba(255, 89, 100, 0.15)',
+          padding: '10px 14px',
+          background: 'rgba(255, 89, 100, 0.12)',
           border: '1px solid var(--accent-coral)',
-          borderRadius: '10px',
+          borderRadius: '8px',
           color: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          marginBottom: '18px',
-          fontSize: '0.85rem'
+          gap: '8px',
+          marginBottom: '14px',
+          fontSize: '0.8rem'
         }}>
-          <AlertCircle size={20} color="var(--accent-coral)" />
+          <AlertCircle size={16} color="var(--accent-coral)" />
           <div>{error}</div>
         </div>
       )}
 
       {loading && (
-        <div style={{ textAlign: 'center', padding: '30px', color: 'var(--accent-aqua)', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-          <RefreshCw size={18} className="animate-spin" /> Synchronizing with bay sensors...
+        <div style={{ textAlign: 'center', padding: '24px', color: 'var(--accent-aqua)', fontWeight: 700, fontSize: '0.86rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <RefreshCw size={16} className="animate-spin" /> Synchronizing telemetry...
         </div>
       )}
 
       {/* ACTIVE TRACKING DATA CARD */}
       {booking && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           
           {/* MAIN STATUS CARD */}
-          <div className="track-main-card">
+          <div className="track-main-card" style={{ padding: '14px 16px', borderRadius: '12px', background: 'linear-gradient(135deg, rgba(0, 49, 53, 0.85) 0%, rgba(6, 26, 36, 0.92) 100%)', border: '1px solid rgba(0, 210, 180, 0.25)' }}>
             
             {/* Top Bar: Code, Vehicle & Live Status Pill */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              borderBottom: '1px solid rgba(74, 92, 106, 0.3)',
-              paddingBottom: '16px',
-              marginBottom: '18px',
-              flexWrap: 'wrap',
-              gap: '12px'
+              alignItems: 'center',
+              borderBottom: '1px solid rgba(74, 92, 106, 0.2)',
+              paddingBottom: '10px',
+              marginBottom: '12px',
+              gap: '8px'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-aqua)', letterSpacing: '0.04em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-aqua)', letterSpacing: '0.02em' }}>
                     {booking.trackingCode}
                   </span>
                   <span style={{
-                    padding: '2px 8px',
+                    padding: '1px 6px',
                     borderRadius: '4px',
-                    background: 'rgba(0, 229, 255, 0.12)',
-                    border: '1px solid rgba(0, 229, 255, 0.3)',
+                    background: 'rgba(0, 229, 255, 0.1)',
+                    border: '1px solid rgba(0, 229, 255, 0.25)',
                     color: 'var(--accent-cyan)',
-                    fontSize: '0.75rem',
-                    fontWeight: 800
+                    fontSize: '0.7rem',
+                    fontWeight: 700
                   }}>
                     {booking.vehicleNumber}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
                   {booking.vehicleBrand || ''} {booking.vehicleModel || booking.vehicleType} • {booking.customerName}
                 </div>
               </div>
 
-              {/* Status & Bay Info Pill */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+              {/* Status Pill */}
+              <div style={{ flexShrink: 0 }}>
                 <div style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px',
+                  gap: '4px',
                   background: currentStageIndex === 5
-                    ? 'rgba(37, 211, 102, 0.2)'
-                    : 'rgba(0, 210, 180, 0.2)',
+                    ? 'rgba(37, 211, 102, 0.15)'
+                    : 'rgba(0, 210, 180, 0.15)',
                   border: currentStageIndex === 5
                     ? '1px solid #25D366'
                     : '1px solid var(--accent-aqua)',
                   color: currentStageIndex === 5 ? '#25D366' : '#FFFFFF',
-                  padding: '4px 12px',
-                  borderRadius: '16px',
-                  fontSize: '0.78rem',
-                  fontWeight: 900,
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.04em'
+                  letterSpacing: '0.02em'
                 }}>
                   <span style={{
-                    width: '6px',
-                    height: '6px',
+                    width: '5px',
+                    height: '5px',
                     borderRadius: '50%',
                     background: currentStageIndex === 5 ? '#25D366' : 'var(--accent-aqua)',
-                    boxShadow: currentStageIndex === 5 ? '0 0 6px #25D366' : '0 0 6px var(--accent-aqua)'
+                    boxShadow: currentStageIndex === 5 ? '0 0 4px #25D366' : '0 0 4px var(--accent-aqua)'
                   }} />
                   {currentStageObj.label}
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>
-                  Bay: <strong style={{ color: 'var(--accent-aqua)' }}>{booking.bayAssigned || booking.assignedBay || 'BAY 1'}</strong>
                 </div>
               </div>
             </div>
 
             {/* 6-STAGE VISUAL PROGRESSION PIPELINE */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '12px' }}>
               
-              {/* Stepper Header */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
-                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--ice-tint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  Progress: Stage {currentStageIndex + 1} of 6
-                </span>
-                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>
-                  {Math.round(((currentStageIndex + 1) / 6) * 100)}% Completed
-                </span>
-              </div>
-
-              {/* 1. DESKTOP STEPPER VIEW (Spacious 6 Columns) */}
-              <div className="track-stepper-desktop">
+              {/* 1. DESKTOP STEPPER VIEW */}
+              <div className="track-stepper-desktop" style={{ marginBottom: '8px' }}>
                 {stages.map((stage, idx) => {
                   const isCompleted = idx < currentStageIndex;
                   const isCurrent = idx === currentStageIndex;
@@ -472,8 +472,8 @@ export default function TrackBooking({ activeCode = '' }) {
                       }}
                     >
                       <div style={{
-                        width: '40px',
-                        height: '40px',
+                        width: '32px',
+                        height: '32px',
                         borderRadius: '50%',
                         background: isCurrent
                           ? 'linear-gradient(135deg, #00D2B4 0%, #0096B4 100%)'
@@ -481,34 +481,34 @@ export default function TrackBooking({ activeCode = '' }) {
                             ? 'rgba(0, 210, 180, 0.2)'
                             : 'rgba(10, 30, 39, 0.7)',
                         border: isCurrent
-                          ? '2.5px solid #FFFFFF'
+                          ? '2px solid #FFFFFF'
                           : isCompleted
-                            ? '2px solid var(--accent-aqua)'
-                            : '2px solid rgba(74, 92, 106, 0.4)',
+                            ? '1.5px solid var(--accent-aqua)'
+                            : '1.5px solid rgba(74, 92, 106, 0.4)',
                         color: isCurrent ? '#003135' : isCompleted ? 'var(--accent-aqua)' : 'var(--text-muted)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '0.88rem',
+                        fontWeight: 800,
+                        fontSize: '0.74rem',
                         boxShadow: isCurrent
-                          ? '0 0 20px rgba(0, 210, 180, 0.8)'
+                          ? '0 0 12px rgba(0, 210, 180, 0.6)'
                           : 'none',
                         transition: 'all 0.3s ease',
-                        marginBottom: '6px'
+                        marginBottom: '4px'
                       }}>
                         {isCompleted ? (
-                          <Check size={18} strokeWidth={3.5} />
+                          <Check size={14} strokeWidth={3} />
                         ) : isCurrent ? (
-                          <StageIcon size={18} strokeWidth={2.5} />
+                          <StageIcon size={14} strokeWidth={2.5} />
                         ) : (
                           <span>{idx + 1}</span>
                         )}
                       </div>
 
                       <div style={{
-                        fontSize: '0.74rem',
-                        fontWeight: isCurrent ? 900 : isCompleted ? 700 : 500,
+                        fontSize: '0.68rem',
+                        fontWeight: isCurrent ? 800 : isCompleted ? 700 : 500,
                         color: isCurrent ? 'var(--accent-aqua)' : isCompleted ? '#FFFFFF' : 'var(--text-muted)',
                         lineHeight: 1.2
                       }}>
@@ -517,14 +517,14 @@ export default function TrackBooking({ activeCode = '' }) {
 
                       {isCurrent && (
                         <span style={{
-                          marginTop: '3px',
+                          marginTop: '2px',
                           background: 'rgba(0, 210, 180, 0.2)',
                           color: 'var(--accent-aqua)',
                           border: '1px solid var(--accent-aqua)',
-                          fontSize: '0.6rem',
+                          fontSize: '0.55rem',
                           fontWeight: 800,
-                          padding: '1px 5px',
-                          borderRadius: '8px',
+                          padding: '1px 4px',
+                          borderRadius: '6px',
                           textTransform: 'uppercase'
                         }}>
                           LIVE
@@ -535,10 +535,10 @@ export default function TrackBooking({ activeCode = '' }) {
                 })}
               </div>
 
-              {/* 2. MOBILE STEPPER VIEW (Sleek App Segmented Bar + Active Card) */}
+              {/* 2. MOBILE STEPPER VIEW (6 Small Stage Boxes under Progress Bar) */}
               <div className="track-stepper-mobile">
                 {/* Segmented Progress Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '6px' }}>
                   {stages.map((st, idx) => {
                     const isDone = idx < currentStageIndex;
                     const isNow = idx === currentStageIndex;
@@ -546,14 +546,14 @@ export default function TrackBooking({ activeCode = '' }) {
                       <div
                         key={st.key}
                         style={{
-                          height: '6px',
-                          borderRadius: '4px',
+                          height: '4px',
+                          borderRadius: '2px',
                           background: isNow
                             ? 'var(--accent-aqua)'
                             : isDone
                               ? 'rgba(0, 210, 180, 0.7)'
                               : 'rgba(74, 92, 106, 0.35)',
-                          boxShadow: isNow ? '0 0 8px var(--accent-aqua)' : 'none',
+                          boxShadow: isNow ? '0 0 6px var(--accent-aqua)' : 'none',
                           transition: 'all 0.3s ease'
                         }}
                       />
@@ -561,153 +561,204 @@ export default function TrackBooking({ activeCode = '' }) {
                   })}
                 </div>
 
-                {/* Active Stage Highlight Card for Mobile */}
-                <div style={{
-                  background: 'rgba(0, 31, 35, 0.85)',
-                  border: '1px solid var(--accent-aqua)',
-                  borderRadius: '12px',
-                  padding: '12px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginTop: '4px'
-                }}>
-                  <div style={{
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '50%',
-                    background: 'var(--accent-aqua)',
-                    color: '#003135',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    fontWeight: 900
-                  }}>
-                    {React.createElement(currentStageObj.icon || Sparkles, { size: 20, strokeWidth: 2.5 })}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--accent-aqua)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      ACTIVE STAGE {currentStageIndex + 1} OF 6
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#FFFFFF', marginTop: '1px' }}>
-                      {currentStageObj.label}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {currentStageObj.desc}
-                    </div>
-                  </div>
-
-                  <span style={{
-                    background: 'rgba(0, 210, 180, 0.25)',
-                    color: 'var(--accent-aqua)',
-                    fontSize: '0.65rem',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--accent-aqua)'
-                  }}>
-                    LIVE
-                  </span>
-                </div>
-
-                {/* Compact Horizontal Stage Tags */}
-                <div style={{
-                  display: 'flex',
-                  gap: '6px',
-                  overflowX: 'auto',
-                  paddingBottom: '4px',
-                  WebkitOverflowScrolling: 'touch',
-                  scrollbarWidth: 'none'
-                }}>
+                {/* 6 Stage Boxes Grid Directly Under Progress Bar */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '8px' }}>
                   {stages.map((st, idx) => {
                     const isDone = idx < currentStageIndex;
                     const isNow = idx === currentStageIndex;
                     return (
-                      <span
+                      <div
                         key={st.key}
                         style={{
-                          whiteSpace: 'nowrap',
-                          fontSize: '0.68rem',
-                          fontWeight: isNow ? 800 : 600,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
                           background: isNow
-                            ? 'rgba(0, 210, 180, 0.25)'
+                            ? 'rgba(0, 210, 180, 0.22)'
                             : isDone
-                              ? 'rgba(37, 211, 102, 0.12)'
-                              : 'rgba(74, 92, 106, 0.2)',
-                          color: isNow
-                            ? 'var(--accent-aqua)'
+                              ? 'rgba(37, 211, 102, 0.1)'
+                              : 'rgba(0, 31, 35, 0.55)',
+                          border: isNow
+                            ? '1px solid var(--accent-aqua)'
                             : isDone
-                              ? '#25D366'
-                              : 'var(--ice-tint)',
-                          border: isNow ? '1px solid var(--accent-aqua)' : '1px solid transparent',
-                          display: 'inline-flex',
+                              ? '1px solid rgba(37, 211, 102, 0.35)'
+                              : '1px solid rgba(74, 92, 106, 0.25)',
+                          borderRadius: '6px',
+                          padding: '4px 2px',
+                          textAlign: 'center',
+                          display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '4px'
+                          justifyContent: 'center',
+                          minHeight: '36px'
                         }}
                       >
-                        {isDone ? '✓' : `${idx + 1}.`} {st.shortLabel || st.label}
-                      </span>
+                        <div style={{
+                          fontSize: '0.6rem',
+                          fontWeight: 800,
+                          color: isNow ? 'var(--accent-aqua)' : isDone ? '#25D366' : 'var(--text-muted)'
+                        }}>
+                          {isDone ? '✓' : idx + 1}
+                        </div>
+                        <div style={{
+                          fontSize: '0.55rem',
+                          fontWeight: isNow ? 800 : 600,
+                          color: isNow ? '#FFFFFF' : isDone ? '#CCD0CF' : 'var(--text-muted)',
+                          lineHeight: 1.1,
+                          marginTop: '1px'
+                        }}>
+                          {st.shortLabel || st.label}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
 
+                {/* Active Stage Compact Status Line */}
+                <div style={{
+                  background: 'rgba(0, 31, 35, 0.75)',
+                  border: '1px solid rgba(0, 210, 180, 0.3)',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '6px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-aqua)', boxShadow: '0 0 5px var(--accent-aqua)', flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {currentStageObj.label}: <span style={{ color: 'var(--ice-tint)', fontWeight: 500, fontSize: '0.7rem' }}>{currentStageObj.desc}</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--accent-aqua)', background: 'rgba(0,210,180,0.15)', padding: '1px 5px', borderRadius: '4px', flexShrink: 0 }}>
+                    LIVE
+                  </span>
+                </div>
               </div>
 
             </div>
 
-            {/* DETAILS GRID & PAYMENT CONTROL */}
-            <div className="track-details-grid">
+            {/* DETAILS CONTAINER & PAYMENT CONTROL */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              background: 'rgba(0, 31, 35, 0.65)',
+              border: '1px solid rgba(74, 92, 106, 0.25)'
+            }}>
               
-              {/* Service Info */}
-              <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 800, letterSpacing: '0.04em' }}>SERVICE</div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#FFFFFF', marginTop: '2px' }}>
-                  {booking.serviceName || booking.packageName || 'Pro Detailing Package'}
+              {/* Row 1: Appointment & Slot Info */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 700, textTransform: 'uppercase' }}>APPOINTMENT</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#FFFFFF' }}>
+                    {booking.date} • {booking.slotTime}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 700, textTransform: 'uppercase' }}>VEHICLE</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>
+                    {booking.vehicleNumber}
+                  </span>
                 </div>
               </div>
 
-              {/* Slot Info */}
-              <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 800, letterSpacing: '0.04em' }}>APPOINTMENT</div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#FFFFFF', marginTop: '2px' }}>
-                  {booking.date} • {booking.slotTime}
+              {/* Row 2: Clean Contained Box for Services */}
+              <div style={{
+                background: 'rgba(0, 20, 26, 0.75)',
+                border: '1px solid rgba(0, 210, 180, 0.2)',
+                borderRadius: '6px',
+                padding: '6px 8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--ice-tint)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    BOOKED SERVICES & DETAILING
+                  </span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--accent-aqua)', fontWeight: 700 }}>
+                    {((booking.serviceName || booking.packageName || '').split('+').filter(Boolean).length || 1)} Item(s)
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '4px',
+                  maxHeight: '88px',
+                  overflowY: 'auto'
+                }}>
+                  {(booking.serviceName || booking.packageName || 'Pro Detailing Package')
+                    .split('+')
+                    .map(s => s.trim())
+                    .filter(Boolean)
+                    .map((svc, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          background: 'rgba(0, 210, 180, 0.12)',
+                          border: '1px solid rgba(0, 210, 180, 0.28)',
+                          color: '#FFFFFF',
+                          fontSize: '0.7rem',
+                          fontWeight: 600,
+                          padding: '2px 7px',
+                          borderRadius: '4px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          lineHeight: 1.2
+                        }}
+                      >
+                        <span style={{ color: 'var(--accent-aqua)', fontWeight: 800, fontSize: '0.64rem' }}>
+                          #{idx + 1}
+                        </span>
+                        {svc}
+                      </span>
+                    ))}
                 </div>
               </div>
 
-              {/* Payment Status & Direct Online Pay Button */}
-              <div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 800, letterSpacing: '0.04em' }}>PAYMENT</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', flexWrap: 'wrap' }}>
-                  <span className={booking.paymentStatus === 'Paid' ? 'badge badge-aqua' : 'badge badge-gold'} style={{ fontSize: '0.74rem', fontWeight: 800 }}>
+              {/* Row 2: Separate Next Line for Payment & Online Pay Button */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '8px',
+                paddingTop: '6px',
+                borderTop: '1px solid rgba(74, 92, 106, 0.25)'
+              }}>
+                <span style={{ fontSize: '0.68rem', color: 'var(--ice-tint)', fontWeight: 700, textTransform: 'uppercase' }}>PAYMENT</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className={`badge-status-pill ${booking.paymentStatus === 'Paid' ? 'badge-aqua' : 'badge-gold'}`} style={{
+                    border: booking.paymentStatus === 'Paid' ? '1px solid rgba(0, 210, 180, 0.5)' : '1px solid rgba(230, 176, 0, 0.6)',
+                    background: booking.paymentStatus === 'Paid' ? 'rgba(0, 210, 180, 0.15)' : 'rgba(230, 176, 0, 0.15)'
+                  }}>
                     {booking.paymentStatus === 'Paid' ? `PAID (₹${booking.totalAmount})` : `PENDING (₹${booking.totalAmount})`}
                   </span>
 
-                  {/* If not paid, show instant Online Pay Button */}
+                  {/* If not paid, show equal sized Online Pay Button */}
                   {booking.paymentStatus !== 'Paid' && (
                     <button
                       onClick={handleLaunchRazorpayPayment}
                       disabled={paying}
-                      className="btn-primary"
+                      className="btn-primary btn-compact-pay"
                       style={{
-                        padding: '4px 12px',
-                        fontSize: '0.74rem',
-                        fontWeight: 800,
-                        borderRadius: '16px',
                         background: 'var(--accent-aqua)',
                         color: '#003135',
                         border: 'none',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
+                        cursor: 'pointer'
                       }}
                     >
                       <CreditCard size={12} />
-                      {paying ? '...' : 'Pay Online'}
+                      {paying ? 'Processing...' : 'Pay Online'}
                     </button>
                   )}
                 </div>
@@ -716,71 +767,31 @@ export default function TrackBooking({ activeCode = '' }) {
 
             {/* INSPECTOR NOTES & INVOICE BUTTON */}
             <div style={{
-              marginTop: '14px',
+              marginTop: '10px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              borderTop: '1px solid rgba(74, 92, 106, 0.3)',
-              paddingTop: '12px',
+              borderTop: '1px solid rgba(74, 92, 106, 0.2)',
+              paddingTop: '8px',
               flexWrap: 'wrap',
-              gap: '10px'
+              gap: '8px'
             }}>
-              <div style={{ fontSize: '0.78rem', color: '#CCD0CF', flex: 1, minWidth: '200px' }}>
-                <span style={{ color: 'var(--ice-tint)', fontWeight: 700 }}>Notes: </span>
-                {booking.notes || 'Full showroom delivery & quality check active in Bay.'}
+              <div style={{ fontSize: '0.72rem', color: '#CCD0CF', flex: 1, minWidth: '160px' }}>
+                <span style={{ color: 'var(--ice-tint)', fontWeight: 600 }}>Notes: </span>
+                {booking.notes || 'Full showroom delivery active.'}
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowInvoiceModal(true)}
-                className="btn-secondary"
-                style={{ fontSize: '0.75rem', padding: '5px 14px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                className="btn-secondary btn-control-item"
+                style={{ height: '28px', minHeight: '28px', fontSize: '0.72rem', padding: '0 10px' }}
               >
-                <FileText size={13} /> View Invoice / PDF
+                <FileText size={12} /> View Invoice
               </button>
             </div>
 
           </div>
-
-          {/* CELEBRATORY COMPLETED STATE BANNER */}
-          {currentStageIndex === 5 && (
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(0, 210, 180, 0.15) 0%, rgba(230, 176, 0, 0.15) 100%)',
-              border: '1.5px solid var(--accent-aqua)',
-              borderRadius: '16px',
-              padding: '24px',
-              textAlign: 'center',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <Award size={42} color="var(--accent-gold)" />
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#FFFFFF', margin: 0 }}>
-                Vehicle Service Completed & Ready!
-              </h3>
-              <p style={{ fontSize: '0.9rem', color: '#CCD0CF', maxWidth: '520px', margin: 0 }}>
-                Your car has received premium showroom treatment with final quality approval. You have earned <strong>{Math.floor((booking.totalAmount || 500) / 10)} Loyalty Points</strong> with this wash.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowInvoiceModal(true)}
-                className="btn-primary"
-                style={{
-                  marginTop: '8px',
-                  background: 'var(--accent-aqua)',
-                  color: '#003135',
-                  fontWeight: 800,
-                  padding: '10px 24px',
-                  borderRadius: '20px',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                Download Paid Tax Invoice
-              </button>
-            </div>
-          )}
 
         </div>
       )}

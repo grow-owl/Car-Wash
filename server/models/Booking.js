@@ -28,6 +28,7 @@ const BookingSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   coupon: { type: String, default: '' },
   couponApplied: { type: String, default: '' },
+  referralCode: { type: String, uppercase: true, trim: true, default: '' },
   bookingDate: { type: String },
   date: { type: String, required: true },
   slotTime: { type: String, required: true },

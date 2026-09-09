@@ -38,81 +38,47 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
 
   return (
     <>
-      {/* MOBILE TOP HEADER BAR (< 900px) */}
-      <div className="mobile-admin-header" style={{
-        position: 'sticky',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9000,
-        background: 'rgba(6, 20, 27, 0.98)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(74, 92, 106, 0.3)',
-        padding: '12px 18px',
-        display: 'none',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => setMobileDrawerOpen(true)}
-            aria-label="Open Menu"
-            style={{
-              background: 'rgba(0, 49, 53, 0.8)',
-              border: '1px solid var(--accent-cyan)',
-              borderRadius: '8px',
-              padding: '6px 10px',
-              color: 'var(--accent-cyan)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 700,
-              fontSize: '0.85rem'
-            }}
-          >
-            <Menu size={18} /> Menu
-          </button>
+      {/* MOBILE TOP HEADER BAR (< 960px) */}
+      <div className="mobile-admin-header">
+        <button
+          onClick={() => setMobileDrawerOpen(true)}
+          aria-label="Open Navigation Menu"
+          style={{
+            background: 'rgba(0, 49, 53, 0.85)',
+            border: '1px solid var(--accent-cyan)',
+            borderRadius: '8px',
+            padding: '7px 14px',
+            color: 'var(--accent-cyan)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            boxShadow: '0 2px 8px rgba(0, 229, 255, 0.2)'
+          }}
+        >
+          <Menu size={18} /> Menu
+        </button>
 
-          <img src="/logo.webp" alt="CAR WASH Logo" width="36" height="36" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={onRegisterWalkIn}
-            className="btn-gold"
-            style={{
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              padding: '7px 12px',
-              borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <Plus size={14} /> + Walk-In
-          </button>
-
-          <button
-            onClick={() => setShowExitModal(true)}
-            style={{
-              background: 'rgba(255, 89, 100, 0.15)',
-              border: '1px solid var(--accent-coral)',
-              color: 'var(--accent-coral)',
-              fontWeight: 700,
-              fontSize: '0.78rem',
-              padding: '7px 12px',
-              borderRadius: '16px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <LogOut size={13} /> Exit
-          </button>
-        </div>
+        <button
+          onClick={onRegisterWalkIn}
+          className="btn-gold"
+          style={{
+            fontWeight: 800,
+            fontSize: '0.8rem',
+            padding: '7px 14px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            minHeight: '34px',
+            height: '34px',
+            boxShadow: '0 2px 8px rgba(255, 195, 0, 0.25)'
+          }}
+        >
+          <Plus size={15} /> Walk-In
+        </button>
       </div>
 
       {/* MOBILE BACKDROP OVERLAY */}

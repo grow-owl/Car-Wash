@@ -8,71 +8,71 @@ export default function Footer({ onOpenOwnerPortal }) {
       <div className="footer-upper-grid">
         {/* LEFT COLUMN: BRAND & SHORT DESCRIPTION */}
         <div className="footer-col-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <img
               src="/logo.webp"
               alt="CAR WASH Logo"
-              width="38"
-              height="38"
+              width="34"
+              height="34"
               loading="lazy"
               decoding="async"
-              style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
+              style={{ height: '34px', width: 'auto', objectFit: 'contain' }}
             />
             <div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1.05, letterSpacing: '0.02em' }}>
+              <div className="footer-brand-title">
                 CAR<span style={{ color: 'var(--accent-cyan)' }}>WASH</span>
               </div>
-              <div style={{ fontSize: '0.62rem', color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginTop: '2px' }}>
+              <div className="footer-brand-sub">
                 AUTO SPA & MANAGEMENT
               </div>
             </div>
           </div>
 
-          <p style={{ fontSize: '0.85rem', color: 'var(--ice-tint)', lineHeight: '1.5', margin: 0 }}>
+          <p className="footer-brand-desc">
             Auto detailing & car spa engineered for maximum gloss and paint protection.
           </p>
         </div>
 
-        {/* CENTER COLUMN: WORKING HOURS (CENTER ALIGNED IN CONTAINER) */}
+        {/* CENTER COLUMN: WORKING HOURS */}
         <div className="footer-col-center">
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
+          <h4 className="footer-col-heading">
             Working Hours
           </h4>
 
-          <div className="footer-list" style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
-              <Clock size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+          <div className="footer-list">
+            <div className="footer-list-item">
+              <Clock size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
               <span>Mon - Sat: <strong style={{ color: '#FFFFFF' }}>08:00 AM - 07:00 PM</strong></span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
-              <Clock size={16} color="var(--accent-gold)" style={{ flexShrink: 0 }} />
+            <div className="footer-list-item">
+              <Clock size={15} color="var(--accent-gold)" style={{ flexShrink: 0 }} />
               <span>Sunday: <strong style={{ color: 'var(--accent-gold)' }}>09:00 AM - 05:00 PM</strong></span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: CONTACT & SUPPORT (EXTREME RIGHT ALIGNED) */}
+        {/* RIGHT COLUMN: CONTACT & SUPPORT */}
         <div className="footer-col-right">
-          <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '0.02em', borderBottom: '2px solid rgba(0, 229, 255, 0.3)', paddingBottom: '6px', width: 'fit-content' }}>
+          <h4 className="footer-col-heading">
             Contact & Support
           </h4>
 
-          <div className="footer-list" style={{ fontSize: '0.86rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ice-tint)' }}>
-              <MapPin size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
-              <span style={{ color: '#FFFFFF', fontWeight: 500 }}>Sevoke Road, Siliguri, WB 734001</span>
+          <div className="footer-list">
+            <div className="footer-list-item">
+              <MapPin size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <span style={{ color: '#FFFFFF' }}>Sevoke Road, Siliguri, WB 734001</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Phone size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
-              <a href="tel:+918609504186" style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }}>
+            <div className="footer-list-item">
+              <Phone size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+              <a href="tel:+918609504186" style={{ color: '#FFFFFF', textDecoration: 'none', fontWeight: 600 }}>
                 +91 86095 04186
               </a>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Mail size={16} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+            <div className="footer-list-item">
+              <Mail size={15} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
               <a href="mailto:info@carwash.in" style={{ color: 'var(--ice-tint)', textDecoration: 'none' }}>
                 info@carwash.in
               </a>
@@ -84,13 +84,13 @@ export default function Footer({ onOpenOwnerPortal }) {
       {/* LOWER FOOTER BAR: FULL WIDTH EDGE-TO-EDGE SPREAD */}
       <div className="footer-lower-bar">
         {/* LEFT: COPYRIGHT */}
-        <div>
+        <div className="footer-copyright">
           <span>© 2026 CAR WASH Auto Spa. All rights reserved.</span>
         </div>
 
         {/* RIGHT: ATTRIBUTION */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
-          <span style={{ fontSize: '0.76rem', color: '#8A99AD', fontWeight: 500 }}>
+        <div className="footer-attribution">
+          <span className="footer-attribution-text">
             Created and Designed by
           </span>
           <a
@@ -111,10 +111,11 @@ export default function Footer({ onOpenOwnerPortal }) {
             <img
               src="/growowl-logo.webp"
               alt="GrowOwl"
-              width="80"
-              height="16"
+              width="58"
+              height="12"
+              className="growowl-footer-logo"
               style={{
-                height: '16px',
+                height: '12px',
                 width: 'auto',
                 objectFit: 'contain',
                 display: 'inline-block',

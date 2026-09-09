@@ -174,13 +174,29 @@ export default function AdminDashboard({
       const res = await updateBookingStatus(id, { status: newStatus });
       fetchAllAdminData();
       if (res.data?.whatsappNotification) {
+        const waNotif = res.data.whatsappNotification;
+        const targetLink = waNotif.waLinkCustomer || waNotif.waLink;
+
+        // Automatically dispatch WhatsApp notification to customer in new tab / app
+        if (targetLink) {
+          try {
+            window.open(targetLink, '_blank');
+          } catch (e) {
+            console.warn('Auto WhatsApp popup blocked or prevented:', e);
+          }
+        }
+
         setWhatsappToast({
-          customerName: res.data.whatsappNotification.customerName,
-          phone: res.data.whatsappNotification.phone,
+          customerName: waNotif.customerName,
+          phone: waNotif.phone,
           status: newStatus,
-          waLink: res.data.whatsappNotification.waLink
+          waLink: targetLink,
+          waLinkCustomer: targetLink,
+          waLinkOwner: waNotif.waLinkOwner,
+          invoiceUrl: waNotif.invoiceUrl,
+          trackUrl: waNotif.trackUrl
         });
-        setTimeout(() => setWhatsappToast(null), 9000);
+        setTimeout(() => setWhatsappToast(null), 10000);
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Error updating status');
@@ -208,13 +224,18 @@ export default function AdminDashboard({
 
   const handleAllotCarToBay = async (bookingId, bayName) => {
     try {
-      await updateBookingStatus(bookingId, { 
+      const res = await updateBookingStatus(bookingId, { 
         bayAssigned: bayName,
         assignedBay: bayName,
         status: 'washing'
       });
       setAllotModalBay(null);
       fetchAllAdminData();
+      if (res.data?.whatsappNotification?.waLinkCustomer) {
+        try {
+          window.open(res.data.whatsappNotification.waLinkCustomer, '_blank');
+        } catch (e) {}
+      }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to allot car to bay');
     }
@@ -242,7 +263,7 @@ export default function AdminDashboard({
   const handleWalkInSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createWalkInBooking({
+      const res = await createWalkInBooking({
         customerName: walkInName || 'Walk-in',
         phone: walkInPhone || '+91 8609504186',
         vehicleNumber: walkInVeh,
@@ -256,8 +277,26 @@ export default function AdminDashboard({
       setWalkInPhone('');
       setWalkInVeh('');
       fetchAllAdminData();
+
+      // Automatically dispatch WhatsApp notification to Walk-in customer
+      if (res.data?.whatsappNotification?.waLinkCustomer) {
+        try {
+          window.open(res.data.whatsappNotification.waLinkCustomer, '_blank');
+        } catch (e) {}
+      }
     } catch {
-      alert('Error');
+      alert('Error creating walk-in booking');
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId, code) => {
+    if (window.confirm(`Are you sure you want to delete booking ${code || ''}? This action cannot be undone.`)) {
+      try {
+        await deleteBooking(bookingId);
+        fetchAllAdminData();
+      } catch (err) {
+        alert(err.response?.data?.error || 'Failed to delete booking');
+      }
     }
   };
 
@@ -569,36 +608,31 @@ export default function AdminDashboard({
     <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
 
       {/* 1. TOP STATS BAR (OPERATIONAL / STAFF-SAFE METRICS) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '14px',
-        marginBottom: '20px'
-      }}>
-        <div className="glass-panel" style={{ padding: '16px', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>TODAY'S JOBS</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-gold)', marginTop: '4px' }}>
+      <div className="admin-stats-grid">
+        <div className="glass-panel admin-stat-card" style={{ padding: '16px', borderRadius: '12px' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>TODAY'S JOBS</div>
+          <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-gold)', marginTop: '4px' }}>
             {bookings.filter(b => b.date === getLocalDateString()).length} Bookings
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '16px', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>ACTIVE QUEUE</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-cyan)', marginTop: '4px' }}>
+        <div className="glass-panel admin-stat-card" style={{ padding: '16px', borderRadius: '12px' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>ACTIVE QUEUE</div>
+          <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-cyan)', marginTop: '4px' }}>
             {bookings.filter(b => b.status === 'In-Progress' || b.status === 'Confirmed' || b.status === 'Pending' || b.status === 'washing' || b.status === 'detailing').length} Cars
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '16px', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>LIVE BAYS IN USE</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#00E5FF', marginTop: '4px' }}>
+        <div className="glass-panel admin-stat-card" style={{ padding: '16px', borderRadius: '12px' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>LIVE BAYS IN USE</div>
+          <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#00E5FF', marginTop: '4px' }}>
             {bays.filter(b => b.status === 'Occupied').length} / {bays.length || 2} Active
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '16px', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>TOTAL WASH ARCHIVE</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#25D366', marginTop: '4px' }}>
+        <div className="glass-panel admin-stat-card" style={{ padding: '16px', borderRadius: '12px' }}>
+          <div className="stat-title" style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 600 }}>TOTAL WASH ARCHIVE</div>
+          <div className="stat-value" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#25D366', marginTop: '4px' }}>
             {bookings.length} Records
           </div>
         </div>
@@ -609,7 +643,7 @@ export default function AdminDashboard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           
           {/* LIVE BAYS (ACTIVE VEHICLE DETECTION & 1-CLICK ALLOTMENT) */}
-          <div className="glass-panel" style={{ padding: '20px', borderRadius: '14px' }}>
+          <div className="glass-panel" style={{ padding: 'clamp(14px, 3vw, 20px)', borderRadius: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -621,7 +655,7 @@ export default function AdminDashboard({
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+            <div className="admin-bays-grid">
               {[
                 { bayNumber: 1, name: 'BAY 1' },
                 { bayNumber: 2, name: 'BAY 2' }
@@ -635,14 +669,16 @@ export default function AdminDashboard({
                   <div
                     key={bayDef.bayNumber}
                     style={{
-                      padding: '20px',
+                      padding: 'clamp(14px, 2.5vw, 20px)',
                       borderRadius: '12px',
                       background: 'rgba(0, 31, 35, 0.45)',
                       border: isOccupied ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      minHeight: '200px'
+                      minHeight: '200px',
+                      boxSizing: 'border-box',
+                      width: '100%'
                     }}
                   >
                     {/* Bay Header */}
@@ -672,7 +708,7 @@ export default function AdminDashboard({
                     {isOccupied ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '12px 14px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.25)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
                             <span style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF' }}>
                               {activeCar.vehicleNumber}
                             </span>
@@ -691,12 +727,12 @@ export default function AdminDashboard({
                         </div>
 
                         {/* Quick Stage Controls */}
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <select
                             value={activeCar.status}
                             onChange={(e) => handleStatusChange(activeCar._id, e.target.value)}
                             style={{
-                              flex: 1,
+                              flex: '1 1 140px',
                               padding: '7px 10px',
                               borderRadius: '6px',
                               background: '#06141B',
@@ -705,7 +741,8 @@ export default function AdminDashboard({
                               fontSize: '0.78rem',
                               fontWeight: 700,
                               cursor: 'pointer',
-                              outline: 'none'
+                              outline: 'none',
+                              minWidth: 0
                             }}
                           >
                             <option value="vehicle_received">Stage: Vehicle Received</option>
@@ -779,126 +816,270 @@ export default function AdminDashboard({
           </div>
 
           {/* RECENT QUEUE (WITH DATE, TIME & BAY ALLOTMENT) */}
-          <div className="glass-panel" style={{ padding: '18px', borderRadius: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div className="glass-panel" style={{ padding: 'clamp(14px, 3vw, 20px)', borderRadius: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0 }}>Recent Queue & Appointments</h3>
-                <span className="badge badge-aqua" style={{ fontSize: '0.7rem' }}>Live Queue</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>Recent Queue</h3>
+                <span className="badge badge-aqua" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>Live</span>
               </div>
-              <button onClick={() => setActiveSubTab('bookings')} className="btn-secondary" style={{ padding: '4px 12px', fontSize: '0.78rem', borderRadius: '6px' }}>
-                All Bookings & History ({bookings.length}) →
+              <button
+                onClick={() => setActiveSubTab('bookings')}
+                className="btn-secondary"
+                style={{ padding: '6px 14px', fontSize: '0.78rem', borderRadius: '8px', minHeight: '32px' }}
+              >
+                All Bookings ({bookings.length}) →
               </button>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
-                    <th style={{ padding: '10px' }}>Code</th>
-                    <th style={{ padding: '10px' }}>Date & Slot Time</th>
-                    <th style={{ padding: '10px' }}>Customer</th>
-                    <th style={{ padding: '10px' }}>Vehicle</th>
-                    <th style={{ padding: '10px' }}>Service</th>
-                    <th style={{ padding: '10px' }}>Bay</th>
-                    <th style={{ padding: '10px' }}>Status</th>
-                    <th style={{ padding: '10px' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.slice(0, 6).map((b) => {
-                    const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
-                    return (
-                      <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                        <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                          {code}
-                        </td>
-                        <td style={{ padding: '10px', color: '#CCD0CF' }}>
-                          <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date || 'Today'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <div
-                            onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                            style={{ fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
-                            title="Click to view 2-Year Lifetime History"
-                          >
-                            {b.customerName}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.phone}</div>
-                        </td>
-                        <td style={{ padding: '10px', color: 'var(--ice-tint)' }}>
-                          <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                          {b.vehicleModel && <div style={{ fontSize: '0.75rem' }}>{b.vehicleModel}</div>}
-                        </td>
-                        <td style={{ padding: '10px', color: '#CCD0CF' }}>
-                          <div style={{ fontWeight: 600 }}>{b.serviceName || b.packageName}</div>
-                          {b.addons && b.addons.length > 0 && (
-                            <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-                              +{b.addons.length} Add-ons
+            {/* DESKTOP TABLE VIEW (>= 768px) */}
+            <div className="queue-desktop-table">
+              <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
+                      <th style={{ padding: '10px' }}>Code</th>
+                      <th style={{ padding: '10px' }}>Date & Slot Time</th>
+                      <th style={{ padding: '10px' }}>Customer</th>
+                      <th style={{ padding: '10px' }}>Vehicle</th>
+                      <th style={{ padding: '10px' }}>Service</th>
+                      <th style={{ padding: '10px' }}>Bay</th>
+                      <th style={{ padding: '10px' }}>Status</th>
+                      <th style={{ padding: '10px' }}>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.slice(0, 6).map((b) => {
+                      const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
+                      return (
+                        <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                          <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+                            {code}
+                          </td>
+                          <td style={{ padding: '10px', color: '#CCD0CF' }}>
+                            <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date || 'Today'}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div
+                              onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                              style={{ fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                              title="Click to view 2-Year Lifetime History"
+                            >
+                              {b.customerName}
                             </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <select
-                            value={b.bayAssigned || 'BAY 1'}
-                            onChange={(e) => handleBayChange(b._id, e.target.value)}
-                            style={{
-                              padding: '4px 6px',
-                              borderRadius: '6px',
-                              background: '#06141B',
-                              color: 'var(--accent-cyan)',
-                              border: '1px solid var(--border-light)',
-                              fontSize: '0.74rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="BAY 1">BAY 1</option>
-                            <option value="BAY 2">BAY 2</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <select
-                            value={b.status}
-                            onChange={(e) => handleStatusChange(b._id, e.target.value)}
-                            style={{
-                              padding: '5px 8px',
-                              borderRadius: '6px',
-                              background: '#06141B',
-                              color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
-                              border: '1px solid var(--border-light)',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="vehicle_received">Vehicle Received</option>
-                            <option value="washing">High Pressure Wash</option>
-                            <option value="detailing">Interior & Polish</option>
-                            <option value="quality_check">Quality Check</option>
-                            <option value="ready">Ready for Pickup</option>
-                            <option value="completed">Completed / Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-gold)' }}>
-                          ₹{b.totalAmount}
-                          <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700 }}>
-                            {b.paymentStatus || 'Pending'}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.phone}</div>
+                          </td>
+                          <td style={{ padding: '10px', color: 'var(--ice-tint)' }}>
+                            <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
+                            {b.vehicleModel && <div style={{ fontSize: '0.75rem' }}>{b.vehicleModel}</div>}
+                          </td>
+                          <td style={{ padding: '10px', color: '#CCD0CF' }}>
+                            <div style={{ fontWeight: 600 }}>{b.serviceName || b.packageName}</div>
+                            {b.addons && b.addons.length > 0 && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
+                                +{b.addons.length} Add-ons
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <select
+                              value={b.bayAssigned || 'BAY 1'}
+                              onChange={(e) => handleBayChange(b._id, e.target.value)}
+                              style={{
+                                padding: '4px 6px',
+                                borderRadius: '6px',
+                                background: '#06141B',
+                                color: 'var(--accent-cyan)',
+                                border: '1px solid var(--border-light)',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="BAY 1">BAY 1</option>
+                              <option value="BAY 2">BAY 2</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <select
+                              value={b.status}
+                              onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                              style={{
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                background: '#06141B',
+                                color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
+                                border: '1px solid var(--border-light)',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="vehicle_received">Vehicle Received</option>
+                              <option value="washing">High Pressure Wash</option>
+                              <option value="detailing">Interior & Polish</option>
+                              <option value="quality_check">Quality Check</option>
+                              <option value="ready">Ready for Pickup</option>
+                              <option value="completed">Completed / Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                            ₹{b.totalAmount}
+                            <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700 }}>
+                              {b.paymentStatus || 'Pending'}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* MOBILE QUEUE CARDS VIEW (< 768px) */}
+            <div className="queue-mobile-cards">
+              {bookings.slice(0, 6).map((b) => {
+                const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
+                const isDone = b.status === 'completed' || b.status === 'ready';
+                return (
+                  <div
+                    key={b._id}
+                    className="glass-card"
+                    style={{
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: 'rgba(0, 31, 35, 0.45)',
+                      border: '1px solid rgba(74, 92, 106, 0.35)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}
+                  >
+                    {/* Top Row: Code + Bay Tag + Status Badge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 900, color: 'var(--accent-cyan)', fontSize: '0.92rem' }}>
+                          {code}
+                        </span>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(0, 229, 255, 0.12)',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid rgba(0, 229, 255, 0.3)'
+                        }}>
+                          {b.bayAssigned || 'BAY 1'}
+                        </span>
+                      </div>
+
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: isDone ? 'rgba(37, 211, 102, 0.15)' : 'rgba(255, 195, 0, 0.15)',
+                        color: isDone ? '#25D366' : 'var(--accent-gold)',
+                        border: isDone ? '1px solid #25D366' : '1px solid rgba(255, 195, 0, 0.4)'
+                      }}>
+                        {(b.status || 'Pending').toUpperCase().replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    {/* Customer & Vehicle Info Box */}
+                    <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                        <span
+                          onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                          style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                        >
+                          {b.customerName}
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
+                          {b.phone}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--ice-tint)' }}>
+                        <span style={{ fontWeight: 700, color: '#FFFFFF' }}>
+                          🚗 {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                        </span>
+                        <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.75rem' }}>
+                          {b.slotTime || '10:00 AM'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                          {b.serviceName || b.packageName}
+                        </span>
+                        <span style={{ fontWeight: 900, color: 'var(--accent-gold)', fontSize: '0.9rem' }}>
+                          ₹{b.totalAmount} <span style={{ fontSize: '0.68rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964' }}>({b.paymentStatus || 'Pending'})</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Controls: Stage Selector + Bay Selector */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '8px' }}>
+                      <select
+                        value={b.status}
+                        onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                        style={{
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          background: '#06141B',
+                          color: isDone ? '#25D366' : 'var(--accent-cyan)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          outline: 'none',
+                          width: '100%'
+                        }}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="vehicle_received">Vehicle Received</option>
+                        <option value="washing">High Pressure Wash</option>
+                        <option value="detailing">Interior & Polish</option>
+                        <option value="quality_check">Quality Check</option>
+                        <option value="ready">Ready for Pickup</option>
+                        <option value="completed">Completed / Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <select
+                        value={b.bayAssigned || 'BAY 1'}
+                        onChange={(e) => handleBayChange(b._id, e.target.value)}
+                        style={{
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          background: '#06141B',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          outline: 'none',
+                          width: '100%'
+                        }}
+                      >
+                        <option value="BAY 1">BAY 1</option>
+                        <option value="BAY 2">BAY 2</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-
         </div>
       )}
 
@@ -999,7 +1180,7 @@ export default function AdminDashboard({
           {/* FILTER CONTROLS BAR: SEARCH, STATUS, PAYMENT & SORTING */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
             gap: '10px',
             marginBottom: '16px'
           }}>
@@ -1065,265 +1246,524 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* BOOKINGS TABLE */}
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
-                  <th style={{ padding: '10px' }}>Code</th>
-                  <th style={{ padding: '10px' }}>Date & Slot Time</th>
-                  <th style={{ padding: '10px' }}>Customer</th>
-                  <th style={{ padding: '10px' }}>Vehicle Info</th>
-                  <th style={{ padding: '10px' }}>Service / Package</th>
-                  <th style={{ padding: '10px' }}>Bay</th>
-                  <th style={{ padding: '10px' }}>Status</th>
-                  <th style={{ padding: '10px' }}>Amount</th>
-                  <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                      No wash bookings found matching your selected filters.
-                    </td>
+          {/* DESKTOP TABLE VIEW (>= 768px) */}
+          <div className="bookings-desktop-table">
+            <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
+                    <th style={{ padding: '10px' }}>Code</th>
+                    <th style={{ padding: '10px' }}>Date & Slot Time</th>
+                    <th style={{ padding: '10px' }}>Customer</th>
+                    <th style={{ padding: '10px' }}>Vehicle Info</th>
+                    <th style={{ padding: '10px' }}>Service / Package</th>
+                    <th style={{ padding: '10px' }}>Bay</th>
+                    <th style={{ padding: '10px' }}>Status</th>
+                    <th style={{ padding: '10px' }}>Amount</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
                   </tr>
-                ) : (
-                  filteredBookings.map((b) => {
-                    const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
-                    return (
-                      <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                        <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                          {code}
-                        </td>
-                        <td style={{ padding: '10px', color: '#CCD0CF' }}>
-                          <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <div
-                            onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                            style={{ fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
-                            title="Click to view 2-Year Lifetime History"
-                          >
-                            {b.customerName}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.phone}</div>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</div>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{b.serviceName || b.packageName}</div>
-                          {b.addons && b.addons.length > 0 && (
-                            <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-                              +{b.addons.length} Add-ons
+                </thead>
+                <tbody>
+                  {filteredBookings.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                        No wash bookings found matching your selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredBookings.map((b) => {
+                      const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
+                      return (
+                        <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                          <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+                            {code}
+                          </td>
+                          <td style={{ padding: '10px', color: '#CCD0CF' }}>
+                            <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div
+                              onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                              style={{ fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                              title="Click to view 2-Year Lifetime History"
+                            >
+                              {b.customerName}
                             </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <select
-                            value={b.bayAssigned || 'BAY 1'}
-                            onChange={(e) => handleBayChange(b._id, e.target.value)}
-                            style={{
-                              padding: '4px 6px',
-                              borderRadius: '6px',
-                              background: '#06141B',
-                              color: 'var(--accent-cyan)',
-                              border: '1px solid var(--border-light)',
-                              fontSize: '0.74rem',
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="BAY 1">BAY 1</option>
-                            <option value="BAY 2">BAY 2</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: '10px' }}>
-                          <select
-                            value={b.status}
-                            onChange={(e) => handleStatusChange(b._id, e.target.value)}
-                            style={{
-                              padding: '5px 8px',
-                              borderRadius: '6px',
-                              background: '#06141B',
-                              color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
-                              border: '1px solid var(--border-light)',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="confirmed">1. Booking Confirmed</option>
-                            <option value="vehicle_received">2. Vehicle Received</option>
-                            <option value="in_progress">3. Service In Progress</option>
-                            <option value="quality_check">4. Quality Check</option>
-                            <option value="ready_for_pickup">5. Ready for Pickup</option>
-                            <option value="completed">6. Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        </td>
-                        <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-gold)' }}>
-                          ₹{b.totalAmount}
-                          <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                            <span>{b.paymentStatus || 'Pending'}</span>
-                            {b.paymentMode && (
-                              <span style={{ fontSize: '0.62rem', background: 'rgba(0, 210, 180, 0.15)', color: 'var(--accent-aqua)', padding: '1px 4px', borderRadius: '4px' }}>
-                                {b.paymentMode}
-                              </span>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.phone}</div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{b.serviceName || b.packageName}</div>
+                            {b.addons && b.addons.length > 0 && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
+                                +{b.addons.length} Add-ons
+                              </div>
                             )}
-                          </div>
-                          {b.razorpayPaymentId && (
-                            <div style={{ fontSize: '0.6rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
-                              {b.razorpayPaymentId}
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <select
+                              value={b.bayAssigned || 'BAY 1'}
+                              onChange={(e) => handleBayChange(b._id, e.target.value)}
+                              style={{
+                                padding: '4px 6px',
+                                borderRadius: '6px',
+                                background: '#06141B',
+                                color: 'var(--accent-cyan)',
+                                border: '1px solid var(--border-light)',
+                                fontSize: '0.74rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="BAY 1">BAY 1</option>
+                              <option value="BAY 2">BAY 2</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <select
+                              value={b.status}
+                              onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                              style={{
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                background: '#06141B',
+                                color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
+                                border: '1px solid var(--border-light)',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="confirmed">1. Booking Confirmed</option>
+                              <option value="vehicle_received">2. Vehicle Received</option>
+                              <option value="in_progress">3. Service In Progress</option>
+                              <option value="quality_check">4. Quality Check</option>
+                              <option value="ready_for_pickup">5. Ready for Pickup</option>
+                              <option value="completed">6. Completed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                            ₹{b.totalAmount}
+                            <div style={{ fontSize: '0.7rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                              <span>{b.paymentStatus || 'Pending'}</span>
+                              {b.paymentMode && (
+                                <span style={{ fontSize: '0.62rem', background: 'rgba(0, 210, 180, 0.15)', color: 'var(--accent-aqua)', padding: '1px 4px', borderRadius: '4px' }}>
+                                  {b.paymentMode}
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
-                            {/* WhatsApp Direct 1-Click Link */}
-                            {(() => {
-                              const cleanPhone = (b.phone || '').replace(/\D/g, '');
-                              const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
-                              const statusLabels = {
-                                pending: 'Pending Confirmation',
-                                confirmed: 'Booking Confirmed',
-                                vehicle_received: 'Vehicle Received at Bay',
-                                washing: 'High Pressure Foam Wash',
-                                detailing: 'Interior & Paint Detailing',
-                                quality_check: 'Final Quality Inspection',
-                                ready: 'Ready for Pickup',
-                                completed: 'Service Completed & Delivered',
-                                cancelled: 'Booking Cancelled'
-                              };
-                              const stageName = statusLabels[b.status?.toLowerCase()] || (b.status || 'Active').replace('_', ' ');
-                              const bayName = b.bayAssigned || 'Bay 1';
-                              const waMsg = `CAR WASH AUTO SPA - SERVICE UPDATE\n\nDear ${b.customerName || 'Customer'},\n\nYour vehicle (${b.vehicleNumber}) is currently in ${stageName} stage at ${bayName}.\n\nTracking Code: ${code}\nLive Status: https://carwash.com/track/${code}\n\nThank you for choosing Car Wash Auto Spa.`;
-                              const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`;
-                              return (
-                                <a
-                                  href={waLink}
-                                  target="_blank"
-                                  rel="noreferrer"
+                            {b.razorpayPaymentId && (
+                              <div style={{ fontSize: '0.6rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
+                                {b.razorpayPaymentId}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                              {/* WhatsApp Direct Tax Invoice Link */}
+                              {(() => {
+                                const cleanPhone = (b.phone || '').replace(/\D/g, '');
+                                const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
+                                const invoiceNo = b.invoiceNumber || 'CW2026-0001';
+                                const trackLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}` : `https://www.carwash.in/?track=${code}`;
+                                const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}&invoice=1` : `https://www.carwash.in/?track=${code}&invoice=1`;
+                                const cleanInvoiceMsg = 
+                                  `*CAR WASH AUTO SPA*\n` +
+                                  `_Official Tax Invoice_\n` +
+                                  `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                                  `Dear *${b.customerName || 'Customer'}*,\n` +
+                                  `Your official tax invoice for vehicle *${b.vehicleNumber || ''}* is ready.\n\n` +
+                                  `*INVOICE & SERVICE DETAILS*\n` +
+                                  `• Invoice No: *${invoiceNo}*\n` +
+                                  `• Tracking ID: ${code}\n` +
+                                  `• Vehicle: ${b.vehicleNumber || ''} (${b.vehicleModel || b.vehicleType || 'Car'})\n` +
+                                  `• Service: ${b.serviceName || b.packageName || 'Pro Wash'}\n` +
+                                  `• Total Amount: Rs. ${b.totalAmount || 0} (${b.paymentStatus || 'Pending'})\n\n` +
+                                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                                  `*LIVE STATUS TRACKING*\n` +
+                                  `${trackLink}\n\n` +
+                                  `*DIGITAL TAX INVOICE*\n` +
+                                  `${invoiceLink}\n` +
+                                  `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                                  `*CAR WASH AUTO SPA*\n` +
+                                  `• Helpline: +91 86095 04186\n` +
+                                  `• Website: www.carwash.in\n` +
+                                  `_Drive Clean. Go Further._`;
+
+                                const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(cleanInvoiceMsg)}`;
+                                return (
+                                  <a
+                                    href={waLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{
+                                      height: '30px',
+                                      padding: '0 10px',
+                                      fontSize: '0.74rem',
+                                      borderRadius: '6px',
+                                      background: '#25D366',
+                                      color: '#06141B',
+                                      border: '1px solid #25D366',
+                                      fontWeight: 800,
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '5px',
+                                      boxSizing: 'border-box',
+                                      whiteSpace: 'nowrap',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                    title="Send Original Tax Invoice via WhatsApp"
+                                  >
+                                    <MessageSquare size={13} /> WhatsApp
+                                  </a>
+                                );
+                              })()}
+
+                              {/* History Button */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                                style={{
+                                  height: '30px',
+                                  padding: '0 10px',
+                                  fontSize: '0.74rem',
+                                  borderRadius: '6px',
+                                  background: 'rgba(0, 229, 255, 0.12)',
+                                  border: '1px solid rgba(0, 229, 255, 0.35)',
+                                  color: 'var(--accent-cyan)',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '5px',
+                                  boxSizing: 'border-box',
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="View Customer Lifetime Timeline"
+                              >
+                                <History size={13} /> History
+                              </button>
+
+                              {/* Invoice Button */}
+                              <button
+                                type="button"
+                                onClick={() => setInvoiceBooking(b)}
+                                style={{
+                                  height: '30px',
+                                  padding: '0 10px',
+                                  fontSize: '0.74rem',
+                                  borderRadius: '6px',
+                                  background: 'rgba(255, 195, 0, 0.12)',
+                                  border: '1px solid rgba(255, 195, 0, 0.35)',
+                                  color: 'var(--accent-gold)',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '5px',
+                                  boxSizing: 'border-box',
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                title="View and Print Invoice"
+                              >
+                                <FileText size={13} /> Invoice
+                              </button>
+
+                                {/* Delete Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteBooking(b._id, code)}
                                   style={{
                                     height: '30px',
-                                    padding: '0 10px',
-                                    fontSize: '0.74rem',
+                                    width: '32px',
+                                    padding: '0',
                                     borderRadius: '6px',
-                                    background: '#25D366',
-                                    color: '#06141B',
-                                    border: '1px solid #25D366',
-                                    fontWeight: 800,
-                                    textDecoration: 'none',
+                                    background: 'rgba(255, 89, 100, 0.12)',
+                                    border: '1px solid rgba(255, 89, 100, 0.35)',
+                                    color: '#FF5964',
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '5px',
                                     boxSizing: 'border-box',
-                                    whiteSpace: 'nowrap',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease'
                                   }}
-                                  title="Send instant WhatsApp status update to customer"
+                                  title="Delete Booking"
                                 >
-                                  <MessageSquare size={13} /> WhatsApp
-                                </a>
-                              );
-                            })()}
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                            {/* History Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                              style={{
-                                height: '30px',
-                                padding: '0 10px',
-                                fontSize: '0.74rem',
-                                borderRadius: '6px',
-                                background: 'rgba(0, 229, 255, 0.12)',
-                                border: '1px solid rgba(0, 229, 255, 0.35)',
-                                color: 'var(--accent-cyan)',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '5px',
-                                boxSizing: 'border-box',
-                                whiteSpace: 'nowrap',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                              }}
-                              title="View Customer Lifetime Timeline"
-                            >
-                              <History size={13} /> History
-                            </button>
+          {/* MOBILE BOOKINGS CARDS VIEW (< 768px) */}
+          <div className="bookings-mobile-cards">
+            {filteredBookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                No wash bookings found matching your selected filters.
+              </div>
+            ) : (
+              filteredBookings.map((b) => {
+                const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
+                const cleanPhone = (b.phone || '').replace(/\D/g, '');
+                const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
+                const invoiceNo = b.invoiceNumber || 'CW2026-0001';
+                const trackLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}` : `https://www.carwash.in/?track=${code}`;
+                const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}&invoice=1` : `https://www.carwash.in/?track=${code}&invoice=1`;
+                const cleanInvoiceMsg = 
+                  `*CAR WASH AUTO SPA*\n` +
+                  `_Official Tax Invoice_\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `Dear *${b.customerName || 'Customer'}*,\n` +
+                  `Your official tax invoice for vehicle *${b.vehicleNumber || ''}* is ready.\n\n` +
+                  `*INVOICE & SERVICE DETAILS*\n` +
+                  `• Invoice No: *${invoiceNo}*\n` +
+                  `• Tracking ID: ${code}\n` +
+                  `• Vehicle: ${b.vehicleNumber || ''} (${b.vehicleModel || b.vehicleType || 'Car'})\n` +
+                  `• Service: ${b.serviceName || b.packageName || 'Pro Wash'}\n` +
+                  `• Total Amount: Rs. ${b.totalAmount || 0} (${b.paymentStatus || 'Pending'})\n\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n` +
+                  `*LIVE STATUS TRACKING*\n` +
+                  `${trackLink}\n\n` +
+                  `*DIGITAL TAX INVOICE*\n` +
+                  `${invoiceLink}\n` +
+                  `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                  `*CAR WASH AUTO SPA*\n` +
+                  `• Helpline: +91 86095 04186\n` +
+                  `• Website: www.carwash.in\n` +
+                  `_Drive Clean. Go Further._`;
 
-                            {/* Invoice Button */}
-                            <button
-                              type="button"
-                              onClick={() => setInvoiceBooking(b)}
-                              style={{
-                                height: '30px',
-                                padding: '0 10px',
-                                fontSize: '0.74rem',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 195, 0, 0.12)',
-                                border: '1px solid rgba(255, 195, 0, 0.35)',
-                                color: 'var(--accent-gold)',
-                                fontWeight: 700,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '5px',
-                                boxSizing: 'border-box',
-                                whiteSpace: 'nowrap',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                              }}
-                              title="View and Print Invoice"
-                            >
-                              <FileText size={13} /> Invoice
-                            </button>
+                const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(cleanInvoiceMsg)}`;
+                const isDone = b.status === 'completed' || b.status === 'ready';
 
-                            {/* Delete Button */}
-                            <button
-                              type="button"
-                              onClick={() => openDeleteConfirm(
-                                'Delete Booking?',
-                                `${code} - ${b.customerName}`,
-                                () => deleteBooking(b._id).then(fetchAllAdminData)
-                              )}
-                              style={{
-                                height: '30px',
-                                width: '32px',
-                                padding: '0',
-                                borderRadius: '6px',
-                                background: 'rgba(255, 89, 100, 0.12)',
-                                border: '1px solid rgba(255, 89, 100, 0.35)',
-                                color: '#FF5964',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxSizing: 'border-box',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                              }}
-                              title="Delete Booking"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                return (
+                  <div
+                    key={b._id}
+                    className="glass-card"
+                    style={{
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: 'rgba(0, 31, 35, 0.45)',
+                      border: '1px solid rgba(74, 92, 106, 0.35)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px'
+                    }}
+                  >
+                    {/* Top Row: Code + Bay Tag + Status Badge */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 900, color: 'var(--accent-cyan)', fontSize: '0.92rem' }}>
+                          {code}
+                        </span>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(0, 229, 255, 0.12)',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid rgba(0, 229, 255, 0.3)'
+                        }}>
+                          {b.bayAssigned || 'BAY 1'}
+                        </span>
+                      </div>
+
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: isDone ? 'rgba(37, 211, 102, 0.15)' : 'rgba(255, 195, 0, 0.15)',
+                        color: isDone ? '#25D366' : 'var(--accent-gold)',
+                        border: isDone ? '1px solid #25D366' : '1px solid rgba(255, 195, 0, 0.4)'
+                      }}>
+                        {(b.status || 'Pending').toUpperCase().replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    {/* Customer & Vehicle Info Box */}
+                    <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.2)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                        <span
+                          onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                          style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                        >
+                          {b.customerName}
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
+                          {b.phone}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--ice-tint)' }}>
+                        <span style={{ fontWeight: 700, color: '#FFFFFF' }}>
+                          🚗 {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                        </span>
+                        <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.75rem' }}>
+                          {b.date} • {b.slotTime || '10:00 AM'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                          {b.serviceName || b.packageName}
+                        </span>
+                        <span style={{ fontWeight: 900, color: 'var(--accent-gold)', fontSize: '0.9rem' }}>
+                          ₹{b.totalAmount} <span style={{ fontSize: '0.68rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964' }}>({b.paymentStatus || 'Pending'})</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Controls: Stage Selector + Bay Selector */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '8px' }}>
+                      <select
+                        value={b.status}
+                        onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                        style={{
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          background: '#06141B',
+                          color: isDone ? '#25D366' : 'var(--accent-cyan)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          outline: 'none',
+                          width: '100%'
+                        }}
+                      >
+                        <option value="confirmed">1. Confirmed</option>
+                        <option value="vehicle_received">2. Received</option>
+                        <option value="washing">3. Washing</option>
+                        <option value="detailing">4. Detailing</option>
+                        <option value="quality_check">5. Quality Check</option>
+                        <option value="ready">6. Ready</option>
+                        <option value="completed">7. Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <select
+                        value={b.bayAssigned || 'BAY 1'}
+                        onChange={(e) => handleBayChange(b._id, e.target.value)}
+                        style={{
+                          padding: '7px 8px',
+                          borderRadius: '6px',
+                          background: '#06141B',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          outline: 'none',
+                          width: '100%'
+                        }}
+                      >
+                        <option value="BAY 1">BAY 1</option>
+                        <option value="BAY 2">BAY 2</option>
+                      </select>
+                    </div>
+
+                    {/* Action Bar: WhatsApp, History, Invoice, Delete */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 38px', gap: '6px', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '8px' }}>
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          height: '30px',
+                          padding: '0 8px',
+                          fontSize: '0.72rem',
+                          borderRadius: '6px',
+                          background: '#25D366',
+                          color: '#06141B',
+                          border: 'none',
+                          fontWeight: 800,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        <MessageSquare size={12} /> WhatsApp
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
+                        className="btn-secondary"
+                        style={{ height: '30px', padding: '0 6px', fontSize: '0.72rem', borderRadius: '6px', gap: '4px' }}
+                      >
+                        <History size={12} /> History
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setInvoiceBooking(b)}
+                        style={{
+                          height: '30px',
+                          padding: '0 6px',
+                          fontSize: '0.72rem',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 195, 0, 0.12)',
+                          border: '1px solid rgba(255, 195, 0, 0.35)',
+                          color: 'var(--accent-gold)',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <FileText size={12} /> Invoice
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBooking(b._id, code)}
+                        style={{
+                          height: '30px',
+                          padding: '0',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 89, 100, 0.12)',
+                          border: '1px solid rgba(255, 89, 100, 0.35)',
+                          color: '#FF5964',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        title="Delete Booking"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
@@ -1384,8 +1824,8 @@ export default function AdminDashboard({
           </div>
 
           {crmSubTab === 'customers' && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
                     <th style={{ padding: '10px 8px' }}>Name</th>
@@ -1460,7 +1900,7 @@ export default function AdminDashboard({
               {/* VIP Metric Cards */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
                 gap: '12px',
                 marginBottom: '18px'
               }}>
@@ -1500,8 +1940,8 @@ export default function AdminDashboard({
                   <p style={{ margin: '4px 0 0', fontSize: '0.82rem' }}>When customers buy Silver, Gold, or Platinum passes from Customer Portal, they will show up here.</p>
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                  <table style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
                         <th style={{ padding: '10px 8px' }}>Customer</th>
@@ -1589,8 +2029,8 @@ export default function AdminDashboard({
           )}
 
           {crmSubTab === 'leads' && (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
                     <th style={{ padding: '8px' }}>Name</th>
@@ -1947,8 +2387,8 @@ export default function AdminDashboard({
                 </button>
               </form>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '450px', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
                       <th style={{ padding: '10px' }}>Category</th>
@@ -2723,8 +3163,8 @@ export default function AdminDashboard({
                 )}
 
                 {/* Wash History Table */}
-                <div style={{ overflowX: 'auto', border: '1px solid var(--border-light)', borderRadius: '10px', background: 'rgba(0, 0, 0, 0.25)' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <div className="table-responsive" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', border: '1px solid var(--border-light)', borderRadius: '10px', background: 'rgba(0, 0, 0, 0.25)' }}>
+                  <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                     <thead>
                       <tr style={{ background: 'rgba(0, 49, 53, 0.6)', borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
                         <th style={{ padding: '10px' }}>Code</th>
@@ -3021,7 +3461,7 @@ export default function AdminDashboard({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: '#25D366', fontSize: '0.9rem' }}>
               <MessageSquare size={18} color="#25D366" />
-              Automated WhatsApp Dispatched!
+              WhatsApp Alert Auto-Dispatched
             </div>
             <button
               onClick={() => setWhatsappToast(null)}
@@ -3031,17 +3471,17 @@ export default function AdminDashboard({
             </button>
           </div>
           <div style={{ fontSize: '0.82rem', color: '#CCD0CF' }}>
-            Notification for <strong>{whatsappToast.customerName}</strong> ({whatsappToast.phone}) dispatched for <strong style={{ color: '#25D366', textTransform: 'uppercase' }}>{whatsappToast.status.replace('_', ' ')}</strong> stage.
+            Live status alert & tracking link sent to <strong>{whatsappToast.customerName}</strong> ({whatsappToast.phone}).
           </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
             <a
-              href={whatsappToast.waLink}
+              href={whatsappToast.waLinkCustomer || whatsappToast.waLink}
               target="_blank"
               rel="noreferrer"
               style={{
                 background: '#25D366',
                 color: '#06141B',
-                padding: '6px 12px',
+                padding: '6px 14px',
                 borderRadius: '6px',
                 textDecoration: 'none',
                 fontSize: '0.78rem',
@@ -3051,8 +3491,32 @@ export default function AdminDashboard({
                 gap: '5px'
               }}
             >
-              <ExternalLink size={13} /> Open / Send on WhatsApp
+              <ExternalLink size={13} /> Open WhatsApp
             </a>
+
+            {whatsappToast.waLinkOwner && (
+              <a
+                href={whatsappToast.waLinkOwner}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  background: 'rgba(0, 229, 255, 0.15)',
+                  border: '1px solid var(--accent-cyan)',
+                  color: 'var(--accent-cyan)',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                Send to Owner
+              </a>
+            )}
+
             <button
               onClick={() => setWhatsappToast(null)}
               style={{

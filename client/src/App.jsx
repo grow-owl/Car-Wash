@@ -128,6 +128,21 @@ export default function App() {
   // Check URL hash & history state for mobile gesture swipe back & navigation
   useEffect(() => {
     const handleUrlRoute = (event) => {
+      // Check query params for instant WhatsApp Invoice & Tracking Links
+      const searchParams = new URLSearchParams(window.location.search);
+      const trackParam = searchParams.get('track') || searchParams.get('code') || searchParams.get('booking');
+      const invoiceParam = searchParams.get('invoice');
+      
+      if (invoiceParam && invoiceParam !== '1' && invoiceParam !== 'true') {
+        setActiveBookingCode(invoiceParam.toUpperCase().trim());
+        setActiveTab('track');
+        return;
+      } else if (trackParam) {
+        setActiveBookingCode(trackParam.toUpperCase().trim());
+        setActiveTab('track');
+        return;
+      }
+
       // Check event state from popstate if present
       if (event && event.state) {
         if (event.state.tab === 'admin') {
@@ -158,12 +173,17 @@ export default function App() {
         if (parts.length > 1 && parts[1]) {
           setAdminSubTab(parts[1]);
         }
+      } else if (hash.startsWith('#track') || hash.startsWith('#invoice')) {
+        const parts = hash.split('/');
+        if (parts.length > 1 && parts[1]) {
+          const codePart = parts[1].split('?')[0];
+          if (codePart) setActiveBookingCode(codePart.toUpperCase().trim());
+        }
+        setActiveTab('track');
       } else if (hash === '#login' || hash === '#portal' || hash === '#garage' || hash === '#vip' || hash === '#crm') {
         setActiveTab('crm');
       } else if (hash === '#booking') {
         setActiveTab('booking');
-      } else if (hash === '#track') {
-        setActiveTab('track');
       } else {
         setActiveTab('home');
       }

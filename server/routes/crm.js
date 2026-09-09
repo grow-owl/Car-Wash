@@ -217,7 +217,14 @@ router.get('/customers/:phone', async (req, res) => {
     if (!customer) {
       customer = await Customer.findOne({ 'vehicles.regNumber': { $regex: req.params.phone, $options: 'i' } });
     }
-    if (!customer) return res.status(404).json({ error: 'Customer profile not found' });
+    if (!customer.referralCode) {
+      const cleanUserName = (customer.name ? customer.name.trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() : 'VIP');
+      const vehLast4 = (customer.vehicles && customer.vehicles[0]?.regNumber) 
+        ? customer.vehicles[0].regNumber.replace(/[^A-Za-z0-9]/g, '').slice(-4).toUpperCase() 
+        : (customer.phone ? customer.phone.slice(-4) : '1122');
+      customer.referralCode = `CARWASH${cleanUserName}${vehLast4}`;
+      await customer.save();
+    }
 
     const bookings = await Booking.find({ phone: customer.phone }).sort({ createdAt: -1 });
     res.json({ customer, bookings });

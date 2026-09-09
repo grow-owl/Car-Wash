@@ -244,18 +244,58 @@ router.post('/', async (req, res) => {
 
     let totalAmount = req.body.totalAmount || req.body.finalAmount || 0;
     let discountAmount = 0;
+    let isReferralBooking = false;
+    let appliedReferralCode = '';
 
     if (couponCode) {
-      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
-      if (coupon) {
-        if (coupon.discountType === 'percent') {
-          discountAmount = (totalAmount * coupon.value) / 100;
-        } else {
-          discountAmount = coupon.value;
-        }
+      const upperCode = couponCode.toUpperCase().trim();
+
+      // Check if it's a Friend Referral Code (CARWASH... / REF...)
+      if (upperCode.startsWith('CARWASH') || upperCode.startsWith('REF')) {
+        isReferralBooking = true;
+        appliedReferralCode = upperCode;
+        discountAmount = Math.min(50, totalAmount);
         totalAmount = Math.max(0, totalAmount - discountAmount);
-        coupon.usedCount += 1;
-        await coupon.save();
+
+        // Find referrer customer and add referral tracking entry
+        try {
+          let referrer = await Customer.findOne({ referralCode: upperCode });
+          if (!referrer) {
+            const allCust = await Customer.find({});
+            referrer = allCust.find(c => {
+              const cName = (c.name || '').trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+              return upperCode.includes(cName) || (c.phone && upperCode.includes(c.phone.slice(-4)));
+            });
+          }
+          if (referrer && referrer.phone !== phone) {
+            referrer.referrals = referrer.referrals || [];
+            const existingRef = referrer.referrals.find(r => r.phone === phone);
+            if (!existingRef) {
+              referrer.referrals.push({
+                friendName: customerName || 'Friend',
+                phone: phone,
+                date: bookingDateStr,
+                status: 'Booking Confirmed',
+                rewardEarned: '50 Loyalty Points (Pending Wash)'
+              });
+              await referrer.save();
+            }
+          }
+        } catch (refErr) {
+          console.error('Error tracking referrer on booking:', refErr);
+        }
+      } else {
+        const coupon = await Coupon.findOne({ code: upperCode });
+        if (coupon) {
+          if (coupon.discountType === 'percent') {
+            discountAmount = (totalAmount * coupon.value) / 100;
+          } else {
+            discountAmount = coupon.value;
+          }
+          totalAmount = Math.max(0, totalAmount - discountAmount);
+          coupon.usedCount += 1;
+          await coupon.save();
+        }
       }
     }
 
@@ -313,6 +353,7 @@ router.post('/', async (req, res) => {
       totalAmount,
       coupon: couponCode ? couponCode.toUpperCase() : '',
       couponApplied: couponCode ? couponCode.toUpperCase() : '',
+      referralCode: isReferralBooking ? appliedReferralCode : (req.body.referralCode || ''),
       bookingDate: bookingDateStr,
       date: bookingDateStr,
       slotTime: targetSlot,
@@ -327,7 +368,7 @@ router.post('/', async (req, res) => {
       assignedBay: allocatedBay,
       bayAssigned: allocatedBay,
       staffAssigned: allocatedBay === 'BAY 2' ? 'Vikram Singh' : 'Rahul Kumar',
-      bookingSource: bookingSource || 'Website'
+      bookingSource: isReferralBooking ? 'Referral' : (bookingSource || 'Website')
     });
 
     await newBooking.save();
@@ -391,10 +432,28 @@ router.post('/', async (req, res) => {
       await customer.save();
     }
 
+    // Generate Automated WhatsApp Notification Payload with Tracking Link
+    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
+    const waNotification = buildOfficialInvoiceWhatsAppMessage(newBooking, newBooking.status, clientOrigin);
+
     res.status(201).json({
-      message: 'Booking confirmed successfully!',
+      message: 'Booking confirmed successfully! Automated WhatsApp notification generated.',
       booking: newBooking,
-      trackingCode: newBooking.trackingCode
+      trackingCode: newBooking.trackingCode,
+      whatsappNotification: {
+        sent: true,
+        phone: newBooking.phone,
+        customerName: newBooking.customerName,
+        message: waNotification.text,
+        waLink: waNotification.waLinkCustomer,
+        waLinkCustomer: waNotification.waLinkCustomer,
+        waLinkOwner: waNotification.waLinkOwner,
+        trackUrl: waNotification.trackUrl,
+        invoiceUrl: waNotification.invoiceUrl,
+        invoiceNumber: waNotification.invoiceNumber,
+        trackingCode: waNotification.trackingCode,
+        status: waNotification.status
+      }
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -467,50 +526,180 @@ router.post('/walkin', async (req, res) => {
       await customer.save();
     }
 
-    res.status(201).json({ message: 'Walk-in Ticket created & Job started in Bay', booking: walkInBooking });
+    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
+    const waNotification = buildOfficialInvoiceWhatsAppMessage(walkInBooking, walkInBooking.status, clientOrigin);
+
+    res.status(201).json({
+      message: 'Walk-in Ticket created & Job started in Bay',
+      booking: walkInBooking,
+      trackingCode: walkInBooking.trackingCode,
+      whatsappNotification: {
+        sent: true,
+        phone: walkInBooking.phone,
+        customerName: walkInBooking.customerName,
+        message: waNotification.text,
+        waLink: waNotification.waLinkCustomer,
+        waLinkCustomer: waNotification.waLinkCustomer,
+        waLinkOwner: waNotification.waLinkOwner,
+        trackUrl: waNotification.trackUrl,
+        invoiceUrl: waNotification.invoiceUrl,
+        invoiceNumber: waNotification.invoiceNumber,
+        trackingCode: waNotification.trackingCode,
+        status: waNotification.status
+      }
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// Helper to build formal, clean WhatsApp status update message
-const buildStatusWhatsAppMessage = (booking, newStatus) => {
+// Helper to build official Tax Invoice & Live Status WhatsApp payload with direct link for Customer & Owner
+const buildOfficialInvoiceWhatsAppMessage = (booking, newStatus, origin = '') => {
+  const invoiceNo = booking.invoiceNumber || 'CW2026-0001';
+  const trackingCode = booking.trackingCode || booking.bookingId;
+  const cleanPhone = (booking.phone || '').replace(/\D/g, '');
+  const customerWaPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
+  const ownerWaPhone = '918609504186';
+  
   const statusLabels = {
     pending: 'Booking Confirmed',
     confirmed: 'Booking Confirmed',
-    vehicle_received: 'Vehicle Received',
+    vehicle_received: 'Vehicle Received at Center',
     in_progress: 'Service In Progress',
     service_in_progress: 'Service In Progress',
-    washing: 'Service In Progress',
-    detailing: 'Service In Progress',
-    quality_check: 'Quality Check',
+    washing: 'High Pressure Wash in Bay',
+    detailing: 'Interior Detailing & Polish',
+    quality_check: '21-Point Quality Inspection',
     ready: 'Ready for Pickup',
     ready_for_pickup: 'Ready for Pickup',
-    completed: 'Completed',
+    completed: 'Service Completed & Delivered',
     cancelled: 'Booking Cancelled'
   };
 
-  const stageLabel = statusLabels[newStatus] || newStatus.toUpperCase().replace('_', ' ');
-  const trackingCode = booking.trackingCode || booking.bookingId;
-  const cleanPhone = (booking.phone || '').replace(/\D/g, '');
-  const phoneWithCountry = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
-  const bayText = booking.bayAssigned || 'Bay 1';
+  const currentStatusKey = (newStatus || booking.status || 'confirmed').toLowerCase();
+  const stageLabel = statusLabels[currentStatusKey] || (newStatus ? newStatus.toUpperCase().replace('_', ' ') : 'Booking Confirmed');
 
-  let text = `CAR WASH AUTO SPA - SERVICE UPDATE\n\n`;
-  text += `Dear ${booking.customerName || 'Customer'},\n\n`;
-  text += `Your vehicle (${booking.vehicleNumber}) is currently in ${stageLabel} stage at ${bayText}.\n\n`;
-  text += `Tracking Code: ${trackingCode}\n`;
-  text += `Live Status: https://carwash.com/track/${trackingCode}\n`;
+  const baseOrigin = origin || process.env.CLIENT_ORIGIN || 'https://www.carwash.in';
+  const trackUrl = `${baseOrigin}/?track=${trackingCode}`;
+  const invoiceUrl = `${baseOrigin}/?track=${trackingCode}&invoice=1`;
 
-  if (newStatus === 'completed' || newStatus === 'ready' || newStatus === 'ready_for_pickup') {
-    text += `Total Amount: Rs. ${booking.totalAmount} (${booking.paymentStatus || 'Pending'})\n\n`;
-    text += `Your vehicle is ready. Thank you for choosing Car Wash Auto Spa.`;
-  } else {
-    text += `\nThank you for choosing Car Wash Auto Spa.`;
+  // Format long service lists cleanly
+  const rawService = booking.serviceName || booking.packageName || 'Full Auto Spa & Wash';
+  const svcParts = rawService.split('+').map(s => s.trim()).filter(Boolean);
+  const formattedService = svcParts.length > 3 
+    ? `${svcParts.slice(0, 2).join(', ')} + ${svcParts.length - 2} more services` 
+    : svcParts.join(', ');
+
+  const addonsList = Array.isArray(booking.addons) && booking.addons.length > 0 
+    ? `\n• Add-ons: ${booking.addons.map(a => typeof a === 'string' ? a : (a.name || a.addonName)).join(', ')}`
+    : '';
+
+  const bayInfo = booking.bayAssigned || booking.assignedBay ? ` | Bay: ${booking.bayAssigned || booking.assignedBay}` : '';
+
+  let actionHeading = 'Official Service Notification';
+  let greetingIntro = `Your vehicle service status has been updated to: *${stageLabel}*`;
+
+  if (['pending', 'confirmed'].includes(currentStatusKey)) {
+    actionHeading = 'Appointment Confirmation';
+    greetingIntro = 'Your car wash appointment has been successfully confirmed.';
+  } else if (['ready', 'ready_for_pickup'].includes(currentStatusKey)) {
+    actionHeading = 'Vehicle Ready for Pickup';
+    greetingIntro = 'Your vehicle wash and detailing is complete and ready for pickup.';
+  } else if (currentStatusKey === 'completed') {
+    actionHeading = 'Service Completed & Delivered';
+    greetingIntro = 'Thank you for choosing Car Wash Auto Spa. Your service has been completed.';
   }
 
-  const waLink = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(text)}`;
-  return { text, waLink, recipient: booking.phone };
+  const text = 
+    `*CAR WASH AUTO SPA*\n` +
+    `_${actionHeading}_\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Dear *${booking.customerName || 'Valued Customer'}*,\n` +
+    `${greetingIntro}\n\n` +
+    `*APPOINTMENT & VEHICLE DETAILS*\n` +
+    `• Tracking ID: *${trackingCode}*\n` +
+    `• Invoice No: ${invoiceNo}\n` +
+    `• Vehicle: *${booking.vehicleNumber}* (${booking.vehicleModel || booking.vehicleType || 'Car'})\n` +
+    `• Date & Time: ${booking.date || new Date().toISOString().split('T')[0]} at ${booking.slotTime || '10:00 AM'}${bayInfo}\n` +
+    `• Service: ${formattedService}` +
+    addonsList + `\n` +
+    `• Total Amount: Rs. ${booking.totalAmount} (${booking.paymentStatus || 'Pending'})\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `*LIVE STATUS TRACKING*\n` +
+    `Track live bay progress and technician updates in real-time:\n` +
+    `${trackUrl}\n\n` +
+    `*DIGITAL TAX INVOICE*\n` +
+    `View and download your official tax invoice:\n` +
+    `${invoiceUrl}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `*CAR WASH AUTO SPA*\n` +
+    `• Helpline: +91 86095 04186\n` +
+    `• Website: www.carwash.in\n` +
+    `_Drive Clean. Go Further._`;
+
+  const waLinkCustomer = `https://wa.me/${customerWaPhone}?text=${encodeURIComponent(text)}`;
+  const waLinkOwner = `https://wa.me/${ownerWaPhone}?text=${encodeURIComponent(text)}`;
+
+  return {
+    text,
+    waLink: waLinkCustomer,
+    waLinkCustomer,
+    waLinkOwner,
+    trackUrl,
+    invoiceUrl,
+    invoiceNumber: invoiceNo,
+    trackingCode,
+    customerName: booking.customerName,
+    phone: booking.phone,
+    totalAmount: booking.totalAmount,
+    status: stageLabel,
+    recipientCustomer: booking.phone,
+    recipientOwner: '+91 86095 04186'
+  };
+};
+
+const buildStatusWhatsAppMessage = buildOfficialInvoiceWhatsAppMessage;
+
+// Helper to award 50 loyalty points to referrer upon wash completion or payment
+const awardReferralPointsIfApplicable = async (booking) => {
+  if (!booking) return;
+  const refCode = (booking.referralCode || (booking.couponApplied?.startsWith('CARWASH') ? booking.couponApplied : '')).toUpperCase().trim();
+  if (!refCode) return;
+
+  try {
+    let referrer = await Customer.findOne({ referralCode: refCode });
+    if (!referrer) {
+      const allCust = await Customer.find({});
+      referrer = allCust.find(c => {
+        const cName = (c.name || '').trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        return refCode.includes(cName) || (c.phone && refCode.includes(c.phone.slice(-4)));
+      });
+    }
+
+    if (referrer && referrer.phone !== booking.phone) {
+      referrer.referrals = referrer.referrals || [];
+      const refEntry = referrer.referrals.find(r => r.phone === booking.phone || r.friendName === booking.customerName);
+      if (!refEntry || !refEntry.status.includes('Completed')) {
+        referrer.loyaltyPoints = (referrer.loyaltyPoints || 0) + 50;
+        if (refEntry) {
+          refEntry.status = 'Completed Wash';
+          refEntry.rewardEarned = '+50 Loyalty Points';
+        } else {
+          referrer.referrals.push({
+            friendName: booking.customerName || 'Friend',
+            phone: booking.phone,
+            date: booking.date || new Date().toISOString().split('T')[0],
+            status: 'Completed Wash',
+            rewardEarned: '+50 Loyalty Points'
+          });
+        }
+        await referrer.save();
+        console.log(`[REFERRAL REWARD] Awarded 50 Loyalty Points to ${referrer.name} (${referrer.phone}) for ${booking.customerName}`);
+      }
+    }
+  } catch (err) {
+    console.error('Error in awardReferralPointsIfApplicable:', err);
+  }
 };
 
 // PATCH Update job status / bay / staff
@@ -529,19 +718,32 @@ router.patch('/:id/status', async (req, res) => {
     const booking = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
+    // If status is completed/ready, award referral points
+    if (['completed', 'ready', 'ready_for_pickup'].includes(booking.status)) {
+      await awardReferralPointsIfApplicable(booking);
+    }
+
     // Generate Automated WhatsApp Notification Payload
-    const waNotification = buildStatusWhatsAppMessage(booking, booking.status);
-    console.log(`[AUTOMATED WHATSAPP NOTIFICATION TRIGGERED] To: ${booking.phone} (${booking.customerName}) | Status: ${booking.status}`);
+    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
+    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
+    console.log(`[AUTOMATED WHATSAPP INVOICE TRIGGERED] To: ${booking.phone} (${booking.customerName}) & Owner (+91 86095 04186) | Status: ${booking.status}`);
 
     res.json({
-      message: `Status updated to ${booking.status}. WhatsApp notification generated for ${booking.phone}`,
+      message: `Status updated to ${booking.status}. Official Invoice WhatsApp notification generated!`,
       booking,
       whatsappNotification: {
         sent: true,
         phone: booking.phone,
         customerName: booking.customerName,
         message: waNotification.text,
-        waLink: waNotification.waLink
+        waLink: waNotification.waLinkCustomer,
+        waLinkCustomer: waNotification.waLinkCustomer,
+        waLinkOwner: waNotification.waLinkOwner,
+        trackUrl: waNotification.trackUrl,
+        invoiceUrl: waNotification.invoiceUrl,
+        invoiceNumber: waNotification.invoiceNumber,
+        trackingCode: waNotification.trackingCode,
+        status: waNotification.status
       }
     });
   } catch (err) {
@@ -563,7 +765,26 @@ router.patch('/:id/pay', async (req, res) => {
       { new: true }
     );
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
-    res.json({ message: 'Payment recorded successfully', booking });
+    await awardReferralPointsIfApplicable(booking);
+
+    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
+    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
+
+    res.json({
+      message: 'Payment recorded successfully',
+      booking,
+      whatsappNotification: {
+        sent: true,
+        phone: booking.phone,
+        customerName: booking.customerName,
+        message: waNotification.text,
+        waLink: waNotification.waLinkCustomer,
+        waLinkCustomer: waNotification.waLinkCustomer,
+        waLinkOwner: waNotification.waLinkOwner,
+        trackUrl: waNotification.trackUrl,
+        invoiceUrl: waNotification.invoiceUrl
+      }
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -583,7 +804,26 @@ router.patch('/track/:code/pay', async (req, res) => {
       { new: true }
     );
     if (!booking) return res.status(404).json({ error: 'Booking tracking code not found' });
-    res.json({ message: 'Payment confirmed successfully', booking });
+    await awardReferralPointsIfApplicable(booking);
+
+    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
+    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
+
+    res.json({
+      message: 'Payment confirmed successfully',
+      booking,
+      whatsappNotification: {
+        sent: true,
+        phone: booking.phone,
+        customerName: booking.customerName,
+        message: waNotification.text,
+        waLink: waNotification.waLinkCustomer,
+        waLinkCustomer: waNotification.waLinkCustomer,
+        waLinkOwner: waNotification.waLinkOwner,
+        trackUrl: waNotification.trackUrl,
+        invoiceUrl: waNotification.invoiceUrl
+      }
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
