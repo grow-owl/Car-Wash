@@ -363,6 +363,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
   const cleanUserName = (currentUser?.name ? currentUser.name.trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() : 'VIP');
   const vehicleLast4 = getVehicleLast4();
+  const referralCode = currentUser?.referralCode || `CARWASH${cleanUserName}${vehicleLast4}`;
   const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
   const referralLink = `${siteBase}/?ref=${referralCode}`;
 
