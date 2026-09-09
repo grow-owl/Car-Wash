@@ -579,7 +579,7 @@ const buildOfficialInvoiceWhatsAppMessage = (booking, newStatus, origin = '') =>
   const currentStatusKey = (newStatus || booking.status || 'confirmed').toLowerCase();
   const stageLabel = statusLabels[currentStatusKey] || (newStatus ? newStatus.toUpperCase().replace('_', ' ') : 'Booking Confirmed');
 
-  const baseOrigin = origin || process.env.CLIENT_ORIGIN || 'https://www.carwash.in';
+  const baseOrigin = process.env.SITE_URL || process.env.CLIENT_ORIGIN || origin || 'https://car-wash-grow-owl.vercel.app';
   const trackUrl = `${baseOrigin}/?track=${trackingCode}`;
   const invoiceUrl = `${baseOrigin}/?track=${trackingCode}&invoice=1`;
 
@@ -610,6 +610,8 @@ const buildOfficialInvoiceWhatsAppMessage = (booking, newStatus, origin = '') =>
     greetingIntro = 'Thank you for choosing Car Wash Auto Spa. Your service has been completed.';
   }
 
+  const siteDisplayUrl = (process.env.SITE_URL || process.env.CLIENT_ORIGIN || 'https://car-wash-grow-owl.vercel.app').replace(/^https?:\/\//, '');
+
   const text = 
     `*CAR WASH AUTO SPA*\n` +
     `_${actionHeading}_\n` +
@@ -634,7 +636,7 @@ const buildOfficialInvoiceWhatsAppMessage = (booking, newStatus, origin = '') =>
     `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     `*CAR WASH AUTO SPA*\n` +
     `• Helpline: +91 86095 04186\n` +
-    `• Website: www.carwash.in\n` +
+    `• Website: ${siteDisplayUrl}\n` +
     `_Drive Clean. Go Further._`;
 
   const waLinkCustomer = `https://wa.me/${customerWaPhone}?text=${encodeURIComponent(text)}`;

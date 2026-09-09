@@ -129,7 +129,7 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
               filter: 'drop-shadow(0 2px 10px rgba(0, 229, 255, 0.35))'
             }}
           />
-          <div>
+          <div className="nav-brand-text">
             <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#FFFFFF', lineHeight: 1.05 }}>
               CAR<span style={{ color: 'var(--accent-cyan)' }}>WASH</span>
             </div>
@@ -330,7 +330,10 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
                   fontWeight: 700,
                   fontSize: '0.82rem',
                   padding: '8px 14px',
-                  borderRadius: '24px'
+                  borderRadius: '24px',
+                  border: '1.5px solid #E63946',
+                  color: '#E63946',
+                  background: 'rgba(230, 57, 70, 0.08)'
                 }}
               >
                 Sign Out
@@ -572,7 +575,10 @@ export default function Navbar({ activeTab, setActiveTab, activeBookingCode, cur
                       padding: '12px',
                       borderRadius: '24px',
                       width: '100%',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      border: '1.5px solid #E63946',
+                      color: '#E63946',
+                      background: 'rgba(230, 57, 70, 0.08)'
                     }}
                   >
                     Sign Out

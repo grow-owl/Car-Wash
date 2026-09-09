@@ -374,6 +374,16 @@ main.public-main-content {
   display: none;
 }
 
+.nav-brand-text {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .nav-brand-text {
+    display: none !important;
+  }
+}
+
 @media (max-width: 960px) {
   .desktop-nav, .desktop-actions {
     display: none !important;
@@ -652,7 +662,7 @@ main.public-main-content {
   background: linear-gradient(180deg, rgba(6, 20, 27, 0.95) 0%, rgba(3, 16, 23, 0.98) 100%);
   border-top: 1px solid rgba(0, 229, 255, 0.2);
   padding: 48px clamp(16px, 4vw, 48px) 24px;
-  margin-top: auto;
+  margin-top: clamp(36px, 6vw, 64px);
   position: relative;
   z-index: 10;
 }
@@ -776,6 +786,7 @@ main.public-main-content {
 @media (max-width: 860px) {
   .site-footer {
     padding: 28px 16px 16px !important;
+    margin-top: clamp(32px, 6vw, 50px) !important;
   }
 
   .footer-upper-grid {

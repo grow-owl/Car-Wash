@@ -3,6 +3,7 @@ import {
   Calendar,
   Clock,
   Car,
+  Bike,
   Check,
   CheckCircle2,
   Sparkles,
@@ -38,6 +39,7 @@ export default function BookingFlow({
   initialVehicle = 'Sedan',
   initialStep = 1,
   preselectedItem = null,
+  currentUser = null,
   onBookingComplete,
   onTrackLive,
   onBackToHome
@@ -139,6 +141,32 @@ export default function BookingFlow({
       }
     }
   }, [preselectedItem]);
+
+  // Auto-fill logged-in customer info (from prop or localStorage)
+  useEffect(() => {
+    let user = currentUser;
+    if (!user) {
+      try {
+        const saved = localStorage.getItem('carwash_customer');
+        if (saved) user = JSON.parse(saved);
+      } catch (e) {}
+    }
+    if (user) {
+      if (user.name) setCustomerName(user.name);
+      if (user.phone) setPhone(user.phone);
+      if (user.email) setEmail(user.email);
+      if (user.vehicles && user.vehicles.length > 0) {
+        setExistingVehicles(user.vehicles);
+        setIsExistingCustomer(true);
+        if (!vehicleNumber && user.vehicles[0]?.regNumber) {
+          setVehicleNumber(user.vehicles[0].regNumber);
+        }
+        if (!vehicleModel && user.vehicles[0]?.model) {
+          setVehicleModel(user.vehicles[0].model);
+        }
+      }
+    }
+  }, [currentUser]);
 
   // Auto-detect and apply Referral Code from URL (?ref=... or ?code=...)
   useEffect(() => {
@@ -299,8 +327,10 @@ export default function BookingFlow({
           if (!targetUrl && bData) {
             const cleanPhone = (bData.phone || phone || '').replace(/\D/g, '');
             const custPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
-            const trackUrl = `${window.location.origin}/?track=${bData.trackingCode || trackingCode}`;
-            const invUrl = `${window.location.origin}/?track=${bData.trackingCode || trackingCode}&invoice=1`;
+            const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
+            const trackUrl = `${siteBase}/?track=${bData.trackingCode || trackingCode}`;
+            const invUrl = `${siteBase}/?track=${bData.trackingCode || trackingCode}&invoice=1`;
+            const siteDisplay = siteBase.replace(/^https?:\/\//, '');
             const rawSvc = bData.serviceName || serviceNameVal || 'Full Auto Spa & Wash';
             const svcParts = rawSvc.split('+').map(s => s.trim()).filter(Boolean);
             const formattedSvc = svcParts.length > 3 
@@ -329,7 +359,7 @@ export default function BookingFlow({
               `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
               `*CAR WASH AUTO SPA*\n` +
               `• Helpline: +91 86095 04186\n` +
-              `• Website: www.carwash.in\n` +
+              `• Website: ${siteDisplay}\n` +
               `_Drive Clean. Go Further._`;
             targetUrl = `https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`;
           }
@@ -443,11 +473,12 @@ export default function BookingFlow({
   };
 
   const vehiclesList = [
-    { type: 'Hatchback', desc: 'Compact 4-Seater' },
-    { type: 'Sedan', desc: 'Executive Midsize' },
-    { type: 'SUV', desc: 'Full-Size / Crossover' },
-    { type: 'Luxury', desc: 'Premium / Sports Car' },
-    { type: 'Truck', desc: 'Pickup / Off-road' }
+    { type: '2-Wheeler', desc: 'Bike / Scooter / Superbike', isBike: true },
+    { type: 'Hatchback', desc: 'Alto / Swift / i20 / Kwid' },
+    { type: 'Sedan', desc: 'City / Verna / Ciaz / Dzire' },
+    { type: 'Compact SUV', desc: 'Nexon / Brezza / Creta / Venue' },
+    { type: 'SUV / MUV', desc: 'Fortuner / Innova / Scorpio / XUV700' },
+    { type: 'Luxury', desc: 'BMW / Audi / Mercedes / Jaguar' }
   ];
 
   const displayPackagesList = (packages && packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
@@ -475,7 +506,7 @@ export default function BookingFlow({
     : services.filter(s => (s.category || 'wash').toLowerCase() === customCategoryFilter);
 
   return (
-    <div className="container" style={{ paddingTop: '16px', paddingBottom: '60px', maxWidth: '1040px' }}>
+    <div className="container" style={{ paddingTop: '16px', paddingBottom: 'clamp(50px, 8vw, 90px)', maxWidth: '1040px' }}>
       
       {/* COMPACT MINIMAL HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '14px' }}>
@@ -535,7 +566,7 @@ export default function BookingFlow({
       </div>
 
       {/* MAIN STEP CONTENT CONTAINER */}
-      <div className="glass-panel" style={{ padding: 'clamp(14px, 3vw, 24px)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '16px' }}>
+      <div className="glass-panel" style={{ padding: 'clamp(14px, 3vw, 24px)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '16px', marginBottom: 'clamp(30px, 6vw, 50px)' }}>
         
         {/* STEP 1: DYNAMIC SERVICE SELECTION (FROM OWNER DATABASE ONLY) */}
         {step === 1 && (
@@ -646,7 +677,7 @@ export default function BookingFlow({
                     <p style={{ fontSize: '0.82rem' }}>No services found in this category.</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
                     {filteredServices.map((s) => {
                       const basePrice = Number(s.price || s.basePrice || 499);
                       const origPrice = s.originalPrice ? Number(s.originalPrice) : Math.round(basePrice * 1.35);
@@ -668,40 +699,49 @@ export default function BookingFlow({
                           style={{
                             background: isChecked ? 'rgba(0, 229, 255, 0.12)' : 'rgba(0, 49, 53, 0.55)',
                             border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.3)',
-                            borderRadius: '10px',
-                            padding: '10px 12px',
+                            borderRadius: '11px',
+                            padding: '13px 14px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            gap: '10px',
-                            transition: 'all 0.15s ease'
+                            gap: '12px',
+                            transition: 'all 0.15s ease',
+                            boxSizing: 'border-box'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                          {/* LEFT: Checkbox + Name + Description + Time */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flex: 1, minWidth: 0 }}>
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => {}}
-                              style={{ width: '16px', height: '16px', accentColor: 'var(--accent-cyan)', cursor: 'pointer', flexShrink: 0 }}
+                              style={{ width: '17px', height: '17px', accentColor: 'var(--accent-cyan)', cursor: 'pointer', flexShrink: 0 }}
                             />
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.86rem', color: '#FFFFFF' }}>{cleanText(s.name)}</span>
-                                <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.72rem', opacity: 0.7 }}>₹{origPrice}</span>
-                                <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--accent-gold)' }}>₹{basePrice}</span>
+                            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#FFFFFF' }}>{cleanText(s.name)}</span>
+                                <span style={{ fontSize: '0.66rem', color: 'var(--ice-tint)', background: 'rgba(255, 255, 255, 0.08)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                  ~{s.durationMins || 30}m
+                                </span>
                               </div>
                               {s.description && (
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {cleanText(s.description)}
                                 </div>
                               )}
                             </div>
                           </div>
 
-                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                            <span className="badge badge-cyan" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>
-                              {s.durationMins || 30}m
+                          {/* RIGHT: Price perfectly right-aligned */}
+                          <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                            {origPrice > basePrice && (
+                              <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.74rem', opacity: 0.7 }}>
+                                ₹{origPrice}
+                              </span>
+                            )}
+                            <span style={{ fontWeight: 800, fontSize: '0.98rem', color: 'var(--accent-gold)' }}>
+                              ₹{basePrice}
                             </span>
                           </div>
                         </div>
@@ -841,7 +881,11 @@ export default function BookingFlow({
                     transition: 'all 0.2s ease'
                   }}
                 >
-                  <Car size={24} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 6px auto' }} />
+                  {v.isBike ? (
+                    <Bike size={24} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 6px auto' }} />
+                  ) : (
+                    <Car size={24} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 6px auto' }} />
+                  )}
                   <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#FFFFFF' }}>{v.type}</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{v.desc}</div>
                 </div>
@@ -1031,7 +1075,7 @@ export default function BookingFlow({
                           <input
                             type="text"
                             required
-                            placeholder="e.g. Dhiraj Kumar"
+                            placeholder="e.g. Rahul Sharma"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
                             className="input-field"
@@ -1098,12 +1142,11 @@ export default function BookingFlow({
                   {/* Optional Add-ons */}
                   {allAddons.length > 0 && (
                     <div style={{ background: 'rgba(0, 31, 35, 0.65)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(74, 92, 106, 0.3)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <Sparkles size={14} style={{ color: 'var(--accent-gold)' }} />
-                        <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent-gold)' }}>Recommended Add-ons (Optional)</span>
+                      <div style={{ marginBottom: '10px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--accent-gold)' }}>Recommended Add-ons (Optional)</span>
                       </div>
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '6px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
                         {allAddons.slice(0, 4).map((addon, idx) => {
                           const isChecked = selectedAddons.some(a => a.name === addon.name);
                           return (
@@ -1115,14 +1158,17 @@ export default function BookingFlow({
                                 justifyContent: 'space-between',
                                 background: isChecked ? 'rgba(0, 229, 255, 0.15)' : 'rgba(6, 20, 27, 0.7)',
                                 border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.25)',
-                                borderRadius: '6px',
-                                padding: '6px 8px',
+                                borderRadius: '8px',
+                                padding: '8px 10px',
                                 cursor: 'pointer',
-                                fontSize: '0.76rem',
-                                color: '#FFFFFF'
+                                fontSize: '0.78rem',
+                                color: '#FFFFFF',
+                                gap: '8px',
+                                boxSizing: 'border-box',
+                                transition: 'all 0.15s ease'
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
@@ -1133,11 +1179,15 @@ export default function BookingFlow({
                                       setSelectedAddons(prev => [...prev, addon]);
                                     }
                                   }}
-                                  style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                                  style={{ width: '15px', height: '15px', accentColor: 'var(--accent-cyan)', cursor: 'pointer', flexShrink: 0 }}
                                 />
-                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cleanText(addon.name)}</span>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, fontSize: '0.78rem' }}>
+                                  {cleanText(addon.name)}
+                                </span>
                               </div>
-                              <span style={{ fontWeight: 800, color: 'var(--accent-gold)' }}>+₹{addon.price}</span>
+                              <span style={{ fontWeight: 800, color: 'var(--accent-gold)', whiteSpace: 'nowrap', flexShrink: 0, fontSize: '0.8rem' }}>
+                                +₹{addon.price}
+                              </span>
                             </label>
                           );
                         })}

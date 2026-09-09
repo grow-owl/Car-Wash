@@ -51,20 +51,33 @@ router.post('/upload', async (req, res) => {
   }
 });
 
+const multiplierMap = {
+  '2-Wheeler': 0.5,
+  'Bike': 0.5,
+  'Hatchback': 0.85,
+  'Sedan': 1.0,
+  'Compact SUV': 1.15,
+  'SUV': 1.35,
+  'SUV / MUV': 1.35,
+  'Luxury': 1.6,
+  'Truck': 1.4
+};
+
 // GET all services (optional query vehicleType, category)
 router.get('/', async (req, res) => {
   try {
     const { vehicleType, category } = req.query;
     let query = {};
-    if (vehicleType) query.vehicleType = vehicleType;
     if (category) query.category = category;
 
     let services = await Service.find(query);
-    if (services.length === 0) {
-      services = await Service.find({});
-    }
+    const mult = multiplierMap[vehicleType] || 1.0;
+
     const cleanedServices = services.map(s => {
       const obj = s.toObject ? s.toObject() : s;
+      const baseP = Number(obj.price || obj.basePrice || 499);
+      const scaledP = Math.round(baseP * mult);
+      const scaledOrig = Math.round((obj.originalPrice || baseP * 1.35) * mult);
       return {
         ...obj,
         name: cleanText(obj.name),
@@ -72,7 +85,10 @@ router.get('/', async (req, res) => {
         description: cleanText(obj.description),
         category: cleanText(obj.category),
         badge: cleanText(obj.badge),
-        image: obj.image || ''
+        image: obj.image || '',
+        basePrice: baseP,
+        price: scaledP,
+        originalPrice: scaledOrig
       };
     });
     res.json(cleanedServices);
@@ -86,14 +102,6 @@ router.get('/packages', async (req, res) => {
   try {
     const { vehicleType } = req.query;
     let packages = await Package.find({}).sort({ price: 1 });
-    
-    const multiplierMap = {
-      Hatchback: 0.9,
-      Sedan: 1.0,
-      SUV: 1.25,
-      Luxury: 1.6,
-      Truck: 1.4
-    };
     const mult = multiplierMap[vehicleType] || 1.0;
 
     const scaledPackages = packages.map(pkg => {
@@ -104,7 +112,8 @@ router.get('/packages', async (req, res) => {
         name: cleanText(obj.name || obj.title),
         tagline: cleanText(obj.tagline),
         description: cleanText(obj.description),
-        price: Math.round(obj.price * mult)
+        price: Math.round((obj.price || 499) * mult),
+        originalPrice: Math.round((obj.originalPrice || (obj.price || 499) * 1.35) * mult)
       };
     });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Clock, Phone, MapPin, Send, MessageCircle, CheckCircle } from 'lucide-react';
+import { ArrowRight, Clock, Phone, MapPin, Send, MessageCircle, CheckCircle, Car, ChevronDown } from 'lucide-react';
 import { getPackages, getServices } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import SectionDivider from '../components/SectionDivider';
@@ -101,9 +101,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   const displayPackages = packages.length >= 3 ? packages : defaultPackages;
 
   const multiplierMap = {
-    Hatchback: 0.85,
-    Sedan: 1.0,
-    SUV: 1.25
+    '2-Wheeler': 0.5,
+    'Hatchback': 0.85,
+    'Sedan': 1.0,
+    'Compact SUV': 1.15,
+    'SUV / MUV': 1.35,
+    'SUV': 1.35,
+    'Truck': 1.45
   };
   const mult = multiplierMap[vehicleSize] || 1.0;
 
@@ -130,14 +134,22 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           title: s.name || s.title || 'Car Service',
           name: s.name || s.title || 'Car Service',
           prices: {
-            Hatchback: Math.round(base * 0.85),
-            Sedan: base,
-            SUV: Math.round(base * 1.25)
+            '2-Wheeler': Math.round(base * 0.5),
+            'Hatchback': Math.round(base * 0.85),
+            'Sedan': base,
+            'Compact SUV': Math.round(base * 1.15),
+            'SUV / MUV': Math.round(base * 1.35),
+            'SUV': Math.round(base * 1.35),
+            'Truck': Math.round(base * 1.45)
           },
           origPrices: {
-            Hatchback: Math.round(base * 0.85 * 1.35),
-            Sedan: Math.round(base * 1.35),
-            SUV: Math.round(base * 1.25 * 1.35)
+            '2-Wheeler': Math.round(base * 0.5 * 1.35),
+            'Hatchback': Math.round(base * 0.85 * 1.35),
+            'Sedan': Math.round(base * 1.35),
+            'Compact SUV': Math.round(base * 1.15 * 1.35),
+            'SUV / MUV': Math.round(base * 1.35 * 1.35),
+            'SUV': Math.round(base * 1.35 * 1.35),
+            'Truck': Math.round(base * 1.45 * 1.35)
           },
           img: s.image && typeof s.image === 'string' && s.image.trim().length > 3
             ? s.image.trim()
@@ -222,7 +234,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 2. BEFORE / AFTER SLIDER */}
       <section style={{
         background: '#11212D',
-        padding: '40px 0'
+        padding: '36px 0'
       }}>
         <div className="container">
           <BeforeAfterSlider />
@@ -234,10 +246,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 3. SERVICES CATALOG */}
       <section id="services-section" style={{
         background: '#06141B',
-        padding: '50px 0'
+        padding: '36px 0'
       }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Individual Services</h2>
             <p style={{ color: 'var(--ice-tint)', fontSize: '0.9rem', marginTop: '6px' }}>
               Custom standalone treatments for your vehicle
@@ -245,29 +257,76 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           </div>
 
           {/* Vehicle & Category Controls */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', marginBottom: '26px' }}>
             
-            {/* Vehicle Size Selector */}
-            <div style={{ display: 'flex', gap: '6px', background: 'rgba(0, 30, 35, 0.7)', padding: '4px', borderRadius: '20px', border: '1px solid var(--border-light)' }}>
-              {['Hatchback', 'Sedan', 'SUV'].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setVehicleSize(type)}
+            {/* Vehicle Selector Dropdown */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              maxWidth: '360px'
+            }}>
+              <div style={{
+                position: 'relative',
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  left: '14px',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'var(--accent-cyan)',
+                  zIndex: 2
+                }}>
+                  <Car size={18} />
+                </div>
+
+                <select
+                  value={vehicleSize}
+                  onChange={(e) => setVehicleSize(e.target.value)}
+                  aria-label="Select Vehicle Type"
                   style={{
-                    background: vehicleSize === type ? 'var(--accent-cyan)' : 'transparent',
-                    color: vehicleSize === type ? '#003135' : '#CCD0CF',
+                    width: '100%',
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(17, 33, 45, 0.95) 100%)',
+                    border: '1.5px solid rgba(0, 229, 255, 0.45)',
+                    borderRadius: '12px',
+                    padding: '11px 40px 11px 42px',
+                    color: '#FFFFFF',
                     fontWeight: 700,
-                    fontSize: '0.8rem',
-                    border: 'none',
-                    padding: '6px 16px',
-                    borderRadius: '16px',
-                    cursor: 'pointer'
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    boxShadow: '0 4px 16px rgba(0, 229, 255, 0.12)',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  {type}
-                </button>
-              ))}
+                  <option value="2-Wheeler" style={{ background: '#06141B', color: '#FFFFFF' }}>2-Wheeler (Bike / Scooter)</option>
+                  <option value="Hatchback" style={{ background: '#06141B', color: '#FFFFFF' }}>Hatchback (Swift, i20, etc.)</option>
+                  <option value="Sedan" style={{ background: '#06141B', color: '#FFFFFF' }}>Sedan (City, Verna, etc.)</option>
+                  <option value="Compact SUV" style={{ background: '#06141B', color: '#FFFFFF' }}>Compact SUV (Brezza, Creta, etc.)</option>
+                  <option value="SUV / MUV" style={{ background: '#06141B', color: '#FFFFFF' }}>SUV / MUV (Fortuner, Innova, etc.)</option>
+                  <option value="Truck" style={{ background: '#06141B', color: '#FFFFFF' }}>Truck / Commercial</option>
+                </select>
+
+                <div style={{
+                  position: 'absolute',
+                  right: '14px',
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'var(--accent-cyan)',
+                  zIndex: 2
+                }}>
+                  <ChevronDown size={18} />
+                </div>
+              </div>
             </div>
 
             {/* Category Filter */}
@@ -363,10 +422,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 4. POPULAR WASH PACKAGES */}
       <section id="pricing-section" style={{
         background: '#11212D',
-        padding: '50px 0'
+        padding: '36px 0'
       }}>
         <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Wash Packages</h2>
             <p style={{ color: 'var(--ice-tint)', fontSize: '0.9rem', marginTop: '6px' }}>
               Transparent pricing with all-inclusive services
@@ -445,9 +504,13 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       {/* 5. QUICK ENQUIRY & LOCATION */}
       <section id="contact-section" style={{
         background: '#11212D',
-        padding: '50px 0'
+        padding: '36px 0 50px 0'
       }}>
         <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>Contact Us</h2>
+          </div>
+
           <div className="grid-2" style={{ gap: '20px' }}>
             
             {/* Quick Enquiry Form */}
@@ -511,7 +574,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
             {/* Location Info */}
             <div className="glass-panel" style={{ padding: '24px', borderRadius: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 16px 0' }}>Visit Our Bay</h3>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 16px 0' }}>Visit Our Shop</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem', color: '#FFFFFF' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

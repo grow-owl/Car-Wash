@@ -5,7 +5,7 @@ const VehicleSchema = new mongoose.Schema({
   regNumber: { type: String, required: true, uppercase: true, trim: true },
   brand: { type: String, default: 'Hyundai' },
   model: { type: String, default: 'Creta' },
-  type: { type: String, enum: ['Hatchback', 'Sedan', 'SUV', 'Luxury', 'Truck'], default: 'Sedan' },
+  type: { type: String, enum: ['2-Wheeler', 'Bike', 'Hatchback', 'Sedan', 'Compact SUV', 'SUV', 'SUV / MUV', 'Luxury', 'Truck'], default: 'Sedan' },
   color: { type: String, default: 'White' },
   totalVisits: { type: Number, default: 0 },
   lastWashDate: { type: Date }

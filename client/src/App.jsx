@@ -293,6 +293,7 @@ export default function App() {
             <BookingFlow
               initialVehicle={selectedVehicle}
               preselectedItem={preselectedItem}
+              currentUser={currentUser}
               onBookingComplete={handleBookingComplete}
               onTrackLive={handleTrackLive}
               onBackToHome={() => changeTab('home')}

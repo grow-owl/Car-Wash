@@ -1369,11 +1369,10 @@ export default function AdminDashboard({
                             <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
                               {/* WhatsApp Direct Tax Invoice Link */}
                               {(() => {
-                                const cleanPhone = (b.phone || '').replace(/\D/g, '');
-                                const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
-                                const invoiceNo = b.invoiceNumber || 'CW2026-0001';
-                                const trackLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}` : `https://www.carwash.in/?track=${code}`;
-                                const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}&invoice=1` : `https://www.carwash.in/?track=${code}&invoice=1`;
+                                const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
+                                const siteDisplay = siteBase.replace(/^https?:\/\//, '');
+                                const trackLink = `${siteBase}/?track=${code}`;
+                                const invoiceLink = `${siteBase}/?track=${code}&invoice=1`;
                                 const cleanInvoiceMsg = 
                                   `*CAR WASH AUTO SPA*\n` +
                                   `_Official Tax Invoice_\n` +
@@ -1394,7 +1393,7 @@ export default function AdminDashboard({
                                   `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                                   `*CAR WASH AUTO SPA*\n` +
                                   `• Helpline: +91 86095 04186\n` +
-                                  `• Website: www.carwash.in\n` +
+                                  `• Website: ${siteDisplay}\n` +
                                   `_Drive Clean. Go Further._`;
 
                                 const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(cleanInvoiceMsg)}`;
@@ -1529,8 +1528,10 @@ export default function AdminDashboard({
                 const cleanPhone = (b.phone || '').replace(/\D/g, '');
                 const waPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
                 const invoiceNo = b.invoiceNumber || 'CW2026-0001';
-                const trackLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}` : `https://www.carwash.in/?track=${code}`;
-                const invoiceLink = typeof window !== 'undefined' ? `${window.location.origin}/?track=${code}&invoice=1` : `https://www.carwash.in/?track=${code}&invoice=1`;
+                const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
+                const siteDisplay = siteBase.replace(/^https?:\/\//, '');
+                const trackLink = `${siteBase}/?track=${code}`;
+                const invoiceLink = `${siteBase}/?track=${code}&invoice=1`;
                 const cleanInvoiceMsg = 
                   `*CAR WASH AUTO SPA*\n` +
                   `_Official Tax Invoice_\n` +
@@ -1551,7 +1552,7 @@ export default function AdminDashboard({
                   `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                   `*CAR WASH AUTO SPA*\n` +
                   `• Helpline: +91 86095 04186\n` +
-                  `• Website: www.carwash.in\n` +
+                  `• Website: ${siteDisplay}\n` +
                   `_Drive Clean. Go Further._`;
 
                 const waLink = `https://wa.me/${waPhone}?text=${encodeURIComponent(cleanInvoiceMsg)}`;

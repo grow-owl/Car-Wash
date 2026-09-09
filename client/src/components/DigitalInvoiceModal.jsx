@@ -86,9 +86,9 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     });
   }
 
-  const invoiceLink = typeof window !== 'undefined' 
-    ? `${window.location.origin}/?track=${trackingCode}&invoice=1` 
-    : `https://www.carwash.in/?track=${trackingCode}&invoice=1`;
+  const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
+  const invoiceLink = `${siteBase}/?track=${trackingCode}&invoice=1`;
+  const siteDisplay = siteBase.replace(/^https?:\/\//, '');
 
   const cleanInvoiceMessage = 
     `*CAR WASH AUTO SPA*\n` +
@@ -109,7 +109,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
     `*CAR WASH AUTO SPA*\n` +
     `• Helpline: +91 86095 04186\n` +
-    `• Website: www.carwash.in\n` +
+    `• Website: ${siteDisplay}\n` +
     `_Drive Clean. Go Further._`;
 
   const cleanCustPhone = phone.replace(/[^0-9]/g, '');
@@ -339,81 +339,97 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
           alignItems: 'center',
           background: 'rgba(0, 49, 53, 0.95)',
           border: '1px solid var(--border-light)',
-          borderRadius: '8px',
-          padding: '6px 10px',
-          flexWrap: 'wrap',
-          gap: '6px'
+          borderRadius: '10px',
+          padding: '8px 12px',
+          marginBottom: '14px',
+          gap: '10px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#FFFFFF' }}>
-              Official Tax Invoice
+          {/* Top Left: "Invoice" on top, Invoice Number below it */}
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 'fit-content' }}>
+            <span style={{ fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.1, letterSpacing: '-0.01em' }}>
+              Invoice
             </span>
-            <span className="badge badge-cyan" style={{ fontSize: '0.66rem', padding: '1px 5px' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700, marginTop: '2px', letterSpacing: '0.02em' }}>
               {invoiceNumber}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {/* Top Right: Print Button + WhatsApp Button + Red Cross Button */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 0
+          }}>
             <button
               type="button"
               onClick={handlePrint}
-              className="btn-gold btn-control-item"
-              style={{ height: '28px', minHeight: '28px', padding: '0 10px', fontSize: '0.72rem' }}
+              className="btn-gold"
+              style={{
+                height: '32px',
+                minHeight: '32px',
+                padding: '0 10px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                whiteSpace: 'nowrap'
+              }}
             >
-              <Printer size={13} /> Print / Save PDF (1-Page)
+              <Printer size={14} /> Print
             </button>
 
             <a
               href={waShareUrl}
               target="_blank"
               rel="noreferrer"
-              className="btn-control-item"
-              title="Send Original Tax Invoice via WhatsApp"
               style={{
                 background: '#25D366',
                 color: '#FFFFFF',
-                height: '28px',
-                minHeight: '28px',
+                height: '32px',
+                minHeight: '32px',
                 padding: '0 10px',
-                fontSize: '0.72rem',
-                textDecoration: 'none'
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                whiteSpace: 'nowrap'
               }}
+              title="Send Tax Invoice via WhatsApp"
             >
-              <MessageSquare size={13} /> WhatsApp
+              <MessageSquare size={14} /> WhatsApp
             </a>
-
-            {onTrackLive && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (onClose) onClose();
-                  onTrackLive(trackingCode);
-                }}
-                className="btn-secondary btn-control-item"
-                style={{ height: '28px', minHeight: '28px', padding: '0 10px', fontSize: '0.72rem' }}
-              >
-                <ExternalLink size={13} /> Track
-              </button>
-            )}
 
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-control-item"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(74, 92, 106, 0.4)',
-                  color: '#CCD0CF',
-                  height: '28px',
-                  minHeight: '28px',
-                  width: '28px',
+                  background: '#E63946',
+                  border: '1.5px solid #D90429',
+                  color: '#FFFFFF',
+                  height: '32px',
+                  minHeight: '32px',
+                  width: '32px',
+                  minWidth: '32px',
                   padding: 0,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                  boxShadow: '0 2px 6px rgba(230, 57, 70, 0.4)'
                 }}
                 aria-label="Close Modal"
               >
-                <X size={14} />
+                <X size={20} strokeWidth={2.8} style={{ width: '20px', height: '20px', display: 'block' }} />
               </button>
             )}
           </div>

@@ -7,7 +7,7 @@ export default function SectionDivider({
   badge = '',       // optional text in the center
   spacing = 'default' // 'tight' (30px), 'default' (50px), 'wide' (70px)
 }) {
-  const spacingMargin = spacing === 'tight' ? '32px 0 24px 0' : spacing === 'wide' ? '72px 0 54px 0' : '52px 0 38px 0';
+  const spacingMargin = spacing === 'tight' ? '18px 0' : spacing === 'wide' ? '36px 0' : '24px 0';
 
   const getGlowGradient = () => {
     switch (variant) {

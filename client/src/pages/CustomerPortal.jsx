@@ -59,8 +59,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
   const [referralsList] = useState([
     { friendName: 'Rahul Sharma', phone: '+91 9800112211', date: '2026-08-20', status: 'Completed Wash', rewardEarned: '50 Loyalty Points' },
-    { friendName: 'Priya Mukherjee', phone: '+91 9831004455', date: '2026-08-22', status: 'Completed Wash', rewardEarned: '50 Loyalty Points' },
-    { friendName: 'Amit Verma', phone: '+91 9874558899', date: '2026-08-23', status: 'Joined (Pending 1st Wash)', rewardEarned: 'Pending' }
+    { friendName: 'Priya Mukherjee', phone: '+91 9831004455', date: '2026-08-22', status: 'Completed Wash', rewardEarned: '50 Loyalty Points' }
   ]);
 
   const defaultMemberships = [
@@ -364,8 +363,8 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
   const cleanUserName = (currentUser?.name ? currentUser.name.trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() : 'VIP');
   const vehicleLast4 = getVehicleLast4();
-  const referralCode = currentUser?.referralCode || `CARWASH${cleanUserName}${vehicleLast4}`;
-  const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${referralCode}` : `https://carwash.in/?ref=${referralCode}`;
+  const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
+  const referralLink = `${siteBase}/?ref=${referralCode}`;
 
   const copyReferral = () => {
     navigator.clipboard.writeText(referralLink);
@@ -379,7 +378,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
   };
 
   return (
-    <div className="container" style={{ paddingTop: 'clamp(20px, 3.5vw, 32px)', paddingBottom: '60px' }}>
+    <div className="container" style={{ paddingTop: 'clamp(20px, 3.5vw, 32px)', paddingBottom: 'clamp(50px, 8vw, 90px)' }}>
       
       {/* IF NOT LOGGED IN: DISPLAY RESPONSIVE SPLIT AUTHENTICATION PANEL */}
       {!currentUser ? (
@@ -387,8 +386,8 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
           {/* LEFT COLUMN: HERO VISUAL & MINIMAL BRAND HIGHLIGHTS */}
           <div className="auth-hero-side">
             <div>
-              <span className="badge badge-aqua" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={13} /> CAR WASH VIP
+              <span className="badge badge-aqua">
+                CAR WASH VIP
               </span>
               <h2 style={{ fontSize: '1.9rem', fontWeight: 800, color: '#FFFFFF', lineHeight: 1.25, marginTop: '8px' }}>
                 Fast Booking & Live Tracking
@@ -660,7 +659,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
               paddingBottom: '16px',
               borderBottom: '1px solid rgba(74, 92, 106, 0.25)'
             }}>
-              {/* User Avatar & Info */}
+              {/* Left: User Avatar & Info */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: 0 }}>
                 <div style={{
                   width: '42px',
@@ -681,26 +680,21 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                   {currentUser.name ? currentUser.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'VIP'}
                 </div>
 
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  {/* Name and Membership Badge */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0, lineHeight: 1.25 }}>
-                      {currentUser.name}
-                    </h2>
-                    <span className={`badge ${currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'badge-gold' : 'badge-aqua'}`} style={{ fontSize: '0.62rem', padding: '2px 7px' }}>
-                      {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'Member'}
-                    </span>
-                  </div>
+                <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                  {/* Name */}
+                  <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0, lineHeight: 1.25 }}>
+                    {currentUser.name}
+                  </h2>
 
                   {/* Phone (Line 1) */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
                     <Phone size={12} color="var(--accent-cyan)" />
                     <span>+91 {currentUser.phone.replace('+91', '').trim()}</span>
                   </div>
 
                   {/* Email (Line 2 - underneath phone) */}
                   {currentUser.email && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', color: '#8A99AD', marginTop: '2px', wordBreak: 'break-all' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#8A99AD', marginTop: '3px', wordBreak: 'break-all' }}>
                       <Mail size={12} color="var(--accent-cyan)" />
                       <span>{currentUser.email}</span>
                     </div>
@@ -708,39 +702,12 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                 </div>
               </div>
 
-              {/* Sign Out Action Button at top-right corner next to name */}
-              <button
-                onClick={handleSignOut}
-                style={{
-                  background: 'rgba(255, 89, 100, 0.12)',
-                  border: '1px solid rgba(255, 89, 100, 0.35)',
-                  color: 'var(--accent-coral)',
-                  borderRadius: '8px',
-                  padding: '5px 10px',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  flexShrink: 0,
-                  height: '30px',
-                  minHeight: '30px',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 89, 100, 0.22)';
-                  e.currentTarget.style.borderColor = 'var(--accent-coral)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 89, 100, 0.12)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 89, 100, 0.35)';
-                }}
-                title="Sign Out"
-              >
-                <LogOut size={13} /> Sign Out
-              </button>
+              {/* Right: Membership Badge */}
+              <div style={{ flexShrink: 0, marginTop: '2px' }}>
+                <span className={`badge ${currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'badge-gold' : 'badge-aqua'}`} style={{ fontSize: '0.68rem', padding: '4px 10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'Member'}
+                </span>
+              </div>
             </div>
 
             {/* MIDDLE STATS GRID: 2 BALANCED SIDE-BY-SIDE CARDS */}
@@ -759,16 +726,18 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '12px'
+                gap: '12px',
+                minHeight: '98px'
               }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>
                     Loyalty Cash Balance
                   </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--accent-cyan)', margin: '4px 0 2px 0', lineHeight: 1 }}>
-                    ₹{currentUser.loyaltyPoints || 50} <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#8A99AD' }}>({currentUser.loyaltyPoints || 50} Pts)</span>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--accent-cyan)', margin: 0, lineHeight: 1.2, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span>₹{currentUser.loyaltyPoints || 50}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#8A99AD' }}>({currentUser.loyaltyPoints || 50} Pts)</span>
                   </div>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 600, marginTop: '4px' }}>
                     1 Point = ₹1 Flat Cash Discount
                   </div>
                 </div>
@@ -797,17 +766,17 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '12px'
+                gap: '12px',
+                minHeight: '98px'
               }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#8A99AD', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>
                     Active Membership
                   </div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '4px 0 4px 0', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FFFFFF', margin: 0, lineHeight: 1.2, display: 'flex', alignItems: 'baseline' }}>
                     {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? currentUser.membershipStatus : 'Regular Member'}
                   </div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'var(--accent-gold)' : '#8A99AD', fontWeight: 600 }}>
-                    <Sparkles size={11} />
+                  <div style={{ fontSize: '0.74rem', color: currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'var(--accent-gold)' : '#8A99AD', fontWeight: 600, marginTop: '4px' }}>
                     {currentUser.membershipStatus && currentUser.membershipStatus !== 'None' ? 'VIP Priority Bay Access Enabled' : 'Earn 10% cash points on each wash'}
                   </div>
                 </div>
@@ -1131,31 +1100,51 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                     }}>
                       <Users size={14} color="var(--accent-aqua)" /> Referral History
                     </h4>
-                    <span className="badge badge-aqua" style={{ fontSize: '0.64rem', padding: '2px 6px' }}>
-                      {(currentUser?.referrals && currentUser.referrals.length > 0 ? currentUser.referrals.length : referralsList.length)} Referred
+                    <span style={{
+                      fontSize: '0.66rem',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      background: 'rgba(74, 92, 106, 0.25)',
+                      border: '1px solid rgba(74, 92, 106, 0.45)',
+                      color: 'var(--ice-tint)',
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase'
+                    }}>
+                      {(currentUser?.referrals && currentUser.referrals.length > 0 ? currentUser.referrals.slice(-2).length : referralsList.slice(0, 2).length)} Referred
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {(currentUser?.referrals && currentUser.referrals.length > 0 ? currentUser.referrals : referralsList).map((ref, idx) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(currentUser?.referrals && currentUser.referrals.length > 0 ? currentUser.referrals.slice(-2).reverse() : referralsList.slice(0, 2)).map((ref, idx) => (
                       <div key={idx} style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        padding: '7px 10px',
+                        padding: '10px 12px',
                         background: 'rgba(6, 20, 27, 0.6)',
                         borderRadius: '8px',
                         border: '1px solid rgba(74, 92, 106, 0.2)'
                       }}>
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.8rem' }}>{ref.friendName}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#8A99AD', marginTop: '1px' }}>{ref.date}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.84rem', lineHeight: 1.2 }}>{ref.friendName}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#8A99AD', lineHeight: 1 }}>{ref.date}</div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span className={`badge ${ref.status.includes('Completed') ? 'badge-aqua' : 'badge-gold'}`} style={{ fontSize: '0.62rem', padding: '2px 5px' }}>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px' }}>
+                          <span style={{
+                            fontSize: '0.64rem',
+                            padding: '2px 7px',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                            letterSpacing: '0.02em',
+                            background: ref.status.includes('Completed') ? 'rgba(0, 229, 255, 0.08)' : 'rgba(255, 195, 0, 0.08)',
+                            border: ref.status.includes('Completed') ? '1px solid rgba(0, 229, 255, 0.25)' : '1px solid rgba(255, 195, 0, 0.25)',
+                            color: ref.status.includes('Completed') ? '#99F6E4' : '#FDE68A'
+                          }}>
                             {ref.status}
                           </span>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--accent-gold)', marginTop: '2px', fontWeight: 700 }}>
+                          <div style={{ fontSize: '0.72rem', color: '#FDE68A', fontWeight: 500, lineHeight: 1 }}>
                             {ref.rewardEarned}
                           </div>
                         </div>
