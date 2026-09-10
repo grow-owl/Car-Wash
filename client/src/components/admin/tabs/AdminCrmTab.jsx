@@ -13,8 +13,22 @@ export default function AdminCrmTab({
   return (
     <div className="glass-panel" style={{ padding: '18px', borderRadius: '14px' }}>
       
-      {/* Subtabs Bar */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', flexWrap: 'wrap' }}>
+      {/* MOBILE CRM SUBTABS DROPDOWN (< 640px) */}
+      <div className="crm-subtabs-mobile" style={{ marginBottom: '16px' }}>
+        <select
+          value={crmSubTab}
+          onChange={(e) => setCrmSubTab(e.target.value)}
+          className="admin-select"
+          style={{ width: '100%', height: '38px', fontSize: '0.84rem', fontWeight: 800 }}
+        >
+          <option value="customers">Customers Directory ({customers.length})</option>
+          <option value="memberships">VIP Club Members 👑 ({membershipSubscriptions.length})</option>
+          <option value="leads">Direct Enquiries ({leads.length})</option>
+        </select>
+      </div>
+
+      {/* DESKTOP SUBTABS BAR (>= 641px) */}
+      <div className="crm-subtabs-desktop" style={{ gap: '8px', marginBottom: '16px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setCrmSubTab('customers')}
           style={{

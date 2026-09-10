@@ -531,19 +531,21 @@ const seedData = async () => {
         name: 'Alex Rivera',
         role: 'Master Detailer',
         phone: '+91 8609504186',
+        salary: 18000,
         completedJobs: 142,
         workingHours: '08:00 AM - 05:00 PM',
         rating: 4.9,
-        status: 'On Job'
+        status: 'Active'
       },
       {
         name: 'Elena Rostova',
         role: 'QC Inspector',
         phone: '+91 9800112244',
+        salary: 22000,
         completedJobs: 210,
         workingHours: '09:00 AM - 06:00 PM',
         rating: 5.0,
-        status: 'On Job'
+        status: 'Active'
       }
     ]);
 

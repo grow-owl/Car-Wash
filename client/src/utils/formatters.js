@@ -60,3 +60,33 @@ export const getLocalDateString = (d = new Date()) => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
+/**
+ * Parses and summarizes multi-service and add-on strings for clean uncluttered display
+ * @param {string} serviceStr 
+ * @param {Array} [addons=[]] 
+ * @returns {{ primary: string, extraCount: number, allList: string[], fullText: string }}
+ */
+export const formatServiceSummary = (serviceStr, addons = []) => {
+  if (!serviceStr && (!addons || addons.length === 0)) {
+    return { primary: 'Pro Wash', extraCount: 0, allList: ['Pro Wash'], fullText: 'Pro Wash' };
+  }
+  const parts = (serviceStr || '').split('+').map(s => s.trim()).filter(Boolean);
+  const addonNames = (addons || []).map(a => {
+    if (typeof a === 'string') return a.trim();
+    return (a?.name || a?.title || '').trim();
+  }).filter(Boolean);
+
+  const combined = [...parts, ...addonNames];
+  if (combined.length === 0) {
+    return { primary: 'Pro Wash', extraCount: 0, allList: ['Pro Wash'], fullText: 'Pro Wash' };
+  }
+
+  return {
+    primary: combined[0],
+    extraCount: combined.length - 1,
+    allList: combined,
+    fullText: combined.join(' • ')
+  };
+};
+

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, Plus, Calendar, Search, MessageSquare, History, FileText, Trash2 } from 'lucide-react';
 import { generateInvoiceWhatsAppUrl } from '../../../utils';
+import ServiceDropdownPill from '../ServiceDropdownPill';
 
 export default function AdminBookingsTab({
   timeFilter,
@@ -59,115 +60,52 @@ export default function AdminBookingsTab({
         </div>
       </div>
 
-      {/* QUICK MULTI-YEAR DATE RANGE SELECTOR */}
-      <div style={{ marginBottom: '16px', background: 'rgba(0, 31, 35, 0.6)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontWeight: 800, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Calendar size={13} /> Timeframe Filter (Past History & Archive):
-        </div>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'all', label: 'All Time' },
-            { id: 'today', label: 'Today' },
-            { id: 'yesterday', label: 'Yesterday' },
-            { id: '7days', label: 'Last 7 Days' },
-            { id: 'month', label: 'This Month' },
-            { id: '6months', label: 'Past 6 Months' },
-            { id: '1year', label: 'Past 1 Year' },
-            { id: '2years', label: 'Past 2 Years' },
-            { id: 'custom', label: 'Custom Range...' }
-          ].map(tf => (
-            <button
-              key={tf.id}
-              onClick={() => setTimeFilter(tf.id)}
-              style={{
-                padding: '5px 12px',
-                borderRadius: '14px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
-                background: timeFilter === tf.id ? 'var(--accent-aqua)' : 'rgba(255, 255, 255, 0.06)',
-                color: timeFilter === tf.id ? '#003135' : '#CCD0CF',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {tf.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Custom Date Pickers when 'custom' is selected */}
-        {timeFilter === 'custom' && (
-          <div style={{ display: 'flex', gap: '12px', marginTop: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>From:</span>
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="input-field"
-                style={{ padding: '4px 8px', fontSize: '0.78rem' }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>To:</span>
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="input-field"
-                style={{ padding: '4px 8px', fontSize: '0.78rem' }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* FILTER CONTROLS BAR: SEARCH, STATUS, PAYMENT & SORTING */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
         gap: '10px',
-        marginBottom: '16px'
+        marginBottom: '16px',
+        alignItems: 'center'
       }}>
         {/* Search Input */}
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ice-tint)' }} />
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ice-tint)', pointerEvents: 'none', zIndex: 1 }} />
           <input
             type="text"
             placeholder="Search Name, Phone, Car No, Code..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field"
-            style={{ paddingLeft: '32px', height: '36px', fontSize: '0.8rem', borderRadius: '8px', width: '100%' }}
+            className="admin-input"
           />
         </div>
 
         {/* Status Filter Dropdown */}
-        <div>
+        <div style={{ width: '100%' }}>
           <select
             value={bookingFilter}
             onChange={(e) => setBookingFilter(e.target.value)}
-            className="input-field"
-            style={{ height: '36px', fontSize: '0.8rem', borderRadius: '8px', width: '100%' }}
+            className="admin-select"
+            style={{ width: '100%' }}
           >
             <option value="all">All Booking Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="washing">Washing</option>
-            <option value="detailing">Detailing</option>
-            <option value="completed">Completed</option>
+            <option value="confirmed">1. Confirmed</option>
+            <option value="vehicle_received">2. Received</option>
+            <option value="in_progress">3. In Progress</option>
+            <option value="quality_check">4. Quality Check</option>
+            <option value="ready_for_pickup">5. Ready</option>
+            <option value="completed">6. Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
 
         {/* Payment Filter Dropdown */}
-        <div>
+        <div style={{ width: '100%' }}>
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="input-field"
-            style={{ height: '36px', fontSize: '0.8rem', borderRadius: '8px', width: '100%' }}
+            className="admin-select"
+            style={{ width: '100%' }}
           >
             <option value="all">All Payments (Paid & Pending)</option>
             <option value="Paid">Paid Only</option>
@@ -176,12 +114,12 @@ export default function AdminBookingsTab({
         </div>
 
         {/* Sorting Dropdown */}
-        <div>
+        <div style={{ width: '100%' }}>
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
-            className="input-field"
-            style={{ height: '36px', fontSize: '0.8rem', borderRadius: '8px', width: '100%', color: 'var(--accent-gold)' }}
+            className="admin-select"
+            style={{ width: '100%', color: 'var(--accent-gold)' }}
           >
             <option value="date_desc">Sort: Date (Newest First)</option>
             <option value="date_asc">Sort: Date (Oldest First)</option>
@@ -245,28 +183,13 @@ export default function AdminBookingsTab({
                         <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</div>
                       </td>
                       <td style={{ padding: '10px' }}>
-                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>{b.serviceName || b.packageName}</div>
-                        {b.addons && b.addons.length > 0 && (
-                          <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)' }}>
-                            +{b.addons.length} Add-ons
-                          </div>
-                        )}
+                        <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
                       </td>
                       <td style={{ padding: '10px' }}>
                         <select
                           value={b.bayAssigned || 'BAY 1'}
                           onChange={(e) => handleBayChange(b._id, e.target.value)}
-                          style={{
-                            padding: '4px 6px',
-                            borderRadius: '6px',
-                            background: '#06141B',
-                            color: 'var(--accent-cyan)',
-                            border: '1px solid var(--border-light)',
-                            fontSize: '0.74rem',
-                            fontWeight: 800,
-                            cursor: 'pointer',
-                            outline: 'none'
-                          }}
+                          className="admin-select-table"
                         >
                           <option value="BAY 1">BAY 1</option>
                           <option value="BAY 2">BAY 2</option>
@@ -276,23 +199,16 @@ export default function AdminBookingsTab({
                         <select
                           value={b.status}
                           onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                          className="admin-select-table"
                           style={{
-                            padding: '5px 8px',
-                            borderRadius: '6px',
-                            background: '#06141B',
-                            color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)',
-                            border: '1px solid var(--border-light)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            outline: 'none'
+                            color: b.status === 'completed' || b.status === 'ready' ? '#25D366' : 'var(--accent-cyan)'
                           }}
                         >
-                          <option value="confirmed">1. Booking Confirmed</option>
-                          <option value="vehicle_received">2. Vehicle Received</option>
-                          <option value="in_progress">3. Service In Progress</option>
+                          <option value="confirmed">1. Confirmed</option>
+                          <option value="vehicle_received">2. Received</option>
+                          <option value="in_progress">3. In Progress</option>
                           <option value="quality_check">4. Quality Check</option>
-                          <option value="ready_for_pickup">5. Ready for Pickup</option>
+                          <option value="ready_for_pickup">5. Ready</option>
                           <option value="completed">6. Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
@@ -313,18 +229,18 @@ export default function AdminBookingsTab({
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'nowrap' }}>
                           {/* WhatsApp Direct Tax Invoice Link */}
                           <a
                             href={waLink}
                             target="_blank"
                             rel="noreferrer"
                             style={{
-                              height: '30px',
-                              padding: '0 10px',
-                              fontSize: '0.74rem',
-                              borderRadius: '6px',
+                              height: '26px',
+                              padding: '0 7px',
+                              fontSize: '0.68rem',
+                              borderRadius: '5px',
                               background: '#25D366',
                               color: '#06141B',
                               border: '1px solid #25D366',
@@ -333,7 +249,7 @@ export default function AdminBookingsTab({
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '5px',
+                              gap: '4px',
                               boxSizing: 'border-box',
                               whiteSpace: 'nowrap',
                               cursor: 'pointer',
@@ -341,7 +257,7 @@ export default function AdminBookingsTab({
                             }}
                             title="Send Original Tax Invoice via WhatsApp"
                           >
-                            <MessageSquare size={13} /> WhatsApp
+                            <MessageSquare size={11} /> WhatsApp
                           </a>
 
                           {/* History Button */}
@@ -349,10 +265,10 @@ export default function AdminBookingsTab({
                             type="button"
                             onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
                             style={{
-                              height: '30px',
-                              padding: '0 10px',
-                              fontSize: '0.74rem',
-                              borderRadius: '6px',
+                              height: '26px',
+                              padding: '0 7px',
+                              fontSize: '0.68rem',
+                              borderRadius: '5px',
                               background: 'rgba(0, 229, 255, 0.12)',
                               border: '1px solid rgba(0, 229, 255, 0.35)',
                               color: 'var(--accent-cyan)',
@@ -360,7 +276,7 @@ export default function AdminBookingsTab({
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '5px',
+                              gap: '4px',
                               boxSizing: 'border-box',
                               whiteSpace: 'nowrap',
                               cursor: 'pointer',
@@ -368,7 +284,7 @@ export default function AdminBookingsTab({
                             }}
                             title="View Customer Lifetime Timeline"
                           >
-                            <History size={13} /> History
+                            <History size={11} /> History
                           </button>
 
                           {/* Invoice Button */}
@@ -376,10 +292,10 @@ export default function AdminBookingsTab({
                             type="button"
                             onClick={() => setInvoiceBooking(b)}
                             style={{
-                              height: '30px',
-                              padding: '0 10px',
-                              fontSize: '0.74rem',
-                              borderRadius: '6px',
+                              height: '26px',
+                              padding: '0 7px',
+                              fontSize: '0.68rem',
+                              borderRadius: '5px',
                               background: 'rgba(255, 195, 0, 0.12)',
                               border: '1px solid rgba(255, 195, 0, 0.35)',
                               color: 'var(--accent-gold)',
@@ -387,7 +303,7 @@ export default function AdminBookingsTab({
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '5px',
+                              gap: '4px',
                               boxSizing: 'border-box',
                               whiteSpace: 'nowrap',
                               cursor: 'pointer',
@@ -395,7 +311,7 @@ export default function AdminBookingsTab({
                             }}
                             title="View and Print Invoice"
                           >
-                            <FileText size={13} /> Invoice
+                            <FileText size={11} /> Invoice
                           </button>
 
                           {/* Delete Button */}
@@ -403,10 +319,10 @@ export default function AdminBookingsTab({
                             type="button"
                             onClick={() => handleDeleteBooking(b._id, code)}
                             style={{
-                              height: '30px',
-                              width: '32px',
+                              height: '26px',
+                              width: '26px',
                               padding: '0',
-                              borderRadius: '6px',
+                              borderRadius: '5px',
                               background: 'rgba(255, 89, 100, 0.12)',
                               border: '1px solid rgba(255, 89, 100, 0.35)',
                               color: '#FF5964',
@@ -419,7 +335,7 @@ export default function AdminBookingsTab({
                             }}
                             title="Delete Booking"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </td>
@@ -513,75 +429,82 @@ export default function AdminBookingsTab({
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                      {b.serviceName || b.packageName}
-                    </span>
-                    <span style={{ fontWeight: 900, color: 'var(--accent-gold)', fontSize: '0.9rem' }}>
-                      ₹{b.totalAmount} <span style={{ fontSize: '0.68rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964' }}>({b.paymentStatus || 'Pending'})</span>
-                    </span>
+                  <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
+                    <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} />
                   </div>
                 </div>
 
-                {/* Controls: Stage Selector + Bay Selector */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '8px' }}>
+                {/* Controls: Stage Selector + Bay Selector + Amount Badge */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr auto', gap: '8px', alignItems: 'center' }}>
                   <select
                     value={b.status}
                     onChange={(e) => handleStatusChange(b._id, e.target.value)}
+                    className="admin-select"
                     style={{
-                      padding: '7px 8px',
-                      borderRadius: '6px',
-                      background: '#06141B',
+                      height: '34px',
+                      minHeight: '34px',
+                      fontSize: '0.75rem',
                       color: isDone ? '#25D366' : 'var(--accent-cyan)',
-                      border: '1px solid var(--border-light)',
-                      fontSize: '0.76rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      outline: 'none',
                       width: '100%'
                     }}
                   >
                     <option value="confirmed">1. Confirmed</option>
                     <option value="vehicle_received">2. Received</option>
-                    <option value="washing">3. Washing</option>
-                    <option value="detailing">4. Detailing</option>
-                    <option value="quality_check">5. Quality Check</option>
-                    <option value="ready">6. Ready</option>
-                    <option value="completed">7. Completed</option>
+                    <option value="in_progress">3. In Progress</option>
+                    <option value="quality_check">4. Quality Check</option>
+                    <option value="ready_for_pickup">5. Ready</option>
+                    <option value="completed">6. Completed</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
 
                   <select
                     value={b.bayAssigned || 'BAY 1'}
                     onChange={(e) => handleBayChange(b._id, e.target.value)}
+                    className="admin-select"
                     style={{
-                      padding: '7px 8px',
-                      borderRadius: '6px',
-                      background: '#06141B',
-                      color: 'var(--accent-cyan)',
-                      border: '1px solid var(--border-light)',
-                      fontSize: '0.76rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      outline: 'none',
+                      height: '34px',
+                      minHeight: '34px',
+                      fontSize: '0.75rem',
                       width: '100%'
                     }}
                   >
                     <option value="BAY 1">BAY 1</option>
                     <option value="BAY 2">BAY 2</option>
                   </select>
+
+                  <div style={{
+                    height: '34px',
+                    minHeight: '34px',
+                    padding: '0 10px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 195, 0, 0.12)',
+                    border: '1px solid rgba(255, 195, 0, 0.35)',
+                    color: 'var(--accent-gold)',
+                    fontWeight: 900,
+                    fontSize: '0.85rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: 'nowrap',
+                    boxSizing: 'border-box'
+                  }}>
+                    ₹{b.totalAmount}
+                  </div>
                 </div>
 
                 {/* Action Bar: WhatsApp, History, Invoice, Delete */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 38px', gap: '6px', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 36px', gap: '6px', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '8px', alignItems: 'center' }}>
                   <a
                     href={waLink}
                     target="_blank"
                     rel="noreferrer"
                     style={{
-                      height: '30px',
-                      padding: '0 8px',
-                      fontSize: '0.72rem',
+                      height: '32px',
+                      minHeight: '32px',
+                      maxHeight: '32px',
+                      boxSizing: 'border-box',
+                      padding: '0 6px',
+                      fontSize: '0.74rem',
                       borderRadius: '6px',
                       background: '#25D366',
                       color: '#06141B',
@@ -595,25 +518,45 @@ export default function AdminBookingsTab({
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    <MessageSquare size={12} /> WhatsApp
+                    <MessageSquare size={13} /> WhatsApp
                   </a>
 
                   <button
                     type="button"
                     onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                    className="btn-secondary"
-                    style={{ height: '30px', padding: '0 6px', fontSize: '0.72rem', borderRadius: '6px', gap: '4px' }}
+                    style={{
+                      height: '32px',
+                      minHeight: '32px',
+                      maxHeight: '32px',
+                      boxSizing: 'border-box',
+                      padding: '0 6px',
+                      fontSize: '0.74rem',
+                      borderRadius: '6px',
+                      background: 'rgba(74, 92, 106, 0.35)',
+                      border: '1px solid rgba(74, 92, 106, 0.55)',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
-                    <History size={12} /> History
+                    <History size={13} /> History
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setInvoiceBooking(b)}
                     style={{
-                      height: '30px',
+                      height: '32px',
+                      minHeight: '32px',
+                      maxHeight: '32px',
+                      boxSizing: 'border-box',
                       padding: '0 6px',
-                      fontSize: '0.72rem',
+                      fontSize: '0.74rem',
                       borderRadius: '6px',
                       background: 'rgba(255, 195, 0, 0.12)',
                       border: '1px solid rgba(255, 195, 0, 0.35)',
@@ -622,17 +565,22 @@ export default function AdminBookingsTab({
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '4px'
+                      gap: '4px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    <FileText size={12} /> Invoice
+                    <FileText size={13} /> Invoice
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleDeleteBooking(b._id, code)}
                     style={{
-                      height: '30px',
+                      height: '32px',
+                      minHeight: '32px',
+                      maxHeight: '32px',
+                      boxSizing: 'border-box',
                       padding: '0',
                       borderRadius: '6px',
                       background: 'rgba(255, 89, 100, 0.12)',
@@ -645,7 +593,7 @@ export default function AdminBookingsTab({
                     }}
                     title="Delete"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>

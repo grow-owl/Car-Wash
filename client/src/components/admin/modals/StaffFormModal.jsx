@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, User } from 'lucide-react';
+import { X, User, IndianRupee, Phone } from 'lucide-react';
 
 export default function StaffFormModal({
   isOpen,
@@ -9,8 +9,8 @@ export default function StaffFormModal({
   setStfName,
   stfPhone,
   setStfPhone,
-  stfStatus,
-  setStfStatus,
+  stfSalary,
+  setStfSalary,
   onSubmit
 }) {
   if (!isOpen) return null;
@@ -42,7 +42,7 @@ export default function StaffFormModal({
 
         <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 700 }}>
               Full Name *
             </label>
             <input
@@ -57,7 +57,7 @@ export default function StaffFormModal({
           </div>
 
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
+            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 700 }}>
               Phone Number *
             </label>
             <input
@@ -72,25 +72,24 @@ export default function StaffFormModal({
           </div>
 
           <div>
-            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '4px' }}>
-              Duty Status
+            <label style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', display: 'block', marginBottom: '6px', fontWeight: 700 }}>
+              Monthly Salary (₹) *
             </label>
-            <select
-              value={stfStatus}
-              onChange={(e) => setStfStatus(e.target.value)}
+            <input
+              type="number"
+              required
+              placeholder="e.g. 18000"
+              value={stfSalary}
+              onChange={(e) => setStfSalary(e.target.value)}
               className="input-field"
-              style={{ width: '100%', minHeight: '42px', fontSize: '0.85rem' }}
-            >
-              <option value="Available">Available</option>
-              <option value="On Job">On Job</option>
-              <option value="Off Duty">Off Duty</option>
-            </select>
+              style={{ width: '100%', minHeight: '42px', fontSize: '0.88rem' }}
+            />
           </div>
 
           <button
             type="submit"
             className="btn-gold"
-            style={{ marginTop: '6px', minHeight: '42px', fontSize: '0.9rem', borderRadius: '8px', fontWeight: 800, width: '100%', justifyContent: 'center' }}
+            style={{ marginTop: '8px', minHeight: '42px', fontSize: '0.9rem', borderRadius: '8px', fontWeight: 800, width: '100%', justifyContent: 'center' }}
           >
             {editingStaff ? 'Update Staff Member' : 'Save Staff Member'}
           </button>

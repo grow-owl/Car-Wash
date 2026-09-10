@@ -5,3 +5,4 @@ export { default as CouponFormModal } from './CouponFormModal';
 export { default as StaffFormModal } from './StaffFormModal';
 export { default as CustomerTimelineModal } from './CustomerTimelineModal';
 export { default as BayAllotmentModal } from './BayAllotmentModal';
+export { default as ExportCsvModal } from './ExportCsvModal';

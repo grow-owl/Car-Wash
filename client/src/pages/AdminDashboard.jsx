@@ -3,7 +3,7 @@ import {
   getAnalytics, getBookings, updateBookingStatus, createWalkInBooking, deleteBooking,
   getCustomers, getStaff, createStaff, updateStaff, deleteStaff, getExpenses, addExpense, deleteExpense,
   getCoupons, createCoupon, deleteCoupon, 
-  getServices, createService, updateService, deleteService, uploadServiceImage,
+  getServices, getPackages, getAddons, createService, updateService, deleteService, uploadServiceImage,
   getBays, updateBayStatus, getLeads, getCustomerTimeline, getMembershipSubscriptions
 } from '../api';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
@@ -16,14 +16,16 @@ import {
   CouponFormModal,
   StaffFormModal,
   CustomerTimelineModal,
-  BayAllotmentModal
+  BayAllotmentModal,
+  ExportCsvModal
 } from '../components/admin/modals';
 import {
   AdminAnalyticsTab,
   AdminBookingsTab,
   AdminCrmTab,
   AdminServicesTab,
-  AdminExpensesStaffTab
+  AdminExpensesStaffTab,
+  AdminFinancialsTab
 } from '../components/admin/tabs';
 import { getLocalDateString } from '../utils';
 
@@ -39,6 +41,8 @@ export default function AdminDashboard({
   const [customers, setCustomers] = useState([]);
   const [bays, setBays] = useState([]);
   const [services, setServices] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [addons, setAddons] = useState([]);
   const [staff, setStaff] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -76,6 +80,7 @@ export default function AdminDashboard({
   const [invoiceBooking, setInvoiceBooking] = useState(null);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [showAddCouponModal, setShowAddCouponModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
 
   // MINIMAL DELETE CONFIRMATION POPUP STATE
@@ -142,7 +147,7 @@ export default function AdminDashboard({
   const [editingStaff, setEditingStaff] = useState(null);
   const [stfName, setStfName] = useState('');
   const [stfPhone, setStfPhone] = useState('+91 ');
-  const [stfStatus, setStfStatus] = useState('Available');
+  const [stfSalary, setStfSalary] = useState('');
 
   // Refresh & Sync status
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -165,7 +170,7 @@ export default function AdminDashboard({
   const fetchAllAdminData = async () => {
     setIsRefreshing(true);
     try {
-      const [anaRes, bookRes, custRes, stfRes, expRes, cpnRes, svcRes, bayRes, leadRes, memSubRes] = await Promise.all([
+      const [anaRes, bookRes, custRes, stfRes, expRes, cpnRes, svcRes, bayRes, leadRes, memSubRes, pkgRes, addRes] = await Promise.all([
         getAnalytics(),
         getBookings(),
         getCustomers(),
@@ -175,7 +180,9 @@ export default function AdminDashboard({
         getServices(),
         getBays(),
         getLeads(),
-        getMembershipSubscriptions().catch(() => ({ data: [] }))
+        getMembershipSubscriptions().catch(() => ({ data: [] })),
+        getPackages().catch(() => ({ data: [] })),
+        getAddons().catch(() => ({ data: [] }))
       ]);
       setAnalytics(anaRes.data);
       setBookings(bookRes.data || []);
@@ -184,6 +191,8 @@ export default function AdminDashboard({
       setExpenses(expRes.data || []);
       setCoupons(cpnRes.data || []);
       setServices(svcRes.data || []);
+      setPackages(pkgRes?.data || []);
+      setAddons(addRes?.data || []);
       setBays(bayRes.data || []);
       if (leadRes && leadRes.data) setLeads(leadRes.data);
       if (memSubRes && memSubRes.data) setMembershipSubscriptions(memSubRes.data);
@@ -220,7 +229,7 @@ export default function AdminDashboard({
           invoiceUrl: waNotif.invoiceUrl,
           trackUrl: waNotif.trackUrl
         });
-        setTimeout(() => setWhatsappToast(null), 10000);
+        setTimeout(() => setWhatsappToast(null), 30000);
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Error updating status');
@@ -245,10 +254,25 @@ export default function AdminDashboard({
       });
       setAllotModalBay(null);
       fetchAllAdminData();
-      if (res.data?.whatsappNotification?.waLinkCustomer) {
-        try {
-          window.open(res.data.whatsappNotification.waLinkCustomer, '_blank');
-        } catch (e) {}
+      if (res.data?.whatsappNotification) {
+        const waNotif = res.data.whatsappNotification;
+        const targetLink = waNotif.waLinkCustomer || waNotif.waLink;
+        if (targetLink) {
+          try {
+            window.open(targetLink, '_blank');
+          } catch (e) {}
+        }
+        setWhatsappToast({
+          customerName: waNotif.customerName,
+          phone: waNotif.phone,
+          status: 'washing',
+          waLink: targetLink,
+          waLinkCustomer: targetLink,
+          waLinkOwner: waNotif.waLinkOwner,
+          invoiceUrl: waNotif.invoiceUrl,
+          trackUrl: waNotif.trackUrl
+        });
+        setTimeout(() => setWhatsappToast(null), 30000);
       }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to allot car to bay');
@@ -271,22 +295,10 @@ export default function AdminDashboard({
     });
   };
 
-  const handleWalkInSubmit = async (e) => {
-    e.preventDefault();
+  const handleWalkInSubmit = async (walkInData) => {
     try {
-      const res = await createWalkInBooking({
-        customerName: walkInName || 'Walk-in',
-        phone: walkInPhone || '+91 8609504186',
-        vehicleNumber: walkInVeh,
-        vehicleType: walkInVehType,
-        serviceName: walkInService,
-        totalAmount: Number(walkInAmount),
-        paymentMode: walkInPayMode
-      });
+      const res = await createWalkInBooking(walkInData);
       if (setShowWalkInModal) setShowWalkInModal(false);
-      setWalkInName('');
-      setWalkInPhone('');
-      setWalkInVeh('');
       fetchAllAdminData();
 
       if (res.data?.whatsappNotification?.waLinkCustomer) {
@@ -294,8 +306,9 @@ export default function AdminDashboard({
           window.open(res.data.whatsappNotification.waLinkCustomer, '_blank');
         } catch (e) {}
       }
-    } catch {
-      alert('Error creating walk-in booking');
+    } catch (err) {
+      console.error('Walk-in booking error:', err);
+      alert(err.response?.data?.error || 'Error creating walk-in booking');
     }
   };
 
@@ -453,7 +466,7 @@ export default function AdminDashboard({
     setEditingStaff(null);
     setStfName('');
     setStfPhone('+91 ');
-    setStfStatus('Available');
+    setStfSalary('');
     setShowStaffModal(true);
   };
 
@@ -461,7 +474,7 @@ export default function AdminDashboard({
     setEditingStaff(stf);
     setStfName(stf.name || '');
     setStfPhone(stf.phone || '');
-    setStfStatus(stf.status || 'Available');
+    setStfSalary(stf.salary || '');
     setShowStaffModal(true);
   };
 
@@ -473,13 +486,13 @@ export default function AdminDashboard({
         await updateStaff(editingStaff._id, {
           name: stfName.trim(),
           phone: stfPhone.trim(),
-          status: stfStatus
+          salary: Number(stfSalary) || 0
         });
       } else {
         await createStaff({
           name: stfName.trim(),
           phone: stfPhone.trim(),
-          status: stfStatus
+          salary: Number(stfSalary) || 0
         });
       }
       setShowStaffModal(false);
@@ -571,34 +584,9 @@ export default function AdminDashboard({
   };
 
   const handleExportCSV = () => {
-    if (filteredBookings.length === 0) {
-      alert('No bookings found for the selected filter.');
-      return;
-    }
-    const headers = ['Code', 'Date', 'Slot Time', 'Customer Name', 'Phone', 'Vehicle Type', 'Vehicle Number', 'Vehicle Model', 'Service / Package', 'Total Amount', 'Payment Status', 'Booking Status'];
-    const rows = filteredBookings.map(b => [
-      b.trackingCode || b.bookingCode || '',
-      b.date || '',
-      b.slotTime || '',
-      `"${(b.customerName || '').replace(/"/g, '""')}"`,
-      `"${b.phone || ''}"`,
-      b.vehicleType || '',
-      b.vehicleNumber || '',
-      `"${(b.vehicleModel || '').replace(/"/g, '""')}"`,
-      `"${(b.serviceName || b.packageName || '').replace(/"/g, '""')}"`,
-      b.totalAmount || 0,
-      b.paymentStatus || 'Pending',
-      b.status || 'Pending'
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `carwash_bookings_history_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setShowExportModal(true);
   };
+
 
   const filteredBookings = bookings
     .filter((b) => {
@@ -647,6 +635,7 @@ export default function AdminDashboard({
       <AdminStatsHeader
         bookings={bookings}
         bays={bays}
+        getActiveBookingForBay={getActiveBookingForBay}
       />
 
       {/* 2. TAB: OVERVIEW & BAYS */}
@@ -762,9 +751,21 @@ export default function AdminDashboard({
         />
       )}
 
+      {/* 7. TAB: FINANCIALS & PROFIT */}
+      {activeSubTab === 'financials' && (
+        <AdminFinancialsTab
+          analytics={analytics}
+          expenses={expenses}
+          showFinancialFigures={showFinancialFigures}
+          setShowFinancialFigures={setShowFinancialFigures}
+        />
+      )}
+
       {/* MODALS */}
       <DeleteConfirmModal
         confirmModal={confirmModal}
+        onClose={closeDeleteConfirm}
+        onConfirm={executeDelete}
         closeDeleteConfirm={closeDeleteConfirm}
         executeDelete={executeDelete}
       />
@@ -772,20 +773,10 @@ export default function AdminDashboard({
       <WalkInBookingModal
         isOpen={showWalkInModal}
         onClose={() => setShowWalkInModal(false)}
-        walkInName={walkInName}
-        setWalkInName={setWalkInName}
-        walkInPhone={walkInPhone}
-        setWalkInPhone={setWalkInPhone}
-        walkInVeh={walkInVeh}
-        setWalkInVeh={setWalkInVeh}
-        walkInVehType={walkInVehType}
-        setWalkInVehType={setWalkInVehType}
-        walkInService={walkInService}
-        setWalkInService={setWalkInService}
-        walkInAmount={walkInAmount}
-        setWalkInAmount={setWalkInAmount}
-        walkInPayMode={walkInPayMode}
-        setWalkInPayMode={setWalkInPayMode}
+        services={services}
+        packages={packages}
+        addons={addons}
+        bays={bays && bays.length > 0 ? bays.map(b => b.name || `BAY ${b.bayNumber}`) : ['BAY 1', 'BAY 2']}
         onSubmit={handleWalkInSubmit}
       />
 
@@ -826,8 +817,8 @@ export default function AdminDashboard({
         setStfName={setStfName}
         stfPhone={stfPhone}
         setStfPhone={setStfPhone}
-        stfStatus={stfStatus}
-        setStfStatus={setStfStatus}
+        stfSalary={stfSalary}
+        setStfSalary={setStfSalary}
         onSubmit={handleSaveStaffSubmit}
       />
 
@@ -847,6 +838,12 @@ export default function AdminDashboard({
         onClose={() => setAllotModalBay(null)}
         bookings={bookings}
         onAllotCarToBay={handleAllotCarToBay}
+      />
+
+      <ExportCsvModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        bookings={bookings}
       />
 
       {invoiceBooking && (

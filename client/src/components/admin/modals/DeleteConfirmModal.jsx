@@ -1,7 +1,29 @@
 import React from 'react';
 
-export default function DeleteConfirmModal({ confirmModal, onClose, onConfirm }) {
+export default function DeleteConfirmModal({
+  confirmModal,
+  onClose,
+  onConfirm,
+  closeDeleteConfirm,
+  executeDelete
+}) {
   if (!confirmModal?.isOpen) return null;
+
+  const handleClose = () => {
+    if (onClose) onClose();
+    else if (closeDeleteConfirm) closeDeleteConfirm();
+  };
+
+  const handleConfirm = async () => {
+    if (onConfirm) {
+      await onConfirm();
+    } else if (executeDelete) {
+      await executeDelete();
+    } else if (confirmModal.onConfirm) {
+      await confirmModal.onConfirm();
+    }
+    handleClose();
+  };
 
   return (
     <div style={{
@@ -20,10 +42,12 @@ export default function DeleteConfirmModal({ confirmModal, onClose, onConfirm })
         maxWidth: '340px',
         padding: '20px',
         borderRadius: '12px',
-        background: '#0a1a24'
+        background: '#0a1a24',
+        border: '1px solid rgba(255, 89, 100, 0.3)',
+        boxShadow: '0 16px 36px rgba(0, 0, 0, 0.7)'
       }}>
         <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px 0', color: '#FFFFFF' }}>
-          {confirmModal.title}
+          {confirmModal.title || 'Delete Item?'}
         </h3>
 
         {confirmModal.itemName && (
@@ -35,16 +59,16 @@ export default function DeleteConfirmModal({ confirmModal, onClose, onConfirm })
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="btn-secondary"
-            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px' }}
+            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px', cursor: 'pointer' }}
           >
             Cancel
           </button>
 
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={handleConfirm}
             style={{
               background: '#FF5964',
               color: '#FFFFFF',

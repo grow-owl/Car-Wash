@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Calendar, Users, Wrench, DollarSign, Plus, RefreshCw, LogOut, Menu, X, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, Wrench, DollarSign, TrendingUp, Plus, RefreshCw, LogOut, Menu, X, AlertTriangle } from 'lucide-react';
 
 export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh, onRegisterWalkIn, onExitToCustomerSite }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -21,7 +21,8 @@ export default function AdminSidebar({ activeSubTab, setActiveSubTab, onRefresh,
     { id: 'bookings', label: 'Bookings & Queue', icon: Calendar },
     { id: 'crm', label: 'Customers & Leads', icon: Users },
     { id: 'services', label: 'Services & Pricing', icon: Wrench },
-    { id: 'expenses', label: 'Staff & Expenses', icon: DollarSign }
+    { id: 'expenses', label: 'Staff & Expenses', icon: DollarSign },
+    { id: 'financials', label: 'Financials & Profit', icon: TrendingUp }
   ];
 
   const handleSelectModule = (id) => {

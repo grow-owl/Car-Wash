@@ -105,7 +105,7 @@ router.get('/slots', async (req, res) => {
   const allSlots = [
     '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM',
     '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM',
-    '04:00 PM', '05:00 PM', '06:00 PM'
+    '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'
   ];
 
   try {
@@ -168,6 +168,27 @@ router.get('/bays', async (req, res) => {
       await bay2.save();
       bays = await Bay.find({}).populate('currentBooking').sort({ bayNumber: 1 });
     }
+
+    // Sync bay status with current live bookings
+    const activeStatuses = ['washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
+    for (let bay of bays) {
+      const bayStr = `BAY ${bay.bayNumber}`;
+      const activeBooking = await Booking.findOne({
+        $or: [
+          { bayAssigned: { $regex: bayStr, $options: 'i' } },
+          { assignedBay: { $regex: bayStr, $options: 'i' } }
+        ],
+        status: { $in: activeStatuses }
+      }).sort({ updatedAt: -1 });
+
+      const newStatus = activeBooking ? 'Occupied' : 'available';
+      if (bay.status !== newStatus) {
+        bay.status = newStatus;
+        bay.currentBooking = activeBooking ? activeBooking._id : null;
+        await bay.save();
+      }
+    }
+
     res.json(bays);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -463,36 +484,64 @@ router.post('/', async (req, res) => {
 // POST Admin Walk-in Ticket Creation (Instantly creates Customer, Vehicle, Booking, assigns Bay & starts Job)
 router.post('/walkin', async (req, res) => {
   try {
-    const { customerName, phone, vehicleNumber, vehicleBrand, vehicleModel, vehicleType, serviceName, totalAmount, staffAssigned, bayAssigned, paymentMode } = req.body;
+    const {
+      customerName,
+      phone,
+      vehicleNumber,
+      vehicleBrand,
+      vehicleModel,
+      vehicleType,
+      serviceName,
+      packageName,
+      services,
+      addons,
+      status,
+      slotTime,
+      totalAmount,
+      staffAssigned,
+      bayAssigned,
+      paymentMode,
+      paymentStatus
+    } = req.body;
+    if (!phone || !phone.trim()) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const trackingCode = `CW-W${randomNum}`;
-    const regNo = (vehicleNumber || 'WALKIN-AUTO').toUpperCase().trim();
+    const regNo = (vehicleNumber && vehicleNumber.trim() ? vehicleNumber.trim() : 'N/A').toUpperCase();
     const brandName = vehicleBrand || 'Tata';
     const modelName = vehicleModel || vehicleType || 'Nexon';
 
     const todayStr = new Date().toISOString().split('T')[0];
     const invoiceNumber = await generateYearlyInvoiceNumber(todayStr);
 
+    const sName = serviceName || packageName || (Array.isArray(services) && services.length > 0 ? services[0] : 'Express Exterior Wash');
+    const selectedSlotTime = slotTime || req.body.timeSlot || 'NOW (Walk-in)';
+
     const walkInBooking = new Booking({
       bookingId: trackingCode,
       trackingCode,
       invoiceNumber,
       customerName: customerName || 'Walk-in Customer',
-      phone: phone || '+91 9900000000',
+      phone: phone.trim(),
       vehicleType: vehicleType || 'Sedan',
       vehicleNumber: regNo,
       vehicleBrand: brandName,
       vehicleModel: modelName,
-      serviceName: serviceName || 'Express Exterior Wash',
+      serviceName: sName,
+      packageName: packageName || (sName?.includes('Package') || sName?.includes('Refresh') || sName?.includes('Shine') || sName?.includes('Detail') ? sName : ''),
+      services: Array.isArray(services) && services.length > 0 ? services : [sName],
+      addons: Array.isArray(addons) ? addons : [],
       date: new Date().toISOString().split('T')[0],
       bookingDate: new Date().toISOString().split('T')[0],
-      slotTime: 'NOW (Walk-in)',
-      timeSlot: 'NOW (Walk-in)',
-      status: 'washing',
-      totalAmount: totalAmount || 499,
-      finalAmount: totalAmount || 499,
+      slotTime: selectedSlotTime,
+      timeSlot: selectedSlotTime,
+      status: status || 'vehicle_received',
+      totalAmount: Number(totalAmount) || 499,
+      finalAmount: Number(totalAmount) || 499,
       paymentMode: paymentMode || 'Cash',
-      paymentStatus: 'Paid',
+      paymentStatus: paymentStatus || (paymentMode === 'Pay After Service' ? 'Pending' : 'Paid'),
       assignedBay: bayAssigned || 'BAY 1',
       bayAssigned: bayAssigned || 'BAY 1',
       staffAssigned: staffAssigned || 'Rahul Kumar',
@@ -508,9 +557,11 @@ router.post('/walkin', async (req, res) => {
       customer.totalBookings += 1;
       customer.totalSpent += walkInBooking.totalAmount;
       customer.lastVisit = new Date();
-      const hasVeh = customer.vehicles.some(v => v.regNumber === regNo);
-      if (!hasVeh) {
-        customer.vehicles.push({ regNumber: regNo, brand: brandName, model: modelName, type: vehicleType || 'Sedan', totalVisits: 1, lastWashDate: new Date() });
+      if (regNo && regNo !== 'N/A') {
+        const hasVeh = customer.vehicles.some(v => v.regNumber === regNo);
+        if (!hasVeh) {
+          customer.vehicles.push({ regNumber: regNo, brand: brandName, model: modelName, type: vehicleType || 'Sedan', totalVisits: 1, lastWashDate: new Date() });
+        }
       }
       await customer.save();
     } else {
@@ -521,7 +572,7 @@ router.post('/walkin', async (req, res) => {
         totalSpent: walkInBooking.totalAmount,
         lastVisit: new Date(),
         loyaltyPoints: 50,
-        vehicles: [{ regNumber: regNo, brand: brandName, model: modelName, type: vehicleType || 'Sedan', totalVisits: 1, lastWashDate: new Date() }]
+        vehicles: (regNo && regNo !== 'N/A') ? [{ regNumber: regNo, brand: brandName, model: modelName, type: vehicleType || 'Sedan', totalVisits: 1, lastWashDate: new Date() }] : []
       });
       await customer.save();
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, ExternalLink, X } from 'lucide-react';
+import { MessageSquare, ExternalLink, X, CheckCircle2 } from 'lucide-react';
 
 export default function WhatsappNotificationToast({
   toast,
@@ -10,36 +10,40 @@ export default function WhatsappNotificationToast({
   return (
     <div style={{
       position: 'fixed',
-      bottom: '24px',
-      right: '24px',
-      zIndex: 9999,
+      bottom: 'clamp(16px, 3vw, 24px)',
+      right: 'clamp(12px, 3vw, 24px)',
+      zIndex: 100000,
       background: 'linear-gradient(135deg, #072e23 0%, #061e1b 100%)',
-      border: '1px solid #25D366',
-      boxShadow: '0 10px 30px rgba(37, 211, 102, 0.35)',
+      border: '1.5px solid #25D366',
+      boxShadow: '0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(37, 211, 102, 0.35)',
       borderRadius: '12px',
-      padding: '16px 20px',
-      maxWidth: '420px',
+      padding: '16px 18px',
+      maxWidth: 'min(92vw, 440px)',
       color: '#FFFFFF',
       display: 'flex',
       flexDirection: 'column',
-      gap: '8px'
+      gap: '8px',
+      boxSizing: 'border-box'
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: '#25D366', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, color: '#25D366', fontSize: '0.92rem' }}>
           <MessageSquare size={18} color="#25D366" />
           WhatsApp Alert Auto-Dispatched
         </div>
         <button
           onClick={onClose}
-          style={{ background: 'transparent', border: 'none', color: '#8A99AD', cursor: 'pointer', padding: 0 }}
+          style={{ background: 'transparent', border: 'none', color: '#8A99AD', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+          title="Close Notification"
         >
           <X size={16} />
         </button>
       </div>
-      <div style={{ fontSize: '0.82rem', color: '#CCD0CF' }}>
+
+      <div style={{ fontSize: '0.82rem', color: '#CCD0CF', lineHeight: 1.4 }}>
         Live status alert & tracking link sent to <strong>{toast.customerName}</strong> ({toast.phone}).
       </div>
-      <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+
+      <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
         <a
           href={toast.waLinkCustomer || toast.waLink}
           target="_blank"

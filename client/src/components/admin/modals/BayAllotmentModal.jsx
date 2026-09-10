@@ -65,7 +65,7 @@ export default function BayAllotmentModal({
               >
                 <div>
                   <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    🚗 {b.vehicleNumber} <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)' }}>({b.trackingCode})</span>
+                    {b.vehicleNumber} <span style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)' }}>({b.trackingCode})</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
                     {b.customerName} • {b.serviceName || b.packageName}
@@ -86,7 +86,7 @@ export default function BayAllotmentModal({
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  ⚡ Allot & Start Wash →
+                  Allot & Start Wash →
                 </button>
               </div>
             ))
