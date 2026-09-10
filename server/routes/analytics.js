@@ -114,7 +114,19 @@ router.get('/expenses', async (req, res) => {
 // POST Add new expense
 router.post('/expenses', async (req, res) => {
   try {
-    const expense = new Expense(req.body);
+    const { category, amount, date, description, notes, paymentMethod, billImage } = req.body;
+    if (!amount || isNaN(Number(amount))) {
+      return res.status(400).json({ error: 'Valid expense amount is required' });
+    }
+    const expense = new Expense({
+      category: category || 'Supplies',
+      amount: Number(amount),
+      date: date || new Date().toISOString().split('T')[0],
+      description: description || notes || '',
+      notes: notes || description || '',
+      paymentMethod: paymentMethod || 'UPI',
+      billImage: billImage || ''
+    });
     await expense.save();
     res.status(201).json(expense);
   } catch (err) {

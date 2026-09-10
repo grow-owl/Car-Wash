@@ -1,0 +1,10 @@
+export * from './client';
+export * from './auth.api';
+export * from './bookings.api';
+export * from './services.api';
+export * from './crm.api';
+export * from './marketing.api';
+export * from './analytics.api';
+export * from './staff.api';
+export * from './payment.api';
+export { default } from './client';

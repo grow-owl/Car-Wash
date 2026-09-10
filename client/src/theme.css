@@ -1036,3 +1036,22 @@ main.public-main-content {
   gap: 5px !important;
   box-sizing: border-box !important;
 }
+
+/* Responsive Expenses Views */
+@media (max-width: 640px) {
+  .expenses-desktop-table {
+    display: none !important;
+  }
+  .expenses-mobile-cards {
+    display: flex !important;
+  }
+}
+
+@media (min-width: 641px) {
+  .expenses-desktop-table {
+    display: block !important;
+  }
+  .expenses-mobile-cards {
+    display: none !important;
+  }
+}
