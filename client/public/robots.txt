@@ -4,4 +4,4 @@ Disallow: /#admin/
 Disallow: /#owner
 Disallow: /api/
 
-Sitemap: https://carwash-auto.com/sitemap.xml
+Sitemap: https://car-wash-grow-owl.vercel.app/sitemap.xml

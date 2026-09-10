@@ -75,6 +75,18 @@ export default function App() {
     }
   }, []);
 
+  // Dynamic Browser Tab SEO Title
+  useEffect(() => {
+    const titles = {
+      home: 'CAR WASH | Premium Auto Detailing, Foam Wash & Ceramic Coating in Siliguri',
+      booking: 'Book Car Wash Online | Instant Slot Booking - CAR WASH',
+      track: 'Live Wash Queue Tracking | CAR WASH',
+      crm: 'Customer Portal & Garage History | CAR WASH',
+      admin: 'Live Bay Management & Dashboard | CAR WASH'
+    };
+    document.title = titles[activeTab] || titles.home;
+  }, [activeTab]);
+
   const handleAdminSignOut = () => {
     localStorage.removeItem('carwash_admin_token');
     localStorage.removeItem('carwash_admin_user');
