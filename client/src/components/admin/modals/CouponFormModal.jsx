@@ -37,7 +37,7 @@ export default function CouponFormModal({
           <input
             type="text"
             required
-            placeholder="Code (e.g. FLAT100)"
+            placeholder="Code (e.g. CARWASHFLAT50)"
             value={cpnCode}
             onChange={(e) => setCpnCode(e.target.value.toUpperCase())}
             className="input-field"
@@ -47,7 +47,7 @@ export default function CouponFormModal({
           <input
             type="number"
             required
-            placeholder="Discount (₹)"
+            placeholder="Discount (₹, e.g. 50)"
             value={cpnValue}
             onChange={(e) => setCpnValue(e.target.value)}
             className="input-field"

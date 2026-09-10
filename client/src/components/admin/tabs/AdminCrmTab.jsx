@@ -302,8 +302,22 @@ export default function AdminCrmTab({
               {leads.map((ld) => {
                 const cleanPhone = ld.phone?.replace(/[^0-9]/g, '') || '';
                 const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
-                const promoCoupon = coupons.length > 0 ? coupons[0].code : 'FLAT100';
-                const promoDiscount = coupons.length > 0 ? (coupons[0].discountValue || 100) : 100;
+                // Find active promo coupon (prefer CARWASHFLAT50 or active coupon), fallback to CARWASHFLAT50
+                const promoCouponObj = 
+                  coupons.find(c => (c.code === 'CARWASHFLAT50' || c.code?.toUpperCase() === 'CARWASHFLAT50') && c.active !== false) ||
+                  coupons.find(c => c.code === 'CARWASHFLAT50' || c.code?.toUpperCase() === 'CARWASHFLAT50') ||
+                  coupons.find(c => c.active !== false) ||
+                  (coupons.length > 0 ? coupons[0] : null);
+
+                const promoCoupon = promoCouponObj?.code || 'CARWASHFLAT50';
+                const promoDiscount = promoCouponObj
+                  ? (promoCouponObj.value !== undefined
+                      ? promoCouponObj.value
+                      : (promoCouponObj.discountValue !== undefined
+                          ? promoCouponObj.discountValue
+                          : (promoCouponObj.discount !== undefined ? promoCouponObj.discount : 50)))
+                  : 50;
+
                 const leadName = ld.name || ld.customerName || 'Valued Customer';
                 const leadSvc = ld.service || ld.serviceName || 'Car Wash & Detailing Service';
 

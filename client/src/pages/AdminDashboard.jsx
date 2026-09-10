@@ -139,7 +139,7 @@ export default function AdminDashboard({
 
   // Coupon form
   const [cpnCode, setCpnCode] = useState('');
-  const [cpnValue, setCpnValue] = useState(100);
+  const [cpnValue, setCpnValue] = useState(50);
   const [cpnMinOrder, setCpnMinOrder] = useState(499);
 
   // Staff Form State
