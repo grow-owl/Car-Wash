@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { getSlotsAvailability } from '../../../api';
+import { getVehicleIcon } from '../../../utils/constants';
 
 const MULTIPLIERS = {
   'Hatchback': 0.85,
@@ -321,25 +322,33 @@ export default function WalkInBookingModal({
               }}
             />
 
-            <select
-              value={vehicleType}
-              onChange={handleVehTypeChange}
-              className="admin-select"
-              style={{
-                width: '100%',
-                height: '42px',
-                minHeight: '42px',
-                maxHeight: '42px',
-                boxSizing: 'border-box',
-                fontSize: '0.88rem',
-                padding: '0 12px',
-                color: 'var(--accent-cyan)'
-              }}
-            >
-              <option value="Hatchback">Hatchback</option>
-              <option value="Sedan">Sedan</option>
-              <option value="SUV">SUV</option>
-            </select>
+            <div style={{ position: 'relative', width: '100%' }}>
+              <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', zIndex: 1 }}>
+                <img src={getVehicleIcon(vehicleType)} alt="" style={{ height: '16px', maxWidth: '26px', objectFit: 'contain' }} />
+              </div>
+              <select
+                value={vehicleType}
+                onChange={handleVehTypeChange}
+                className="admin-select"
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  minHeight: '42px',
+                  maxHeight: '42px',
+                  boxSizing: 'border-box',
+                  fontSize: '0.88rem',
+                  padding: '0 12px 0 48px',
+                  color: 'var(--accent-cyan)'
+                }}
+              >
+                <option value="2-Wheeler">2-Wheeler</option>
+                <option value="Hatchback">Hatchback</option>
+                <option value="Sedan">Sedan</option>
+                <option value="Compact SUV">Compact SUV</option>
+                <option value="SUV">SUV / MUV</option>
+                <option value="Luxury">Luxury</option>
+              </select>
+            </div>
           </div>
 
           {/* Box 1: Packages Section */}

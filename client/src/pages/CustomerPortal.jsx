@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Mail, Lock, Car, Plus, Key, Zap, MapPin } from 'lucide-react';
+import { Award, Gift, Share2, Shield, Star, Check, Copy, Sparkles, CreditCard, MessageCircle, Users, CheckCircle, Clock, LogOut, User, Phone, Mail, Lock, Plus, Key, Zap, MapPin } from 'lucide-react';
 import { getMemberships, subscribeMembership, getCustomerDetails, buyGiftCard, loginCustomer, signupCustomer, addCustomerVehicle, createRazorpayOrder, verifyRazorpayPayment, reportPaymentFailure } from '../api';
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import { cleanText } from '../utils/cleanText';
+import { getVehicleIcon } from '../utils/constants';
 import SectionDivider from '../components/SectionDivider';
 
 export default function CustomerPortal({ currentUser: propUser, setCurrentUser: propSetUser, onSignOut: propSignOut }) {
@@ -414,7 +415,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: 600 }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255, 195, 0, 0.15)', border: '1px solid var(--accent-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-gold)', flexShrink: 0 }}>
-                    <Car size={15} />
+                    <img src={getVehicleIcon('Sedan')} alt="" style={{ height: '14px', maxWidth: '20px', objectFit: 'contain' }} />
                   </div>
                   <span>Saved Vehicle Garage</span>
                 </div>
@@ -836,7 +837,7 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
                 <h3 style={{ fontSize: '1.35rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: '#FFFFFF' }}>
-                  <Car size={20} color="var(--accent-gold)" /> My Garage (Saved Vehicles)
+                  <img src={getVehicleIcon('Sedan')} alt="" style={{ height: '20px', maxWidth: '30px', objectFit: 'contain', filter: 'drop-shadow(0 0 6px rgba(255, 195, 0, 0.8))' }} /> My Garage (Saved Vehicles)
                 </h3>
               </div>
             </div>
@@ -871,9 +872,16 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                     <span style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--accent-gold)', letterSpacing: '0.04em' }}>
                       {v.regNumber}
                     </span>
-                    <span className="badge badge-aqua" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
-                      {v.type || 'Sedan'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <img
+                        src={getVehicleIcon(v.type)}
+                        alt=""
+                        style={{ height: '16px', maxWidth: '28px', objectFit: 'contain' }}
+                      />
+                      <span className="badge badge-aqua" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                        {v.type || 'Sedan'}
+                      </span>
+                    </div>
                   </div>
                   <div style={{ fontSize: '0.88rem', color: '#FFFFFF', fontWeight: 600 }}>
                     {v.brand || 'Vehicle'} {v.model}

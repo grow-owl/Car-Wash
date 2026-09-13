@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, Plus, Calendar, Search, MessageSquare, History, FileText, Trash2 } from 'lucide-react';
 import { generateInvoiceWhatsAppUrl } from '../../../utils';
+import { getVehicleIcon } from '../../../utils/constants';
 import ServiceDropdownPill from '../ServiceDropdownPill';
 
 export default function AdminBookingsTab({
@@ -180,7 +181,10 @@ export default function AdminBookingsTab({
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <img src={getVehicleIcon(b.vehicleType)} alt="" style={{ height: '14px', maxWidth: '22px', objectFit: 'contain' }} />
+                          <span>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</span>
+                        </div>
                       </td>
                       <td style={{ padding: '10px' }}>
                         <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
@@ -421,8 +425,9 @@ export default function AdminBookingsTab({
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--ice-tint)' }}>
-                    <span style={{ fontWeight: 700, color: '#FFFFFF' }}>
-                      🚗 {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                    <span style={{ fontWeight: 700, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <img src={getVehicleIcon(b.vehicleType)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                      {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
                     </span>
                     <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.75rem' }}>
                       {b.date} • {b.slotTime || '10:00 AM'}

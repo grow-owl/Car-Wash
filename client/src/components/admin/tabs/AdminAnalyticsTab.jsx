@@ -1,6 +1,7 @@
 import React from 'react';
-import { Car, Plus, Sparkles, CheckCircle2, ChevronRight, Clock, ShieldCheck, User } from 'lucide-react';
+import { Plus, Sparkles, CheckCircle2, ChevronRight, Clock, ShieldCheck, User } from 'lucide-react';
 import { formatCurrency } from '../../../utils';
+import { getVehicleIcon } from '../../../utils/constants';
 import ServiceDropdownPill from '../ServiceDropdownPill';
 
 export default function AdminAnalyticsTab({
@@ -37,7 +38,17 @@ export default function AdminAnalyticsTab({
             alignItems: 'center',
             gap: '8px'
           }}>
-            <Car size={22} color="var(--accent-cyan)" /> Live Bay Management
+            <img
+              src={getVehicleIcon('Sedan')}
+              alt=""
+              style={{
+                height: '22px',
+                maxWidth: '34px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.8))'
+              }}
+            />
+            Live Bay Management
           </h3>
         </div>
 
@@ -137,8 +148,9 @@ export default function AdminAnalyticsTab({
                     }}>
                       {/* Top Row: Vehicle Number & Type */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '1.02rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.02em' }}>
-                          🚗 {activeCar.vehicleNumber}
+                        <span style={{ fontSize: '1.02rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.02em', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <img src={getVehicleIcon(activeCar.vehicleType || activeCar.vehicleModel)} alt="" style={{ height: '16px', maxWidth: '28px', objectFit: 'contain' }} />
+                          {activeCar.vehicleNumber}
                         </span>
                         <span style={{
                           fontSize: '0.72rem',
@@ -479,8 +491,9 @@ export default function AdminAnalyticsTab({
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
-                    <span style={{ fontWeight: 700, color: '#FFFFFF' }}>
-                      🚗 {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                    <span style={{ fontWeight: 700, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                      {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
                     </span>
                     <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.74rem' }}>
                       {b.slotTime || '10:00 AM'}

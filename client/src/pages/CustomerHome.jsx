@@ -4,6 +4,7 @@ import { getPackages, getServices } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import SectionDivider from '../components/SectionDivider';
 import { cleanText } from '../utils/cleanText';
+import { getVehicleIcon } from '../utils/constants';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService, onSelectPackage }) {
   const [packages, setPackages] = useState([]);
@@ -276,13 +277,24 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 <div style={{
                   position: 'absolute',
                   left: '14px',
+                  width: '28px',
                   pointerEvents: 'none',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
                   color: 'var(--accent-cyan)',
                   zIndex: 2
                 }}>
-                  <Car size={18} />
+                  <img
+                    src={getVehicleIcon(vehicleSize)}
+                    alt={vehicleSize}
+                    style={{
+                      height: '18px',
+                      maxWidth: '28px',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 0 4px rgba(0, 229, 255, 0.8))'
+                    }}
+                  />
                 </div>
 
                 <select
@@ -297,7 +309,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                     background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(17, 33, 45, 0.95) 100%)',
                     border: '1.5px solid rgba(0, 229, 255, 0.45)',
                     borderRadius: '12px',
-                    padding: '11px 40px 11px 42px',
+                    padding: '11px 42px 11px 56px',
                     color: '#FFFFFF',
                     fontWeight: 700,
                     fontSize: '0.9rem',

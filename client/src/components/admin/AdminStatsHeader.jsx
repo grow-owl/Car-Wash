@@ -1,6 +1,7 @@
 import React from 'react';
-import { Calendar, Users, Car, Archive } from 'lucide-react';
+import { Calendar, Users, Archive } from 'lucide-react';
 import { getLocalDateString } from '../../utils';
+import { getVehicleIcon } from '../../utils/constants';
 
 export default function AdminStatsHeader({
   bookings = [],
@@ -55,7 +56,7 @@ export default function AdminStatsHeader({
       title: "Live Bays In Use",
       number: `${occupiedBaysCount} / ${totalBays}`,
       unit: 'Active',
-      icon: Car,
+      customIcon: getVehicleIcon('Sedan'),
       color: '#00E5FF',
       glow: 'rgba(0, 229, 255, 0.15)',
       border: 'rgba(0, 229, 255, 0.35)'
@@ -138,7 +139,20 @@ export default function AdminStatsHeader({
               flexShrink: 0,
               border: `1px solid ${st.border}`
             }}>
-              <IconComponent size={18} color={st.color} />
+              {st.customIcon ? (
+                <img
+                  src={st.customIcon}
+                  alt=""
+                  style={{
+                    height: '18px',
+                    maxWidth: '28px',
+                    objectFit: 'contain',
+                    filter: `drop-shadow(0 0 5px ${st.color})`
+                  }}
+                />
+              ) : (
+                <IconComponent size={18} color={st.color} />
+              )}
             </div>
           </div>
         );

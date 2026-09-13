@@ -3,8 +3,8 @@ import {
   Calendar,
   Clock,
   Car,
-  Bike,
   Check,
+  CheckCircle,
   CheckCircle2,
   Sparkles,
   ShieldCheck,
@@ -15,7 +15,8 @@ import {
   CreditCard,
   Smartphone,
   Lock,
-  Wallet
+  Wallet,
+  Plus
 } from 'lucide-react';
 import {
   getServices,
@@ -34,6 +35,21 @@ import {
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import { cleanText } from '../utils/cleanText';
+import { VEHICLE_ICONS } from '../utils/constants';
+
+// Fallback high-resolution service catalog images hosted on Cloudinary
+const getFallbackServiceImage = (titleOrCategory = '') => {
+  const s = (titleOrCategory || '').toLowerCase();
+  if (s.includes('wax')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg';
+  if (s.includes('polish')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg';
+  if (s.includes('engine')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg';
+  if (s.includes('tyre') || s.includes('wheel')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg';
+  if (s.includes('vacuum')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg';
+  if (s.includes('spa') || s.includes('detail') || s.includes('ceramic')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg';
+  if (s.includes('interior')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg';
+  if (s.includes('full')) return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg';
+  return 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg';
+};
 
 export default function BookingFlow({
   initialVehicle = 'Sedan',
@@ -473,12 +489,36 @@ export default function BookingFlow({
   };
 
   const vehiclesList = [
-    { type: '2-Wheeler', desc: 'Bike / Scooter / Superbike', isBike: true },
-    { type: 'Hatchback', desc: 'Alto / Swift / i20 / Kwid' },
-    { type: 'Sedan', desc: 'City / Verna / Ciaz / Dzire' },
-    { type: 'Compact SUV', desc: 'Nexon / Brezza / Creta / Venue' },
-    { type: 'SUV / MUV', desc: 'Fortuner / Innova / Scorpio / XUV700' },
-    { type: 'Luxury', desc: 'BMW / Audi / Mercedes / Jaguar' }
+    {
+      type: '2-Wheeler',
+      desc: 'Bike / Scooter / Superbike',
+      icon: VEHICLE_ICONS['2-Wheeler']
+    },
+    {
+      type: 'Hatchback',
+      desc: 'Alto / Swift / i20 / Kwid',
+      icon: VEHICLE_ICONS['Hatchback']
+    },
+    {
+      type: 'Sedan',
+      desc: 'City / Verna / Ciaz / Dzire',
+      icon: VEHICLE_ICONS['Sedan']
+    },
+    {
+      type: 'Compact SUV',
+      desc: 'Nexon / Brezza / Creta / Venue',
+      icon: VEHICLE_ICONS['Compact SUV']
+    },
+    {
+      type: 'SUV / MUV',
+      desc: 'Fortuner / Innova / Scorpio / XUV700',
+      icon: VEHICLE_ICONS['SUV / MUV']
+    },
+    {
+      type: 'Luxury',
+      desc: 'BMW / Audi / Mercedes / Jaguar',
+      icon: VEHICLE_ICONS['Luxury']
+    }
   ];
 
   const displayPackagesList = (packages && packages.length >= 3 ? packages : primary3Packages).slice().sort((a, b) => a.price - b.price);
@@ -506,7 +546,7 @@ export default function BookingFlow({
     : services.filter(s => (s.category || 'wash').toLowerCase() === customCategoryFilter);
 
   return (
-    <div className="container" style={{ paddingTop: '16px', paddingBottom: 'clamp(50px, 8vw, 90px)', maxWidth: '1040px' }}>
+    <div className="container" style={{ paddingTop: '16px', paddingBottom: 'clamp(50px, 8vw, 90px)', maxWidth: '1180px' }}>
       
       {/* COMPACT MINIMAL HEADER */}
       <div style={{ textAlign: 'center', marginBottom: '14px' }}>
@@ -516,53 +556,32 @@ export default function BookingFlow({
       </div>
 
       {/* SLEEK 3-STEP PROGRESS TRACK */}
-      <div className="wizard-step-bar" style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginBottom: '20px',
-        background: 'rgba(0, 31, 35, 0.65)',
-        padding: '8px 16px',
-        borderRadius: '12px',
-        border: '1px solid rgba(74, 92, 106, 0.3)',
-        gap: '8px',
-        flexWrap: 'wrap'
-      }}>
+      <div className="wizard-step-bar">
         {[
           { num: 1, label: 'Services' },
           { num: 2, label: 'Vehicle' },
           { num: 3, label: 'Slot & Confirm' }
-        ].map(st => (
-          <div
-            key={st.num}
-            onClick={() => setStep(st.num)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              opacity: step === st.num ? 1 : 0.6
-            }}
-          >
-            <div style={{
-              width: '26px',
-              height: '26px',
-              borderRadius: '50%',
-              background: step === st.num ? 'var(--accent-aqua)' : 'rgba(0, 49, 53, 0.8)',
-              color: step === st.num ? '#003135' : 'var(--text-main)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '0.74rem',
-              border: step === st.num ? '2px solid var(--accent-aqua)' : '1px solid var(--border-light)'
-            }}>
-              {st.num}
+        ].map(st => {
+          const isCurrent = step === st.num;
+          const isCompleted = step > st.num;
+          const statusClass = isCurrent ? 'active' : isCompleted ? 'completed' : 'pending';
+
+          return (
+            <div
+              key={st.num}
+              onClick={() => setStep(st.num)}
+              className={`wizard-step-item ${statusClass}`}
+              title={`Step ${st.num}: ${st.label}`}
+            >
+              <div className="wizard-step-badge">
+                {isCompleted ? <Check size={14} strokeWidth={3} /> : st.num}
+              </div>
+              <div className="wizard-step-label">
+                {st.label}
+              </div>
             </div>
-            <div style={{ fontSize: '0.82rem', fontWeight: step === st.num ? 800 : 600, color: step === st.num ? 'var(--accent-aqua)' : '#CCD0CF' }}>
-              {st.label}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* MAIN STEP CONTENT CONTAINER */}
@@ -677,11 +696,15 @@ export default function BookingFlow({
                     <p style={{ fontSize: '0.82rem' }}>No services found in this category.</p>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+                  <div className="services-box-grid">
                     {filteredServices.map((s) => {
                       const basePrice = Number(s.price || s.basePrice || 499);
                       const origPrice = s.originalPrice ? Number(s.originalPrice) : Math.round(basePrice * 1.35);
                       const isChecked = selectedCustomServices.some(cs => cs._id === s._id || cs.name.toLowerCase() === s.name.toLowerCase());
+                      const serviceImg = (s.image && typeof s.image === 'string' && s.image.trim().length > 5)
+                        ? s.image.trim()
+                        : getFallbackServiceImage(s.name || s.category);
+
                       const itemToToggle = {
                         _id: s._id,
                         name: s.name,
@@ -689,60 +712,98 @@ export default function BookingFlow({
                         originalPrice: origPrice,
                         category: s.category,
                         durationMins: s.durationMins || 30,
-                        description: s.description
+                        description: s.description,
+                        image: serviceImg
                       };
 
                       return (
                         <div
                           key={s._id || s.name}
                           onClick={() => toggleCustomService(itemToToggle)}
-                          style={{
-                            background: isChecked ? 'rgba(0, 229, 255, 0.12)' : 'rgba(0, 49, 53, 0.55)',
-                            border: isChecked ? '1px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.3)',
-                            borderRadius: '11px',
-                            padding: '13px 14px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px',
-                            transition: 'all 0.15s ease',
-                            boxSizing: 'border-box'
-                          }}
+                          className={`service-box-card ${isChecked ? 'selected' : ''}`}
                         >
-                          {/* LEFT: Checkbox + Name + Description + Time */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', flex: 1, minWidth: 0 }}>
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {}}
-                              style={{ width: '17px', height: '17px', accentColor: 'var(--accent-cyan)', cursor: 'pointer', flexShrink: 0 }}
+                          {/* IMAGE BANNER CONTAINER */}
+                          <div className="service-box-img-wrapper">
+                            <img
+                              src={serviceImg}
+                              alt={cleanText(s.name)}
+                              loading="lazy"
+                              decoding="async"
+                              className="service-box-img"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = getFallbackServiceImage(s.name || s.category);
+                              }}
                             />
-                            <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#FFFFFF' }}>{cleanText(s.name)}</span>
-                                <span style={{ fontSize: '0.66rem', color: 'var(--ice-tint)', background: 'rgba(255, 255, 255, 0.08)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                  ~{s.durationMins || 30}m
-                                </span>
-                              </div>
-                              {s.description && (
-                                <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {cleanText(s.description)}
-                                </div>
+                            <div className="service-box-img-overlay" />
+
+                            {/* TOP-LEFT CHECK / SELECTION BADGE */}
+                            <div className={`service-box-badge-check ${isChecked ? 'checked' : 'unchecked'}`}>
+                              {isChecked ? (
+                                <>
+                                  <Check size={11} strokeWidth={3.5} />
+                                  <span>Selected</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.7)', display: 'inline-block' }} />
+                                  <span>Select</span>
+                                </>
                               )}
                             </div>
+
+                            {/* TOP-RIGHT DURATION BADGE */}
+                            <div className="service-box-badge-duration">
+                              <Clock size={11} />
+                              <span>~{s.durationMins || 30}m</span>
+                            </div>
+
+                            {/* POPULAR BADGE */}
+                            {(s.isPopular || s.badge) && (
+                              <div className="service-box-badge-popular">
+                                ★ {s.badge || 'POPULAR'}
+                              </div>
+                            )}
                           </div>
 
-                          {/* RIGHT: Price perfectly right-aligned */}
-                          <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                            {origPrice > basePrice && (
-                              <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.74rem', opacity: 0.7 }}>
-                                ₹{origPrice}
-                              </span>
-                            )}
-                            <span style={{ fontWeight: 800, fontSize: '0.98rem', color: 'var(--accent-gold)' }}>
-                              ₹{basePrice}
-                            </span>
+                          {/* CARD CONTENT */}
+                          <div className="service-box-body">
+                            <div>
+                              <h4 className="service-box-title" title={cleanText(s.name)}>
+                                {cleanText(s.name)}
+                              </h4>
+                              {s.description && (
+                                <p className="service-box-desc" title={cleanText(s.description)}>
+                                  {cleanText(s.description)}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* FOOTER: PRICING + TOGGLE ACTION */}
+                            <div className="service-box-footer">
+                              <div className="service-box-price-group">
+                                {origPrice > basePrice && (
+                                  <span className="service-box-orig-price">
+                                    ₹{origPrice}
+                                  </span>
+                                )}
+                                <span className="service-box-price">
+                                  ₹{basePrice}
+                                </span>
+                              </div>
+
+                              <div className={`service-box-btn ${isChecked ? 'selected' : 'unselected'}`}>
+                                {isChecked ? (
+                                  <>
+                                    <Check size={11} strokeWidth={3} /> Added
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={11} strokeWidth={2.5} /> Add
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -752,82 +813,149 @@ export default function BookingFlow({
               </div>
             )}
 
-            {/* MODE 2: PRE-MADE PACKAGES */}
+            {/* MODE 2: PRE-MADE PACKAGES (MATCHING HOMEPAGE POPULAR PACKAGES UI) */}
             {bookingMode === 'packages' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div className="grid-3" style={{ gap: '20px', marginBottom: '24px' }}>
                 {displayPackagesList.map((pkg, idx) => {
                   const pkgName = cleanText(pkg.title || pkg.name);
                   const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
+                  const isPopular = pkg.isPopular || pkgName.toLowerCase().includes('premium shine');
+                  const servicesList = pkg.includedServices || pkg.services || [];
+                  const origPrice = pkg.originalPrice || (pkg.price === 499 ? 699 : pkg.price === 799 ? 1099 : 1999);
 
                   return (
                     <div
                       key={idx}
                       onClick={() => setSelectedService(pkg)}
+                      className="glass-panel"
                       style={{
-                        background: isSelected
-                          ? 'rgba(15, 164, 175, 0.18)'
-                          : (pkg.isPopular || pkgName.toLowerCase().includes('premium shine'))
-                            ? 'rgba(255, 195, 0, 0.06)'
-                            : 'rgba(0, 49, 53, 0.55)',
-                        border: isSelected
-                          ? '2px solid var(--accent-aqua)'
-                          : (pkg.isPopular || pkgName.toLowerCase().includes('premium shine'))
-                            ? '2px solid var(--accent-gold)'
-                            : '1px solid rgba(74, 92, 106, 0.3)',
-                        borderRadius: '12px',
-                        padding: '14px 16px',
+                        padding: '24px 22px',
+                        borderRadius: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                         cursor: 'pointer',
                         position: 'relative',
-                        transition: 'all 0.2s ease',
-                        boxShadow: (pkg.isPopular || pkgName.toLowerCase().includes('premium shine'))
-                          ? '0 0 14px rgba(255, 195, 0, 0.18)'
-                          : 'none'
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        border: isSelected
+                          ? '2px solid var(--accent-aqua)'
+                          : isPopular
+                            ? '2px solid var(--accent-gold)'
+                            : '1px solid rgba(74, 92, 106, 0.35)',
+                        background: isSelected
+                          ? 'linear-gradient(135deg, rgba(0, 49, 53, 0.95) 0%, rgba(2, 79, 87, 0.55) 100%)'
+                          : isPopular
+                            ? 'linear-gradient(135deg, rgba(37, 55, 69, 0.95) 0%, rgba(17, 33, 45, 0.95) 100%)'
+                            : 'var(--bg-glass-card)',
+                        boxShadow: isSelected
+                          ? '0 0 24px rgba(0, 229, 255, 0.35), inset 0 0 16px rgba(0, 229, 255, 0.08)'
+                          : isPopular
+                            ? '0 0 20px rgba(255, 195, 0, 0.22)'
+                            : '0 4px 16px rgba(0, 0, 0, 0.25)',
+                        transform: isSelected ? 'scale(1.015)' : 'none'
                       }}
                     >
-                      {(pkg.isPopular || pkgName.toLowerCase().includes('premium shine')) && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '-9px',
-                          right: '12px',
-                          background: 'var(--accent-gold)',
-                          color: '#06141B',
-                          padding: '2px 10px',
-                          borderRadius: '10px',
-                          fontWeight: 800,
-                          fontSize: '0.64rem',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
-                        }}>
-                          ★ MOST POPULAR
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <h4 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#FFFFFF', margin: 0 }}>{pkgName}</h4>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-aqua)' }}>₹{pkg.price}</div>
-                      </div>
-
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: '1.4' }}>
-                        {cleanText(pkg.description || pkg.tagline)}
-                      </p>
-
-                      {pkg.includedServices && pkg.includedServices.length > 0 && (
-                        <div style={{ borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '8px', marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          {pkg.includedServices.map((inc, i) => (
-                            <span key={i} style={{ fontSize: '0.68rem', color: '#CCD0CF', background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px' }}>
-                              ✓ {cleanText(inc)}
+                      <div>
+                        {/* Top Badges Row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '26px', marginBottom: '10px' }}>
+                          {isPopular ? (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'var(--accent-gold)',
+                              color: '#06141B',
+                              padding: '3px 10px',
+                              borderRadius: '12px',
+                              fontWeight: 800,
+                              fontSize: '0.68rem',
+                              letterSpacing: '0.04em'
+                            }}>
+                              ★ MOST POPULAR
                             </span>
-                          ))}
-                        </div>
-                      )}
+                          ) : <div />}
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '8px', marginTop: '8px' }}>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--ice-tint)' }}>~{pkg.durationMins || 50} mins</span>
-                        {isSelected && (
-                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-aqua)', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <Check size={12} /> Selected
+                          {isSelected && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'rgba(0, 229, 255, 0.2)',
+                              color: 'var(--accent-aqua)',
+                              border: '1px solid var(--accent-aqua)',
+                              padding: '3px 10px',
+                              borderRadius: '12px',
+                              fontWeight: 800,
+                              fontSize: '0.68rem'
+                            }}>
+                              <Check size={12} strokeWidth={3} /> SELECTED
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Title & Tagline */}
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 4px 0', color: '#FFFFFF' }}>
+                          {pkgName}
+                        </h3>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginBottom: '14px', lineHeight: '1.4' }}>
+                          {cleanText(pkg.description || pkg.tagline || 'Transparent pricing with all-inclusive services')}
+                        </div>
+
+                        {/* Price & Duration */}
+                        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid rgba(74, 92, 106, 0.25)' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                            <span style={{ textDecoration: 'line-through', color: 'var(--text-subtle)', fontSize: '0.95rem', opacity: 0.75 }}>
+                              ₹{origPrice}
+                            </span>
+                            <span style={{ fontSize: '1.95rem', fontWeight: 900, color: (isPopular && !isSelected) ? 'var(--accent-gold)' : 'var(--accent-cyan)' }}>
+                              ₹{pkg.price}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 8px', borderRadius: '6px' }}>
+                            <Clock size={12} /> ~{pkg.durationMins || 50} mins
                           </span>
-                        )}
+                        </div>
+
+                        {/* Included Services Checklist */}
+                        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 22px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {servicesList.map((service, sIdx) => (
+                            <li key={sIdx} style={{ fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#FFFFFF' }}>
+                              <CheckCircle size={15} color={(isPopular && !isSelected) ? 'var(--accent-gold)' : 'var(--accent-cyan)'} style={{ flexShrink: 0 }} />
+                              <span>{cleanText(service)}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
+
+                      {/* Card Selection Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedService(pkg);
+                        }}
+                        className={isSelected ? "btn-cyan" : isPopular ? "btn-gold" : "btn-cyan"}
+                        style={{
+                          width: '100%',
+                          justifyContent: 'center',
+                          padding: '11px',
+                          fontSize: '0.88rem',
+                          fontWeight: 800,
+                          borderRadius: '10px',
+                          marginTop: 'auto',
+                          background: isSelected ? 'var(--accent-aqua)' : undefined,
+                          color: isSelected ? '#003135' : undefined,
+                          boxShadow: isSelected ? '0 0 16px rgba(0, 229, 255, 0.45)' : undefined
+                        }}
+                      >
+                        {isSelected ? (
+                          <>
+                            <Check size={16} strokeWidth={3} /> Selected Package
+                          </>
+                        ) : (
+                          'Choose Package'
+                        )}
+                      </button>
                     </div>
                   );
                 })}
@@ -839,6 +967,10 @@ export default function BookingFlow({
                 onClick={() => {
                   if (bookingMode === 'custom' && selectedCustomServices.length === 0) {
                     alert('Please select at least 1 service to build your custom combo.');
+                    return;
+                  }
+                  if (bookingMode === 'packages' && !selectedService) {
+                    alert('Please select a wash package to proceed.');
                     return;
                   }
                   setStep(2);
@@ -866,30 +998,48 @@ export default function BookingFlow({
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-              {vehiclesList.map(v => (
-                <div
-                  key={v.type}
-                  onClick={() => setVehicleType(v.type)}
-                  style={{
-                    background: vehicleType === v.type ? 'rgba(15, 164, 175, 0.18)' : 'rgba(0, 49, 53, 0.55)',
-                    border: vehicleType === v.type ? '1.5px solid var(--accent-aqua)' : '1px solid rgba(74, 92, 106, 0.3)',
-                    borderRadius: '10px',
-                    padding: '14px 10px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {v.isBike ? (
-                    <Bike size={24} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 6px auto' }} />
-                  ) : (
-                    <Car size={24} style={{ color: vehicleType === v.type ? 'var(--accent-aqua)' : 'var(--ice-tint)', margin: '0 auto 6px auto' }} />
-                  )}
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#FFFFFF' }}>{v.type}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>{v.desc}</div>
-                </div>
-              ))}
+            <div className="vehicle-selection-grid">
+              {vehiclesList.map(v => {
+                const isSelected = vehicleType === v.type;
+                return (
+                  <div
+                    key={v.type}
+                    onClick={() => setVehicleType(v.type)}
+                    style={{
+                      background: isSelected ? 'rgba(15, 164, 175, 0.18)' : 'rgba(0, 49, 53, 0.55)',
+                      border: isSelected ? '1.5px solid var(--accent-aqua)' : '1px solid rgba(74, 92, 106, 0.3)',
+                      borderRadius: '12px',
+                      padding: '16px 14px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 0 16px rgba(0, 229, 255, 0.22)' : 'none'
+                    }}
+                  >
+                    <div style={{ height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                      <img
+                        src={v.icon}
+                        alt={v.type}
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          maxHeight: '34px',
+                          maxWidth: '68px',
+                          width: 'auto',
+                          height: 'auto',
+                          objectFit: 'contain',
+                          filter: isSelected
+                            ? 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.9)) brightness(1.2)'
+                            : 'brightness(0.92) opacity(0.85)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: isSelected ? 'var(--accent-aqua)' : '#FFFFFF' }}>{v.type}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{v.desc}</div>
+                  </div>
+                );
+              })}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '14px', gap: '10px' }}>
@@ -1199,7 +1349,10 @@ export default function BookingFlow({
                   <div style={{ background: 'rgba(0, 31, 35, 0.85)', padding: '16px 18px', borderRadius: '12px', border: '1px solid rgba(0, 229, 255, 0.25)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', paddingBottom: '6px', borderBottom: '1px solid rgba(74, 92, 106, 0.25)' }}>
                       <h4 style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>Booking Summary</h4>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 700 }}>{vehicleType}</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--accent-cyan)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <img src={VEHICLE_ICONS[vehicleType] || VEHICLE_ICONS['Sedan']} alt="" style={{ height: '15px', maxWidth: '26px', objectFit: 'contain' }} />
+                        {vehicleType}
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem', color: '#CCD0CF' }}>
