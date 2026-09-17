@@ -158,7 +158,6 @@ export default function AdminBookingsTab({
                 <th style={{ padding: '14px 10px', width: '165px' }}>Customer</th>
                 <th style={{ padding: '14px 10px', width: '165px' }}>Vehicle Info</th>
                 <th style={{ padding: '14px 10px' }}>Service / Package</th>
-                <th style={{ padding: '14px 10px', width: '110px' }}>Bay</th>
                 <th style={{ padding: '14px 10px', width: '160px' }}>Status</th>
                 <th style={{ padding: '14px 10px', width: '115px' }}>Amount</th>
                 <th style={{ padding: '14px 10px', width: '125px', textAlign: 'center' }}>Actions</th>
@@ -167,7 +166,7 @@ export default function AdminBookingsTab({
             <tbody>
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     No wash bookings found matching your selected filters.
                   </td>
                 </tr>
@@ -199,55 +198,6 @@ export default function AdminBookingsTab({
                       </td>
                       <td style={{ padding: '10px' }}>
                         <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
-                      </td>
-                      <td style={{ padding: '10px' }}>
-                        {(() => {
-                          const isDone = b.status === 'completed' || b.status === 'cancelled';
-                          const bay1Car = getOccupyingCar(1, b._id);
-                          const bay2Car = getOccupyingCar(2, b._id);
-
-                          const isBay1Busy = !!bay1Car;
-                          const isBay2Busy = !!bay2Car;
-
-                          const currentAssigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
-                          const isCurrentInBay1 = currentAssigned.includes('BAY 1');
-                          const isCurrentInBay2 = currentAssigned.includes('BAY 2');
-
-                          const areBothBaysBusy = isBay1Busy && isBay2Busy;
-                          const isSelectDisabled = isDone || (areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2);
-
-                          return (
-                            <select
-                              value={b.bayAssigned || (isBay1Busy && !isBay2Busy ? 'BAY 2' : 'BAY 1')}
-                              onChange={(e) => handleBayChange(b._id, e.target.value)}
-                              disabled={isSelectDisabled}
-                              className="admin-select-table"
-                              title={
-                                isDone
-                                  ? 'Service finished. Bay assignment closed.'
-                                  : areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2
-                                  ? 'Both Bay 1 and Bay 2 are currently busy with ongoing work'
-                                  : 'Select Bay'
-                              }
-                            >
-                              {areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2 && (
-                                <option value="" disabled>Both Bays Busy</option>
-                              )}
-                              <option
-                                value="BAY 1"
-                                disabled={isBay1Busy}
-                              >
-                                BAY 1 {isBay1Busy ? `(Busy - ${bay1Car.vehicleNumber || 'Occupied'})` : ''}
-                              </option>
-                              <option
-                                value="BAY 2"
-                                disabled={isBay2Busy}
-                              >
-                                BAY 2 {isBay2Busy ? `(Busy - ${bay2Car.vehicleNumber || 'Occupied'})` : ''}
-                              </option>
-                            </select>
-                          );
-                        })()}
                       </td>
                       <td style={{ padding: '10px' }}>
                         <select
