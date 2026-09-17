@@ -213,10 +213,22 @@ router.get('/customers', async (req, res) => {
 // GET customer by phone or ID with full vehicle service history & garage list
 router.get('/customers/:phone', async (req, res) => {
   try {
-    let customer = await Customer.findOne({ phone: req.params.phone });
+    const rawTarget = String(req.params.phone || '').trim();
+    const cleanPhone = rawTarget.replace(/[^0-9]/g, '');
+    let customer = await Customer.findOne({
+      $or: [
+        { phone: rawTarget },
+        { phone: cleanPhone },
+        { phone: cleanPhone.slice(-10) }
+      ]
+    });
     if (!customer) {
-      customer = await Customer.findOne({ 'vehicles.regNumber': { $regex: req.params.phone, $options: 'i' } });
+      customer = await Customer.findOne({ 'vehicles.regNumber': { $regex: rawTarget, $options: 'i' } });
     }
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer profile not found' });
+    }
+
     if (!customer.referralCode) {
       const cleanUserName = (customer.name ? customer.name.trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() : 'VIP');
       const vehLast4 = (customer.vehicles && customer.vehicles[0]?.regNumber) 
@@ -226,7 +238,14 @@ router.get('/customers/:phone', async (req, res) => {
       await customer.save();
     }
 
-    const bookings = await Booking.find({ phone: customer.phone }).sort({ createdAt: -1 });
+    const cleanPhoneLast10 = customer.phone.replace(/[^0-9]/g, '').slice(-10);
+    const bookings = await Booking.find({
+      $or: [
+        { phone: customer.phone },
+        { phone: { $regex: cleanPhoneLast10 } }
+      ]
+    }).sort({ createdAt: -1 });
+
     res.json({ customer, bookings });
   } catch (err) {
     res.status(500).json({ error: err.message });

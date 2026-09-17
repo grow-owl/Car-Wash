@@ -20,6 +20,7 @@ export default function AdminBookingsTab({
   sortOption,
   setSortOption,
   filteredBookings = [],
+  bookings = [],
   handleExportCSV,
   setShowWalkInModal,
   handleOpenCustomerTimeline,
@@ -30,6 +31,25 @@ export default function AdminBookingsTab({
 }) {
   const getWhatsAppInvoiceLink = (b) => {
     return generateInvoiceWhatsAppUrl({ booking: b });
+  };
+
+  const isBookingOccupyingBay = (booking) => {
+    if (!booking) return false;
+    const s = String(booking.status || '').toLowerCase().trim();
+    if (s === 'completed' || s === 'cancelled') return false;
+    const activeStatuses = ['washing', 'in_progress', 'detailing', 'vehicle_received', 'quality_check', 'ready_for_pickup', 'confirmed', 'pending', 'in_bay'];
+    return activeStatuses.includes(s);
+  };
+
+  const getOccupyingCar = (bayNumOrName, currentBookingId) => {
+    const bayStr = typeof bayNumOrName === 'number' ? `BAY ${bayNumOrName}` : String(bayNumOrName || '').toUpperCase();
+    const listToSearch = bookings && bookings.length > 0 ? bookings : filteredBookings;
+    return listToSearch.find(item => {
+      if (item._id === currentBookingId) return false;
+      if (!isBookingOccupyingBay(item)) return false;
+      const assigned = String(item.bayAssigned || item.assignedBay || '').toUpperCase();
+      return assigned.includes(bayStr);
+    });
   };
 
   return (
@@ -74,7 +94,7 @@ export default function AdminBookingsTab({
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ice-tint)', pointerEvents: 'none', zIndex: 1 }} />
           <input
             type="text"
-            placeholder="Search Name, Phone, Car No, Code..."
+            placeholder="Search Vehicle No, Customer, Phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="admin-input"
@@ -93,9 +113,7 @@ export default function AdminBookingsTab({
             <option value="confirmed">1. Confirmed</option>
             <option value="vehicle_received">2. Received</option>
             <option value="in_progress">3. In Progress</option>
-            <option value="quality_check">4. Quality Check</option>
-            <option value="ready_for_pickup">5. Ready</option>
-            <option value="completed">6. Completed</option>
+            <option value="completed">4. Complete</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -137,37 +155,32 @@ export default function AdminBookingsTab({
           <table style={{ width: '100%', minWidth: '950px', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
-                <th style={{ padding: '10px' }}>Code</th>
-                <th style={{ padding: '10px' }}>Date & Slot Time</th>
-                <th style={{ padding: '10px' }}>Customer</th>
-                <th style={{ padding: '10px' }}>Vehicle Info</th>
-                <th style={{ padding: '10px' }}>Service / Package</th>
-                <th style={{ padding: '10px' }}>Bay</th>
-                <th style={{ padding: '10px' }}>Status</th>
-                <th style={{ padding: '10px' }}>Amount</th>
-                <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
+                <th style={{ padding: '14px 10px', width: '135px' }}>Date & Slot</th>
+                <th style={{ padding: '14px 10px', width: '165px' }}>Customer</th>
+                <th style={{ padding: '14px 10px', width: '165px' }}>Vehicle Info</th>
+                <th style={{ padding: '14px 10px' }}>Service / Package</th>
+                <th style={{ padding: '14px 10px', width: '110px' }}>Bay</th>
+                <th style={{ padding: '14px 10px', width: '160px' }}>Status</th>
+                <th style={{ padding: '14px 10px', width: '115px' }}>Amount</th>
+                <th style={{ padding: '14px 10px', width: '125px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                     No wash bookings found matching your selected filters.
                   </td>
                 </tr>
               ) : (
                 filteredBookings.map((b) => {
-                  const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
-                  const waLink = getWhatsAppInvoiceLink(b, code);
+                  const waLink = getWhatsAppInvoiceLink(b);
 
                   return (
                     <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                      <td style={{ padding: '10px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
-                        {code}
-                      </td>
-                      <td style={{ padding: '10px', color: '#CCD0CF' }}>
+                      <td style={{ padding: '14px 10px', color: '#CCD0CF' }}>
                         <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginTop: '2px' }}>{b.slotTime || '10:00 AM'}</div>
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div
@@ -190,14 +203,53 @@ export default function AdminBookingsTab({
                         <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
                       </td>
                       <td style={{ padding: '10px' }}>
-                        <select
-                          value={b.bayAssigned || 'BAY 1'}
-                          onChange={(e) => handleBayChange(b._id, e.target.value)}
-                          className="admin-select-table"
-                        >
-                          <option value="BAY 1">BAY 1</option>
-                          <option value="BAY 2">BAY 2</option>
-                        </select>
+                        {(() => {
+                          const isDone = b.status === 'completed' || b.status === 'cancelled';
+                          const bay1Car = getOccupyingCar(1, b._id);
+                          const bay2Car = getOccupyingCar(2, b._id);
+
+                          const isBay1Busy = !!bay1Car;
+                          const isBay2Busy = !!bay2Car;
+
+                          const currentAssigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+                          const isCurrentInBay1 = currentAssigned.includes('BAY 1');
+                          const isCurrentInBay2 = currentAssigned.includes('BAY 2');
+
+                          const areBothBaysBusy = isBay1Busy && isBay2Busy;
+                          const isSelectDisabled = isDone || (areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2);
+
+                          return (
+                            <select
+                              value={b.bayAssigned || (isBay1Busy && !isBay2Busy ? 'BAY 2' : 'BAY 1')}
+                              onChange={(e) => handleBayChange(b._id, e.target.value)}
+                              disabled={isSelectDisabled}
+                              className="admin-select-table"
+                              title={
+                                isDone
+                                  ? 'Service finished. Bay assignment closed.'
+                                  : areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2
+                                  ? 'Both Bay 1 and Bay 2 are currently busy with ongoing work'
+                                  : 'Select Bay'
+                              }
+                            >
+                              {areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2 && (
+                                <option value="" disabled>Both Bays Busy</option>
+                              )}
+                              <option
+                                value="BAY 1"
+                                disabled={isBay1Busy}
+                              >
+                                BAY 1 {isBay1Busy ? `(Busy - ${bay1Car.vehicleNumber || 'Occupied'})` : ''}
+                              </option>
+                              <option
+                                value="BAY 2"
+                                disabled={isBay2Busy}
+                              >
+                                BAY 2 {isBay2Busy ? `(Busy - ${bay2Car.vehicleNumber || 'Occupied'})` : ''}
+                              </option>
+                            </select>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '10px' }}>
                         <select
@@ -211,9 +263,7 @@ export default function AdminBookingsTab({
                           <option value="confirmed">1. Confirmed</option>
                           <option value="vehicle_received">2. Received</option>
                           <option value="in_progress">3. In Progress</option>
-                          <option value="quality_check">4. Quality Check</option>
-                          <option value="ready_for_pickup">5. Ready</option>
-                          <option value="completed">6. Completed</option>
+                          <option value="completed">4. Complete</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </td>
@@ -321,7 +371,7 @@ export default function AdminBookingsTab({
                           {/* Delete Button */}
                           <button
                             type="button"
-                            onClick={() => handleDeleteBooking(b._id, code)}
+                            onClick={() => handleDeleteBooking(b._id, b.vehicleNumber)}
                             style={{
                               height: '26px',
                               width: '26px',
@@ -360,8 +410,7 @@ export default function AdminBookingsTab({
           </div>
         ) : (
           filteredBookings.map((b) => {
-            const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
-            const waLink = getWhatsAppInvoiceLink(b, code);
+            const waLink = getWhatsAppInvoiceLink(b);
             const isDone = b.status === 'completed' || b.status === 'ready';
 
             return (
@@ -378,11 +427,12 @@ export default function AdminBookingsTab({
                   gap: '10px'
                 }}
               >
-                {/* Top Row: Code + Bay Tag + Status Badge */}
+                {/* Top Row: Vehicle Number + Bay Tag + Status Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 900, color: 'var(--accent-cyan)', fontSize: '0.92rem' }}>
-                      {code}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                      {b.vehicleNumber}
                     </span>
                     <span style={{
                       fontSize: '0.68rem',
@@ -411,30 +461,30 @@ export default function AdminBookingsTab({
                 </div>
 
                 {/* Customer & Vehicle Info Box */}
-                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.28)', padding: '11px 14px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.25)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span
                       onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
                       style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                      title="Click to view Customer Lifetime History"
                     >
                       {b.customerName}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
                       {b.phone}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--ice-tint)' }}>
-                    <span style={{ fontWeight: 700, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <img src={getVehicleIcon(b.vehicleType)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
-                      {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
+                    <span style={{ color: 'var(--ice-tint)', fontWeight: 600 }}>
+                      {b.vehicleModel && b.vehicleModel !== b.vehicleType ? `${b.vehicleModel} • ` : ''}{b.vehicleType || 'Sedan'}
                     </span>
                     <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.75rem' }}>
-                      {b.date} • {b.slotTime || '10:00 AM'}
+                      {b.date ? `${b.date} • ` : ''}{b.slotTime || '10:00 AM'}
                     </span>
                   </div>
 
-                  <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
+                  <div style={{ marginTop: '3px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
                     <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} />
                   </div>
                 </div>
@@ -456,26 +506,63 @@ export default function AdminBookingsTab({
                     <option value="confirmed">1. Confirmed</option>
                     <option value="vehicle_received">2. Received</option>
                     <option value="in_progress">3. In Progress</option>
-                    <option value="quality_check">4. Quality Check</option>
-                    <option value="ready_for_pickup">5. Ready</option>
-                    <option value="completed">6. Completed</option>
+                    <option value="completed">4. Complete</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
 
-                  <select
-                    value={b.bayAssigned || 'BAY 1'}
-                    onChange={(e) => handleBayChange(b._id, e.target.value)}
-                    className="admin-select"
-                    style={{
-                      height: '34px',
-                      minHeight: '34px',
-                      fontSize: '0.75rem',
-                      width: '100%'
-                    }}
-                  >
-                    <option value="BAY 1">BAY 1</option>
-                    <option value="BAY 2">BAY 2</option>
-                  </select>
+                  {(() => {
+                    const isDone = b.status === 'completed' || b.status === 'cancelled';
+                    const bay1Car = getOccupyingCar(1, b._id);
+                    const bay2Car = getOccupyingCar(2, b._id);
+
+                    const isBay1Busy = !!bay1Car;
+                    const isBay2Busy = !!bay2Car;
+
+                    const currentAssigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+                    const isCurrentInBay1 = currentAssigned.includes('BAY 1');
+                    const isCurrentInBay2 = currentAssigned.includes('BAY 2');
+
+                    const areBothBaysBusy = isBay1Busy && isBay2Busy;
+                    const isSelectDisabled = isDone || (areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2);
+
+                    return (
+                      <select
+                        value={b.bayAssigned || (isBay1Busy && !isBay2Busy ? 'BAY 2' : 'BAY 1')}
+                        onChange={(e) => handleBayChange(b._id, e.target.value)}
+                        disabled={isSelectDisabled}
+                        className="admin-select"
+                        style={{
+                          height: '34px',
+                          minHeight: '34px',
+                          fontSize: '0.75rem',
+                          width: '100%'
+                        }}
+                        title={
+                          isDone
+                            ? 'Service finished. Bay assignment closed.'
+                            : areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2
+                            ? 'Both Bay 1 and Bay 2 are currently busy with ongoing work'
+                            : 'Select Bay'
+                        }
+                      >
+                        {areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2 && (
+                          <option value="" disabled>Both Bays Busy</option>
+                        )}
+                        <option
+                          value="BAY 1"
+                          disabled={isBay1Busy}
+                        >
+                          BAY 1 {isBay1Busy ? `(Busy - ${bay1Car.vehicleNumber || 'Occupied'})` : ''}
+                        </option>
+                        <option
+                          value="BAY 2"
+                          disabled={isBay2Busy}
+                        >
+                          BAY 2 {isBay2Busy ? `(Busy - ${bay2Car.vehicleNumber || 'Occupied'})` : ''}
+                        </option>
+                      </select>
+                    );
+                  })()}
 
                   <div style={{
                     height: '34px',
@@ -580,7 +667,7 @@ export default function AdminBookingsTab({
 
                   <button
                     type="button"
-                    onClick={() => handleDeleteBooking(b._id, code)}
+                    onClick={() => handleDeleteBooking(b._id, b.vehicleNumber)}
                     style={{
                       height: '32px',
                       minHeight: '32px',

@@ -1,12 +1,18 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { getSlotsAvailability } from '../../../api';
 import { getVehicleIcon } from '../../../utils/constants';
 
 const MULTIPLIERS = {
+  '2-Wheeler': 0.5,
+  'Bike': 0.5,
   'Hatchback': 0.85,
   'Sedan': 1.0,
-  'SUV': 1.35
+  'Compact SUV': 1.15,
+  'SUV': 1.35,
+  'SUV / MUV': 1.35,
+  'Luxury': 1.6
 };
 
 const TIME_SLOTS = [
@@ -66,6 +72,7 @@ export default function WalkInBookingModal({
   onClose,
   services = [],
   packages = [],
+  bookings = [],
   onSubmit
 }) {
   const [customerName, setCustomerName] = useState('');
@@ -225,6 +232,35 @@ export default function WalkInBookingModal({
       return;
     }
 
+    // Auto-detect which bay is free to prevent collisions
+    const isBookingOccupyingBay = (b) => {
+      if (!b) return false;
+      const s = String(b.status || '').toLowerCase().trim();
+      if (s === 'completed' || s === 'cancelled') return false;
+      return ['washing', 'in_progress', 'detailing', 'vehicle_received', 'quality_check', 'ready_for_pickup', 'confirmed', 'pending', 'in_bay'].includes(s);
+    };
+
+    const isBay1Busy = bookings.some(b => isBookingOccupyingBay(b) && String(b.bayAssigned || b.assignedBay || '').toUpperCase().includes('BAY 1'));
+    const isBay2Busy = bookings.some(b => isBookingOccupyingBay(b) && String(b.bayAssigned || b.assignedBay || '').toUpperCase().includes('BAY 2'));
+
+    let targetBay = 'BAY 1';
+    let targetStatus = 'in_progress';
+
+    if (selectedTime && !selectedTime.startsWith('NOW')) {
+      targetStatus = 'confirmed';
+      targetBay = !isBay1Busy ? 'BAY 1' : 'BAY 2';
+    } else if (!isBay1Busy) {
+      targetBay = 'BAY 1';
+      targetStatus = 'in_progress';
+    } else if (!isBay2Busy) {
+      targetBay = 'BAY 2';
+      targetStatus = 'in_progress';
+    } else {
+      // Both bays busy: put car in waiting queue
+      targetBay = 'BAY 1';
+      targetStatus = 'vehicle_received';
+    }
+
     onSubmit({
       customerName: customerName.trim() || 'Walk-in Customer',
       phone: phone.trim(),
@@ -237,8 +273,8 @@ export default function WalkInBookingModal({
       addons: [],
       slotTime: selectedTime,
       timeSlot: selectedTime,
-      bayAssigned: 'BAY 1',
-      status: 'washing',
+      bayAssigned: targetBay,
+      status: targetStatus,
       totalAmount: Number(amount) || 499,
       paymentMode,
       paymentStatus: paymentMode === 'Pay After Service' ? 'Pending' : 'Paid'
@@ -323,13 +359,33 @@ export default function WalkInBookingModal({
             />
 
             <div style={{ position: 'relative', width: '100%' }}>
-              <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '26px', zIndex: 1 }}>
-                <img src={getVehicleIcon(vehicleType)} alt="" style={{ height: '16px', maxWidth: '26px', objectFit: 'contain' }} />
+              <div style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '26px',
+                height: '26px',
+                zIndex: 2
+              }}>
+                <img
+                  src={getVehicleIcon(vehicleType)}
+                  alt=""
+                  style={{
+                    height: '16px',
+                    maxWidth: '26px',
+                    objectFit: 'contain'
+                  }}
+                />
               </div>
               <select
                 value={vehicleType}
                 onChange={handleVehTypeChange}
-                className="admin-select"
+                className="admin-select walkin-veh-select"
                 style={{
                   width: '100%',
                   height: '42px',
@@ -337,7 +393,7 @@ export default function WalkInBookingModal({
                   maxHeight: '42px',
                   boxSizing: 'border-box',
                   fontSize: '0.88rem',
-                  padding: '0 12px 0 48px',
+                  padding: '0 28px 0 48px',
                   color: 'var(--accent-cyan)'
                 }}
               >
@@ -544,7 +600,7 @@ export default function WalkInBookingModal({
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => {}}
+                            onChange={() => { }}
                             style={{ cursor: 'pointer', accentColor: 'var(--accent-cyan)' }}
                           />
                           <span style={{ fontWeight: isChecked ? 700 : 400 }}>{svc.name}</span>
@@ -565,7 +621,7 @@ export default function WalkInBookingModal({
             <select
               value={selectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
-              className="admin-select"
+              className="admin-select admin-modal-select"
               style={{
                 width: '100%',
                 height: '42px',
@@ -573,7 +629,7 @@ export default function WalkInBookingModal({
                 maxHeight: '42px',
                 boxSizing: 'border-box',
                 fontSize: '0.88rem',
-                padding: '0 12px',
+                padding: '0 28px 0 12px',
                 color: 'var(--accent-cyan)'
               }}
             >
@@ -602,7 +658,7 @@ export default function WalkInBookingModal({
             <select
               value={paymentMode}
               onChange={(e) => setPaymentMode(e.target.value)}
-              className="admin-select"
+              className="admin-select admin-modal-select"
               style={{
                 width: '100%',
                 height: '42px',
@@ -610,7 +666,8 @@ export default function WalkInBookingModal({
                 maxHeight: '42px',
                 boxSizing: 'border-box',
                 fontSize: '0.88rem',
-                padding: '0 12px'
+                padding: '0 28px 0 12px',
+                color: 'var(--accent-cyan)'
               }}
             >
               <option value="Cash">Cash</option>
@@ -629,6 +686,44 @@ export default function WalkInBookingModal({
             className="input-field"
             style={{ minHeight: '40px', fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent-gold)' }}
           />
+
+          {/* Live Bay Allotment Preview */}
+          {(() => {
+            const isBookingOccupyingBay = (b) => {
+              if (!b) return false;
+              const s = String(b.status || '').toLowerCase().trim();
+              if (s === 'completed' || s === 'cancelled') return false;
+              return ['washing', 'in_progress', 'detailing', 'vehicle_received', 'quality_check', 'ready_for_pickup', 'confirmed', 'pending', 'in_bay'].includes(s);
+            };
+            const isBay1Busy = bookings.some(b => isBookingOccupyingBay(b) && String(b.bayAssigned || b.assignedBay || '').toUpperCase().includes('BAY 1'));
+            const isBay2Busy = bookings.some(b => isBookingOccupyingBay(b) && String(b.bayAssigned || b.assignedBay || '').toUpperCase().includes('BAY 2'));
+
+            if (selectedTime && !selectedTime.startsWith('NOW')) {
+              return (
+                <div style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)' }}>
+                  📅 Scheduled for <strong>{selectedTime}</strong> (Status: Confirmed)
+                </div>
+              );
+            } else if (!isBay1Busy) {
+              return (
+                <div style={{ fontSize: '0.74rem', color: '#25D366', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', background: 'rgba(37, 211, 102, 0.1)', border: '1px solid rgba(37, 211, 102, 0.3)' }}>
+                  ✓ Will start immediately in <strong>BAY 1</strong>
+                </div>
+              );
+            } else if (!isBay2Busy) {
+              return (
+                <div style={{ fontSize: '0.74rem', color: 'var(--accent-cyan)', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.3)' }}>
+                  ✓ Will start immediately in <strong>BAY 2</strong> (Bay 1 is currently in use)
+                </div>
+              );
+            } else {
+              return (
+                <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', background: 'rgba(255, 195, 0, 0.12)', border: '1px solid rgba(255, 195, 0, 0.35)' }}>
+                  ⚠️ Both Bay 1 and Bay 2 are busy. Car will be added to the <strong>Waiting Queue</strong>.
+                </div>
+              );
+            }
+          })()}
 
           <button
             type="submit"

@@ -4,10 +4,12 @@ import { getMemberships, subscribeMembership, getCustomerDetails, buyGiftCard, l
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import { cleanText } from '../utils/cleanText';
 import { getVehicleIcon } from '../utils/constants';
+import { subscribeLiveSync } from '../utils';
 import SectionDivider from '../components/SectionDivider';
 
 export default function CustomerPortal({ currentUser: propUser, setCurrentUser: propSetUser, onSignOut: propSignOut }) {
   const [memberships, setMemberships] = useState([]);
+  const [customerBookings, setCustomerBookings] = useState([]);
   
   // Auth state
   const [localUser, setLocalUser] = useState(propUser || null);
@@ -130,11 +132,32 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
     }
   };
 
+  // Live background sync: subscribe to instant live events & poll customer status
+  useEffect(() => {
+    if (!currentUser?.phone) return;
+    fetchLatestCustomer(currentUser.phone);
+
+    const unsubscribe = subscribeLiveSync(() => {
+      fetchLatestCustomer(currentUser.phone);
+    });
+
+    const interval = setInterval(() => {
+      fetchLatestCustomer(currentUser.phone);
+    }, 8000);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [currentUser?.phone]);
+
   const fetchLatestCustomer = async (phone) => {
     try {
       const res = await getCustomerDetails(phone);
       if (res.data?.customer) {
         updateCustomerState(res.data.customer);
+      }
+      if (res.data?.bookings) {
+        setCustomerBookings(Array.isArray(res.data.bookings) ? res.data.bookings : []);
       }
     } catch (err) {
       console.error(err);
@@ -821,6 +844,127 @@ export default function CustomerPortal({ currentUser: propUser, setCurrentUser: 
                 <div style={{ color: '#CCD0CF', marginTop: '2px' }}>Redeem on any future wash booking</div>
               </div>
             </div>
+          </div>
+
+          <SectionDivider variant="cyan" icon="clock" badge="MY LIVE WASH BOOKINGS" spacing="tight" />
+
+          {/* MY LIVE WASH BOOKINGS & STATUS */}
+          <div className="glass-panel" style={{
+            padding: '24px 28px',
+            marginBottom: '32px',
+            border: '1px solid rgba(0, 229, 255, 0.25)',
+            background: 'linear-gradient(135deg, rgba(6, 26, 36, 0.95) 0%, rgba(3, 16, 23, 0.98) 100%)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
+            borderRadius: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: '#FFFFFF' }}>
+                <Clock size={20} color="var(--accent-cyan)" /> My Wash Appointments & Queue
+              </h3>
+              <button
+                type="button"
+                onClick={() => currentUser?.phone && fetchLatestCustomer(currentUser.phone)}
+                style={{ background: 'transparent', border: '1px solid var(--border-light)', color: 'var(--accent-cyan)', padding: '5px 12px', borderRadius: '6px', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                <Zap size={13} /> Refresh Status
+              </button>
+            </div>
+
+            {customerBookings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 16px', color: '#8A99AD', fontSize: '0.88rem' }}>
+                No active bookings found for your phone (+91 {currentUser.phone}).
+                <div style={{ marginTop: '12px' }}>
+                  <a href="#booking" className="btn-cyan" style={{ display: 'inline-flex', padding: '8px 18px', fontSize: '0.82rem', textDecoration: 'none', borderRadius: '8px' }}>
+                    Book a Wash Now
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '12px' }}>
+                {customerBookings.map((b) => (
+                  <div key={b._id} style={{
+                    background: 'rgba(0, 20, 27, 0.65)',
+                    border: '1px solid rgba(74, 92, 106, 0.35)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                        {b.vehicleNumber}
+                      </span>
+                      {(() => {
+                        const s = String(b.status || '').toLowerCase().trim();
+                        let badgeClass = 'badge-aqua';
+                        let label = '1. Confirmed';
+
+                        if (s === 'completed' || s === 'delivered' || s === 'ready' || s === 'ready_for_pickup') {
+                          badgeClass = 'badge-green';
+                          label = '4. Complete';
+                        } else if (s === 'in_progress' || s === 'washing' || s === 'detailing' || s === 'quality_check') {
+                          badgeClass = 'badge-gold';
+                          label = '3. In Progress';
+                        } else if (s === 'vehicle_received' || s === 'received') {
+                          badgeClass = 'badge-aqua';
+                          label = '2. Received';
+                        } else if (s === 'cancelled') {
+                          badgeClass = 'badge-red';
+                          label = 'Cancelled';
+                        }
+
+                        return (
+                          <span className={`badge ${badgeClass}`} style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#FFFFFF' }}>
+                        {b.serviceName || b.packageName || 'Car Wash & Spa'}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                        {b.vehicleModel ? `${b.vehicleModel} • ` : ''}{b.date} at {b.slotTime}
+                      </div>
+                      {b.bayAssigned && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', marginTop: '2px', fontWeight: 600 }}>
+                          Assigned: {b.bayAssigned}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(74, 92, 106, 0.25)', paddingTop: '10px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF' }}>
+                        ₹{b.totalAmount || b.finalAmount || 0}
+                      </span>
+                      <a
+                        href={`/?track=${encodeURIComponent(b.vehicleNumber)}`}
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          color: 'var(--accent-cyan)',
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(0, 229, 255, 0.1)',
+                          border: '1px solid rgba(0, 229, 255, 0.25)'
+                        }}
+                      >
+                        Live Tracking &rarr;
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <SectionDivider variant="gold" icon="star" badge="MY VEHICLES" spacing="tight" />

@@ -87,7 +87,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
   }
 
   const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
-  const invoiceLink = `${siteBase}/?track=${trackingCode}&invoice=1`;
+  const invoiceLink = `${siteBase}/?track=${encodeURIComponent(vehicleNumber)}&invoice=1`;
   const siteDisplay = siteBase.replace(/^https?:\/\//, '');
 
   const cleanInvoiceMessage = 
@@ -98,7 +98,6 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     `Your tax invoice for vehicle *${vehicleNumber}* is ready.\n\n` +
     `*INVOICE & SERVICE DETAILS*\n` +
     `• Invoice No: *${invoiceNumber}*\n` +
-    `• Tracking ID: ${trackingCode}\n` +
     `• Vehicle: ${vehicleNumber} (${vehicleModel})\n` +
     `• Service: ${booking.serviceName || booking.packageName}\n` +
     `• Total Amount: Rs. ${totalAmount} (${paymentStatus})\n\n` +

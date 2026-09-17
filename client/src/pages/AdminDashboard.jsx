@@ -8,7 +8,6 @@ import {
 } from '../api';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import AdminStatsHeader from '../components/admin/AdminStatsHeader';
-import WhatsappNotificationToast from '../components/admin/WhatsappNotificationToast';
 import {
   DeleteConfirmModal,
   WalkInBookingModal,
@@ -27,7 +26,7 @@ import {
   AdminExpensesStaffTab,
   AdminFinancialsTab
 } from '../components/admin/tabs';
-import { getLocalDateString } from '../utils';
+import { getLocalDateString, notifyLiveSync, subscribeLiveSync } from '../utils';
 
 export default function AdminDashboard({
   activeSubTab = 'analytics',
@@ -116,14 +115,6 @@ export default function AdminDashboard({
     closeDeleteConfirm();
   };
 
-  // Walk-In Form
-  const [walkInName, setWalkInName] = useState('');
-  const [walkInPhone, setWalkInPhone] = useState('');
-  const [walkInVeh, setWalkInVeh] = useState('');
-  const [walkInVehType, setWalkInVehType] = useState('Sedan');
-  const [walkInService, setWalkInService] = useState('Express Foam Wash');
-  const [walkInAmount, setWalkInAmount] = useState(299);
-  const [walkInPayMode, setWalkInPayMode] = useState('Cash');
 
   // Expense form
   const [expCategory, setExpCategory] = useState('Supplies');
@@ -151,11 +142,28 @@ export default function AdminDashboard({
 
   // Refresh & Sync status
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [whatsappToast, setWhatsappToast] = useState(null);
   const [allotModalBay, setAllotModalBay] = useState(null);
 
+  // Real-time synchronization subscription & auto-sync polling
   useEffect(() => {
     fetchAllAdminData();
+
+    // Instant cross-tab and in-tab sync listener
+    const unsubscribe = subscribeLiveSync((event) => {
+      // Whenever a booking is created or status updated anywhere
+      fetchAllAdminData(true);
+    });
+
+    const interval = setInterval(() => {
+      fetchAllAdminData(true);
+    }, 6000);
+    const onFocus = () => fetchAllAdminData(true);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [activeSubTab, refreshTrigger]);
 
   useEffect(() => {
@@ -167,70 +175,48 @@ export default function AdminDashboard({
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  const fetchAllAdminData = async () => {
-    setIsRefreshing(true);
+  const fetchAllAdminData = async (silent = false) => {
+    if (!silent) setIsRefreshing(true);
     try {
       const [anaRes, bookRes, custRes, stfRes, expRes, cpnRes, svcRes, bayRes, leadRes, memSubRes, pkgRes, addRes] = await Promise.all([
-        getAnalytics(),
-        getBookings(),
-        getCustomers(),
-        getStaff(),
-        getExpenses(),
-        getCoupons(),
-        getServices(),
-        getBays(),
-        getLeads(),
+        getAnalytics().catch(err => { console.warn('Analytics load error:', err.message); return { data: null }; }),
+        getBookings().catch(err => { console.warn('Bookings load error:', err.message); return { data: [] }; }),
+        getCustomers().catch(err => { console.warn('Customers load error:', err.message); return { data: [] }; }),
+        getStaff().catch(err => { console.warn('Staff load error:', err.message); return { data: [] }; }),
+        getExpenses().catch(err => { console.warn('Expenses load error:', err.message); return { data: [] }; }),
+        getCoupons().catch(err => { console.warn('Coupons load error:', err.message); return { data: [] }; }),
+        getServices().catch(err => { console.warn('Services load error:', err.message); return { data: [] }; }),
+        getBays().catch(err => { console.warn('Bays load error:', err.message); return { data: [] }; }),
+        getLeads().catch(err => { console.warn('Leads load error:', err.message); return { data: [] }; }),
         getMembershipSubscriptions().catch(() => ({ data: [] })),
         getPackages().catch(() => ({ data: [] })),
         getAddons().catch(() => ({ data: [] }))
       ]);
-      setAnalytics(anaRes.data);
-      setBookings(bookRes.data || []);
-      setCustomers(custRes.data || []);
-      setStaff(stfRes.data || []);
-      setExpenses(expRes.data || []);
-      setCoupons(cpnRes.data || []);
-      setServices(svcRes.data || []);
-      setPackages(pkgRes?.data || []);
-      setAddons(addRes?.data || []);
-      setBays(bayRes.data || []);
-      if (leadRes && leadRes.data) setLeads(leadRes.data);
-      if (memSubRes && memSubRes.data) setMembershipSubscriptions(memSubRes.data);
+
+      if (anaRes?.data) setAnalytics(anaRes.data);
+      if (bookRes?.data) setBookings(Array.isArray(bookRes.data) ? bookRes.data : []);
+      if (custRes?.data) setCustomers(Array.isArray(custRes.data) ? custRes.data : []);
+      if (stfRes?.data) setStaff(Array.isArray(stfRes.data) ? stfRes.data : []);
+      if (expRes?.data) setExpenses(Array.isArray(expRes.data) ? expRes.data : []);
+      if (cpnRes?.data) setCoupons(Array.isArray(cpnRes.data) ? cpnRes.data : []);
+      if (svcRes?.data) setServices(Array.isArray(svcRes.data) ? svcRes.data : []);
+      if (pkgRes?.data) setPackages(Array.isArray(pkgRes.data) ? pkgRes.data : []);
+      if (addRes?.data) setAddons(Array.isArray(addRes.data) ? addRes.data : []);
+      if (bayRes?.data) setBays(Array.isArray(bayRes.data) ? bayRes.data : []);
+      if (leadRes && leadRes.data) setLeads(Array.isArray(leadRes.data) ? leadRes.data : []);
+      if (memSubRes && memSubRes.data) setMembershipSubscriptions(Array.isArray(memSubRes.data) ? memSubRes.data : []);
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
+      if (!silent) setTimeout(() => setIsRefreshing(false), 300);
     }
   };
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      const res = await updateBookingStatus(id, { status: newStatus });
+      await updateBookingStatus(id, { status: newStatus });
+      notifyLiveSync({ type: 'STATUS_UPDATED', id, status: newStatus });
       fetchAllAdminData();
-      if (res.data?.whatsappNotification) {
-        const waNotif = res.data.whatsappNotification;
-        const targetLink = waNotif.waLinkCustomer || waNotif.waLink;
-
-        if (targetLink) {
-          try {
-            window.open(targetLink, '_blank');
-          } catch (e) {
-            console.warn('Auto WhatsApp popup blocked:', e);
-          }
-        }
-
-        setWhatsappToast({
-          customerName: waNotif.customerName,
-          phone: waNotif.phone,
-          status: newStatus,
-          waLink: targetLink,
-          waLinkCustomer: targetLink,
-          waLinkOwner: waNotif.waLinkOwner,
-          invoiceUrl: waNotif.invoiceUrl,
-          trackUrl: waNotif.trackUrl
-        });
-        setTimeout(() => setWhatsappToast(null), 30000);
-      }
     } catch (err) {
       alert(err.response?.data?.error || 'Error updating status');
     }
@@ -239,6 +225,7 @@ export default function AdminDashboard({
   const handleBayChange = async (id, newBay) => {
     try {
       await updateBookingStatus(id, { bayAssigned: newBay, assignedBay: newBay });
+      notifyLiveSync({ type: 'BAY_UPDATED', id, bay: newBay });
       fetchAllAdminData();
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to update bay');
@@ -247,33 +234,14 @@ export default function AdminDashboard({
 
   const handleAllotCarToBay = async (bookingId, bayName) => {
     try {
-      const res = await updateBookingStatus(bookingId, { 
+      await updateBookingStatus(bookingId, { 
         bayAssigned: bayName,
         assignedBay: bayName,
         status: 'washing'
       });
+      notifyLiveSync({ type: 'STATUS_UPDATED', id: bookingId, status: 'washing', bayAssigned: bayName });
       setAllotModalBay(null);
       fetchAllAdminData();
-      if (res.data?.whatsappNotification) {
-        const waNotif = res.data.whatsappNotification;
-        const targetLink = waNotif.waLinkCustomer || waNotif.waLink;
-        if (targetLink) {
-          try {
-            window.open(targetLink, '_blank');
-          } catch (e) {}
-        }
-        setWhatsappToast({
-          customerName: waNotif.customerName,
-          phone: waNotif.phone,
-          status: 'washing',
-          waLink: targetLink,
-          waLinkCustomer: targetLink,
-          waLinkOwner: waNotif.waLinkOwner,
-          invoiceUrl: waNotif.invoiceUrl,
-          trackUrl: waNotif.trackUrl
-        });
-        setTimeout(() => setWhatsappToast(null), 30000);
-      }
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to allot car to bay');
     }
@@ -281,44 +249,42 @@ export default function AdminDashboard({
 
   const getActiveBookingForBay = (bayNumOrName) => {
     const bayStr = typeof bayNumOrName === 'number' ? `BAY ${bayNumOrName}` : String(bayNumOrName || '').toUpperCase();
-    const activeStatuses = ['washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
+    const activeStatuses = ['in_progress', 'washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
     
     const active = bookings.find(b => {
       const assigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
-      return assigned.includes(bayStr) && activeStatuses.includes(b.status?.toLowerCase());
+      const status = String(b.status || '').toLowerCase().trim();
+      return assigned.includes(bayStr) && activeStatuses.includes(status);
     });
     if (active) return active;
 
     return bookings.find(b => {
       const assigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
-      return assigned.includes(bayStr) && (b.status === 'confirmed' || b.status === 'pending');
+      const status = String(b.status || '').toLowerCase().trim();
+      return assigned.includes(bayStr) && status !== 'completed' && status !== 'cancelled';
     });
   };
 
   const handleWalkInSubmit = async (walkInData) => {
     try {
       const res = await createWalkInBooking(walkInData);
+      notifyLiveSync({ type: 'WALKIN_CREATED', booking: res.data?.booking || walkInData });
       if (setShowWalkInModal) setShowWalkInModal(false);
       fetchAllAdminData();
-
-      if (res.data?.whatsappNotification?.waLinkCustomer) {
-        try {
-          window.open(res.data.whatsappNotification.waLinkCustomer, '_blank');
-        } catch (e) {}
-      }
     } catch (err) {
       console.error('Walk-in booking error:', err);
       alert(err.response?.data?.error || 'Error creating walk-in booking');
     }
   };
 
-  const handleDeleteBooking = async (bookingId, code) => {
+  const handleDeleteBooking = async (bookingId, vehicleNumber) => {
     openDeleteConfirm(
       'Delete Booking?',
-      `Booking ${code || ''}`,
+      vehicleNumber ? `Vehicle: ${vehicleNumber}` : 'Selected Booking',
       async () => {
         try {
           await deleteBooking(bookingId);
+          notifyLiveSync({ type: 'BOOKING_DELETED', id: bookingId });
           fetchAllAdminData();
         } catch (err) {
           alert(err.response?.data?.error || 'Failed to delete booking');
@@ -647,7 +613,6 @@ export default function AdminDashboard({
           handleStatusChange={handleStatusChange}
           handleBayChange={handleBayChange}
           setAllotModalBay={setAllotModalBay}
-          setWalkInVeh={setWalkInVeh}
           setShowWalkInModal={setShowWalkInModal}
           handleOpenCustomerTimeline={handleOpenCustomerTimeline}
           setActiveSubTab={setActiveSubTab}
@@ -672,6 +637,7 @@ export default function AdminDashboard({
           sortOption={sortOption}
           setSortOption={setSortOption}
           filteredBookings={filteredBookings}
+          bookings={bookings}
           handleExportCSV={handleExportCSV}
           setShowWalkInModal={setShowWalkInModal}
           handleOpenCustomerTimeline={handleOpenCustomerTimeline}
@@ -777,6 +743,7 @@ export default function AdminDashboard({
         packages={packages}
         addons={addons}
         bays={bays && bays.length > 0 ? bays.map(b => b.name || `BAY ${b.bayNumber}`) : ['BAY 1', 'BAY 2']}
+        bookings={bookings}
         onSubmit={handleWalkInSubmit}
       />
 
@@ -852,11 +819,6 @@ export default function AdminDashboard({
           onClose={() => setInvoiceBooking(null)}
         />
       )}
-
-      <WhatsappNotificationToast
-        toast={whatsappToast}
-        onClose={() => setWhatsappToast(null)}
-      />
 
     </div>
   );

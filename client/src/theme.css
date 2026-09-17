@@ -568,12 +568,12 @@ main.public-main-content {
   display: none;
 }
 
-/* Mobile Stepper Utilities */
 .track-stepper-desktop {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   position: relative;
+  margin: 18px 0 14px 0;
 }
 
 .track-stepper-mobile {
@@ -1203,6 +1203,26 @@ select.input-field option {
   box-sizing: border-box;
 }
 
+/* Modal Selects with 42px height and icon offset */
+select.admin-modal-select {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  font-size: 0.88rem !important;
+  padding: 0 28px 0 12px !important;
+  border-radius: 8px !important;
+}
+
+select.walkin-veh-select {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 28px 0 48px !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+}
+
 .admin-input {
   height: 36px !important;
   min-height: 36px !important;
@@ -1228,7 +1248,6 @@ select.input-field option {
 }
 
 
-/* 2. Table Compact Select (e.g. Bay & Status selectors in Tables) */
 .admin-select-table {
   height: 32px;
   min-height: 32px;
@@ -1239,6 +1258,23 @@ select.input-field option {
   display: inline-flex;
   align-items: center;
   width: 100%;
+}
+
+select.admin-select-table:disabled,
+select.admin-select:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  border-color: rgba(74, 92, 106, 0.35) !important;
+  color: #7B8B9A !important;
+  background-image: none !important;
+  filter: grayscale(0.5);
+}
+
+select.admin-select-table option:disabled,
+select.admin-select option:disabled {
+  color: #5A6978 !important;
+  background-color: #030C10 !important;
+  font-style: italic;
 }
 
 /* 3. Action Buttons matched in height with selects */

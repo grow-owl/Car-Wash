@@ -10,25 +10,21 @@ export default function AdminStatsHeader({
 }) {
   const todayStr = getLocalDateString(new Date());
   const todayBookingsCount = bookings.filter(b => b.date === todayStr).length;
-  const activeQueueCount = bookings.filter(b => 
-    b.status === 'In-Progress' || 
-    b.status === 'Confirmed' || 
-    b.status === 'Pending' || 
-    b.status === 'washing' || 
-    b.status === 'detailing' ||
-    b.status === 'vehicle_received' ||
-    b.status === 'quality_check'
-  ).length;
+  const activeQueueCount = bookings.filter(b => {
+    const s = String(b.status || '').toLowerCase().trim();
+    return s !== 'completed' && s !== 'cancelled';
+  }).length;
 
   const totalBays = bays.length || 2;
   const occupiedBaysCount = (typeof getActiveBookingForBay === 'function'
     ? [1, 2].filter(bayNum => !!getActiveBookingForBay(bayNum)).length
     : [1, 2].filter(bayNum => {
         const bayStr = `BAY ${bayNum}`;
-        const activeStatuses = ['washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
+        const activeStatuses = ['in_progress', 'washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay', 'confirmed', 'pending'];
         return bookings.some(b => {
           const assigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
-          return assigned.includes(bayStr) && activeStatuses.includes(b.status?.toLowerCase());
+          const s = String(b.status || '').toLowerCase().trim();
+          return assigned.includes(bayStr) && activeStatuses.includes(s);
         });
       }).length
   );

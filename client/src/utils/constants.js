@@ -28,12 +28,10 @@ export const getVehicleIcon = (type = '') => {
 };
 
 export const BOOKING_STATUSES = [
-  { id: 'confirmed', label: '1. Booking Confirmed', color: 'var(--accent-cyan)' },
-  { id: 'vehicle_received', label: '2. Vehicle Received', color: '#00D2B4' },
-  { id: 'in_progress', label: '3. Service In Progress', color: 'var(--accent-gold)' },
-  { id: 'quality_check', label: '4. Quality Check', color: '#B388FF' },
-  { id: 'ready_for_pickup', label: '5. Ready for Pickup', color: '#25D366' },
-  { id: 'completed', label: '6. Completed', color: '#25D366' },
+  { id: 'confirmed', label: '1. Confirmed', color: 'var(--accent-cyan)' },
+  { id: 'vehicle_received', label: '2. Received', color: '#00D2B4' },
+  { id: 'in_progress', label: '3. In Progress', color: 'var(--accent-gold)' },
+  { id: 'completed', label: '4. Complete', color: '#25D366' },
   { id: 'cancelled', label: 'Cancelled', color: '#FF5964' }
 ];
 

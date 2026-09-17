@@ -1,4 +1,6 @@
 require('dotenv').config();
+const dns = require('dns');
+try { dns.setServers(['8.8.8.8', '1.1.1.1']); } catch (e) {}
 const mongoose = require('mongoose');
 const Service = require('./models/Service');
 const Package = require('./models/Package');

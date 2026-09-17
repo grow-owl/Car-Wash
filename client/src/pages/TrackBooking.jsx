@@ -25,9 +25,11 @@ import { trackBooking, payBookingByCode, createRazorpayOrder, verifyRazorpayPaym
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import SectionDivider from '../components/SectionDivider';
+import { subscribeLiveSync } from '../utils';
+import { getVehicleIcon } from '../utils/constants';
 
 export default function TrackBooking({ activeCode = '' }) {
-  const [trackingCode, setTrackingCode] = useState(activeCode || 'CW-9669');
+  const [trackingCode, setTrackingCode] = useState(activeCode || '');
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,48 +41,34 @@ export default function TrackBooking({ activeCode = '' }) {
   const [paying, setPaying] = useState(false);
   const [paySuccessMsg, setPaySuccessMsg] = useState('');
 
-  // 6 EXACT STAGES REQUESTED BY USER
+  // 4 CANONICAL STAGES
   const stages = [
     {
       key: 'confirmed',
-      label: 'Booking Confirmed',
-      shortLabel: 'Confirmed',
-      desc: 'Appointment confirmed',
+      label: '1. Confirmed',
+      shortLabel: '1. Confirmed',
+      desc: 'Appointment confirmed & scheduled',
       icon: Calendar
     },
     {
       key: 'vehicle_received',
-      label: 'Vehicle Received',
-      shortLabel: 'Received',
-      desc: 'Vehicle checked in & inspected',
+      label: '2. Received',
+      shortLabel: '2. Received',
+      desc: 'Vehicle received & bay allotted',
       icon: Car
     },
     {
       key: 'in_progress',
-      label: 'Service In Progress',
-      shortLabel: 'In Progress',
-      desc: 'High-pressure wash, foam & detailing',
+      label: '3. In Progress',
+      shortLabel: '3. In Progress',
+      desc: 'High-pressure wash & cleaning in bay',
       icon: Sparkles
     },
     {
-      key: 'quality_check',
-      label: 'Quality Check',
-      shortLabel: 'Quality Check',
-      desc: '18-point inspection & paint check',
-      icon: ShieldCheck
-    },
-    {
-      key: 'ready_for_pickup',
-      label: 'Ready for Pickup',
-      shortLabel: 'Ready',
-      desc: 'Final shine & parked for pickup',
-      icon: CheckCircle2
-    },
-    {
       key: 'completed',
-      label: 'Completed',
-      shortLabel: 'Completed',
-      desc: 'Service finished & delivered',
+      label: '4. Complete',
+      shortLabel: '4. Complete',
+      desc: 'Wash finished & delivered',
       icon: Award
     }
   ];
@@ -111,14 +99,23 @@ export default function TrackBooking({ activeCode = '' }) {
     }
   }, []);
 
-  // Auto-sync polling every 3.5s while on Live Track page for instant synchronization with Owner Dashboard!
+  // Auto-sync polling every 3.5s & instant live sync subscription while on Live Track page
   useEffect(() => {
-    if (trackingCode) {
+    if (trackingCode && trackingCode.trim().length > 0) {
       handleSearch();
+
+      const unsubscribe = subscribeLiveSync((event) => {
+        // Instant refresh on status update or booking sync
+        handleSearchSilently();
+      });
+
       const interval = setInterval(() => {
         handleSearchSilently();
       }, 3500);
-      return () => clearInterval(interval);
+      return () => {
+        unsubscribe();
+        clearInterval(interval);
+      };
     }
   }, [trackingCode]);
 
@@ -242,13 +239,13 @@ export default function TrackBooking({ activeCode = '' }) {
     }
   };
 
-  // ACCURATE 6-STAGE MAPPING WITH DATABASE & ADMIN DASHBOARD
+  // 4-STAGE MAPPING WITH DATABASE & ADMIN DASHBOARD
+  const isCancelled = booking && String(booking.status || '').toLowerCase().trim() === 'cancelled';
+
   const getStageIndex = (currentStatus) => {
     const s = String(currentStatus || '').toLowerCase().trim();
-    if (s === 'completed' || s === 'delivered') return 5;
-    if (s === 'ready' || s === 'ready_for_pickup') return 4;
-    if (s === 'quality_check' || s === 'inspection') return 3;
-    if (s === 'in_progress' || s === 'service_in_progress' || s === 'washing' || s === 'wash' || s === 'detailing' || s === 'interior' || s === 'polish' || s === 'in_bay') return 2;
+    if (s === 'completed' || s === 'delivered' || s === 'ready' || s === 'ready_for_pickup') return 3;
+    if (s === 'in_progress' || s === 'service_in_progress' || s === 'washing' || s === 'wash' || s === 'detailing' || s === 'quality_check' || s === 'inspection' || s === 'in_bay') return 2;
     if (s === 'vehicle_received' || s === 'received' || s === 'checked_in') return 1;
     if (s === 'confirmed' || s === 'pending') return 0;
     return 0;
@@ -262,8 +259,8 @@ export default function TrackBooking({ activeCode = '' }) {
     return clean.startsWith('91') ? clean : `91${clean.slice(-10)}`;
   };
 
-  const waSupportLink = booking
-    ? `https://wa.me/${getCleanPhone(booking.phone)}?text=${encodeURIComponent(`Hi Car Wash Auto Spa, I am tracking my vehicle (${booking.vehicleNumber}, Tracking: ${booking.trackingCode}).`)}`
+  const waHelpUrl = booking && booking.phone
+    ? `https://wa.me/${getCleanPhone(booking.phone)}?text=${encodeURIComponent(`Hi Car Wash Auto Spa, I am tracking my vehicle (${booking.vehicleNumber}).`)}`
     : '#';
 
   return (
@@ -295,9 +292,12 @@ export default function TrackBooking({ activeCode = '' }) {
         <div style={{ flex: 1, position: 'relative' }}>
           <input
             type="text"
-            placeholder="Enter Tracking Code (e.g. CW-9669)"
+            placeholder="Enter Vehicle Number (e.g. MH 02 AB 1234)"
             value={trackingCode}
-            onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setTrackingCode(e.target.value.toUpperCase());
+              if (error) setError('');
+            }}
             className="input-field track-search-input"
             style={{
               paddingLeft: '44px',
@@ -379,6 +379,39 @@ export default function TrackBooking({ activeCode = '' }) {
         </div>
       )}
 
+      {/* EMPTY INITIAL STATE HELPER */}
+      {!booking && !loading && !error && (
+        <div style={{
+          textAlign: 'center',
+          padding: '36px 20px',
+          background: 'rgba(0, 31, 35, 0.45)',
+          border: '1px dashed rgba(0, 210, 180, 0.25)',
+          borderRadius: '14px',
+          color: 'var(--ice-tint)',
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: 'rgba(0, 210, 180, 0.12)',
+            border: '1px solid rgba(0, 210, 180, 0.3)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '12px'
+          }}>
+            <Search size={22} color="var(--accent-aqua)" />
+          </div>
+          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '6px' }}>
+            Live Vehicle Tracking
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#8A99AD', maxWidth: '380px', margin: '0 auto', lineHeight: 1.4 }}>
+            Enter your vehicle registration number in the search bar above to monitor live bay stage, service telemetry, and invoice.
+          </div>
+        </div>
+      )}
+
       {/* ACTIVE TRACKING DATA CARD */}
       {booking && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'clamp(24px, 5vw, 44px)' }}>
@@ -397,24 +430,33 @@ export default function TrackBooking({ activeCode = '' }) {
               gap: '8px'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-aqua)', letterSpacing: '0.02em' }}>
-                    {booking.trackingCode}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <span style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    background: 'rgba(0, 229, 255, 0.1)',
-                    border: '1px solid rgba(0, 229, 255, 0.25)',
-                    color: 'var(--accent-cyan)',
-                    fontSize: '0.74rem',
-                    fontWeight: 700
+                    fontSize: '1.3rem',
+                    fontWeight: 900,
+                    color: '#FFFFFF',
+                    letterSpacing: '0.03em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
+                    <img src={getVehicleIcon(booking.vehicleType || booking.vehicleModel)} alt="" style={{ height: '20px', maxWidth: '32px', objectFit: 'contain' }} />
                     {booking.vehicleNumber}
                   </span>
+                  <span style={{
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    background: 'rgba(0, 229, 255, 0.12)',
+                    border: '1px solid rgba(0, 229, 255, 0.3)',
+                    color: 'var(--accent-cyan)',
+                    fontSize: '0.78rem',
+                    fontWeight: 700
+                  }}>
+                    {booking.vehicleModel || booking.vehicleType || 'Vehicle'}
+                  </span>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--ice-tint)', marginTop: '3px' }}>
-                  {booking.vehicleBrand || ''} {booking.vehicleModel || booking.vehicleType} • {booking.customerName}
+                <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
+                  {booking.customerName} {booking.phone ? `• ${booking.phone}` : ''}
                 </div>
               </div>
 
@@ -424,13 +466,19 @@ export default function TrackBooking({ activeCode = '' }) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '5px',
-                  background: currentStageIndex === 5
+                  background: isCancelled
+                    ? 'rgba(255, 89, 100, 0.15)'
+                    : currentStageIndex === 3
                     ? 'rgba(37, 211, 102, 0.15)'
                     : 'rgba(0, 210, 180, 0.15)',
-                  border: currentStageIndex === 5
+                  border: isCancelled
+                    ? '1px solid #FF5964'
+                    : currentStageIndex === 3
                     ? '1px solid #25D366'
                     : '1px solid var(--accent-aqua)',
-                  color: currentStageIndex === 5 ? '#25D366' : '#FFFFFF',
+                  color: isCancelled
+                    ? '#FF5964'
+                    : currentStageIndex === 3 ? '#25D366' : '#FFFFFF',
                   padding: '3px 10px',
                   borderRadius: '12px',
                   fontSize: '0.72rem',
@@ -442,19 +490,54 @@ export default function TrackBooking({ activeCode = '' }) {
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    background: currentStageIndex === 5 ? '#25D366' : 'var(--accent-aqua)',
-                    boxShadow: currentStageIndex === 5 ? '0 0 4px #25D366' : '0 0 4px var(--accent-aqua)'
+                    background: isCancelled ? '#FF5964' : currentStageIndex === 3 ? '#25D366' : 'var(--accent-aqua)',
+                    boxShadow: isCancelled ? '0 0 4px #FF5964' : currentStageIndex === 3 ? '0 0 4px #25D366' : '0 0 4px var(--accent-aqua)'
                   }} />
-                  {currentStageObj.label}
+                  {isCancelled ? 'CANCELLED' : currentStageObj.label}
                 </div>
               </div>
             </div>
 
-            {/* 6-STAGE VISUAL PROGRESSION PIPELINE */}
+            {/* CANCELLATION BANNER */}
+            {isCancelled && (
+              <div style={{
+                background: 'rgba(255, 89, 100, 0.12)',
+                border: '1px solid rgba(255, 89, 100, 0.35)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <AlertCircle size={18} color="#FF5964" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#FF5964' }}>
+                    Booking Cancelled
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--ice-tint)', marginTop: '2px' }}>
+                    This wash appointment has been cancelled. For any questions or to re-book, please contact support.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4-STAGE VISUAL PROGRESSION PIPELINE */}
             <div style={{ marginBottom: '14px' }}>
               
               {/* 1. DESKTOP STEPPER VIEW */}
-              <div className="track-stepper-desktop" style={{ marginBottom: '8px' }}>
+              <div
+                className="track-stepper-desktop"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${stages.length}, 1fr)`,
+                  gap: '8px',
+                  position: 'relative',
+                  margin: '24px 0 18px 0',
+                  alignItems: 'flex-start',
+                  width: '100%'
+                }}
+              >
                 {stages.map((stage, idx) => {
                   const isCompleted = idx < currentStageIndex;
                   const isCurrent = idx === currentStageIndex;
@@ -468,66 +551,110 @@ export default function TrackBooking({ activeCode = '' }) {
                         flexDirection: 'column',
                         alignItems: 'center',
                         textAlign: 'center',
-                        position: 'relative'
+                        position: 'relative',
+                        width: '100%'
                       }}
                     >
+                      {/* Connecting Progress Line to next step */}
+                      {idx < stages.length - 1 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '19px',
+                            left: '50%',
+                            width: '100%',
+                            height: '3px',
+                            background: idx < currentStageIndex
+                              ? 'linear-gradient(90deg, var(--accent-aqua), #00D2B4)'
+                              : 'rgba(74, 92, 106, 0.35)',
+                            boxShadow: idx < currentStageIndex ? '0 0 8px rgba(0, 210, 180, 0.4)' : 'none',
+                            zIndex: 1,
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      )}
+
+                      {/* Circle Icon Badge */}
                       <div style={{
-                        width: '32px',
-                        height: '32px',
+                        width: '38px',
+                        height: '38px',
                         borderRadius: '50%',
                         background: isCurrent
                           ? 'linear-gradient(135deg, #00D2B4 0%, #0096B4 100%)'
                           : isCompleted
-                            ? 'rgba(0, 210, 180, 0.2)'
-                            : 'rgba(10, 30, 39, 0.7)',
+                            ? 'rgba(0, 210, 180, 0.25)'
+                            : 'rgba(6, 26, 36, 0.95)',
                         border: isCurrent
-                          ? '2px solid #FFFFFF'
+                          ? '2.5px solid #FFFFFF'
                           : isCompleted
-                            ? '1.5px solid var(--accent-aqua)'
-                            : '1.5px solid rgba(74, 92, 106, 0.4)',
+                            ? '2px solid var(--accent-aqua)'
+                            : '1.5px solid rgba(74, 92, 106, 0.45)',
                         color: isCurrent ? '#003135' : isCompleted ? 'var(--accent-aqua)' : 'var(--text-muted)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontWeight: 800,
-                        fontSize: '0.74rem',
+                        fontSize: '0.8rem',
                         boxShadow: isCurrent
-                          ? '0 0 12px rgba(0, 210, 180, 0.6)'
+                          ? '0 0 16px rgba(0, 210, 180, 0.7)'
                           : 'none',
                         transition: 'all 0.3s ease',
-                        marginBottom: '4px'
+                        position: 'relative',
+                        zIndex: 2,
+                        marginBottom: '8px'
                       }}>
                         {isCompleted ? (
-                          <Check size={14} strokeWidth={3} />
+                          <Check size={16} strokeWidth={3} />
                         ) : isCurrent ? (
-                          <StageIcon size={14} strokeWidth={2.5} />
+                          <StageIcon size={17} strokeWidth={2.5} />
                         ) : (
                           <span>{idx + 1}</span>
                         )}
                       </div>
 
+                      {/* Stage Label */}
                       <div style={{
-                        fontSize: '0.68rem',
-                        fontWeight: isCurrent ? 800 : isCompleted ? 700 : 500,
-                        color: isCurrent ? 'var(--accent-aqua)' : isCompleted ? '#FFFFFF' : 'var(--text-muted)',
-                        lineHeight: 1.2
+                        fontSize: '0.82rem',
+                        fontWeight: isCurrent ? 800 : isCompleted ? 700 : 600,
+                        color: isCurrent ? 'var(--accent-aqua)' : isCompleted ? '#FFFFFF' : '#8A99AD',
+                        lineHeight: 1.3,
+                        position: 'relative',
+                        zIndex: 2
                       }}>
                         {stage.shortLabel || stage.label}
                       </div>
 
+                      {/* Sub-description */}
+                      <div style={{
+                        fontSize: '0.68rem',
+                        color: isCurrent ? 'var(--ice-tint)' : 'var(--text-muted)',
+                        marginTop: '3px',
+                        lineHeight: 1.2,
+                        maxWidth: '140px',
+                        position: 'relative',
+                        zIndex: 2
+                      }}>
+                        {stage.desc}
+                      </div>
+
+                      {/* LIVE Badge */}
                       {isCurrent && (
                         <span style={{
-                          marginTop: '2px',
+                          marginTop: '6px',
                           background: 'rgba(0, 210, 180, 0.2)',
                           color: 'var(--accent-aqua)',
                           border: '1px solid var(--accent-aqua)',
-                          fontSize: '0.55rem',
+                          fontSize: '0.6rem',
                           fontWeight: 800,
-                          padding: '1px 4px',
-                          borderRadius: '6px',
-                          textTransform: 'uppercase'
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          boxShadow: '0 0 8px rgba(0, 210, 180, 0.3)',
+                          position: 'relative',
+                          zIndex: 2
                         }}>
-                          LIVE
+                          ● LIVE
                         </span>
                       )}
                     </div>
@@ -535,10 +662,10 @@ export default function TrackBooking({ activeCode = '' }) {
                 })}
               </div>
 
-              {/* 2. MOBILE STEPPER VIEW (6 Small Stage Boxes under Progress Bar) */}
+              {/* 2. MOBILE STEPPER VIEW (4 Stage Boxes under Progress Bar) */}
               <div className="track-stepper-mobile">
                 {/* Segmented Progress Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stages.length}, 1fr)`, gap: '4px', marginBottom: '6px' }}>
                   {stages.map((st, idx) => {
                     const isDone = idx < currentStageIndex;
                     const isNow = idx === currentStageIndex;
@@ -561,8 +688,8 @@ export default function TrackBooking({ activeCode = '' }) {
                   })}
                 </div>
 
-                {/* 6 Stage Boxes Grid Directly Under Progress Bar */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', marginBottom: '8px' }}>
+                {/* Stage Boxes Grid Directly Under Progress Bar */}
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stages.length}, 1fr)`, gap: '4px', marginBottom: '8px' }}>
                   {stages.map((st, idx) => {
                     const isDone = idx < currentStageIndex;
                     const isNow = idx === currentStageIndex;

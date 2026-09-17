@@ -36,6 +36,7 @@ import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import { cleanText } from '../utils/cleanText';
 import { VEHICLE_ICONS } from '../utils/constants';
+import { notifyLiveSync } from '../utils';
 
 // Fallback high-resolution service catalog images hosted on Cloudinary
 const getFallbackServiceImage = (titleOrCategory = '') => {
@@ -85,6 +86,32 @@ export default function BookingFlow({
   const [vehicleModel, setVehicleModel] = useState('');
   const [isExistingCustomer, setIsExistingCustomer] = useState(false);
   const [existingVehicles, setExistingVehicles] = useState([]);
+
+  // Auto-populate logged-in customer data & garage vehicles
+  useEffect(() => {
+    let userToUse = currentUser;
+    if (!userToUse) {
+      try {
+        const saved = localStorage.getItem('carwash_customer');
+        if (saved) userToUse = JSON.parse(saved);
+      } catch (e) {}
+    }
+
+    if (userToUse) {
+      if (userToUse.name && !customerName) setCustomerName(userToUse.name);
+      if (userToUse.phone && !phone) setPhone(userToUse.phone);
+      if (userToUse.email && !email) setEmail(userToUse.email);
+      if (Array.isArray(userToUse.vehicles) && userToUse.vehicles.length > 0) {
+        setIsExistingCustomer(true);
+        setExistingVehicles(userToUse.vehicles);
+        if (!vehicleNumber && userToUse.vehicles[0]?.regNumber) {
+          setVehicleNumber(userToUse.vehicles[0].regNumber);
+          if (userToUse.vehicles[0].type) setVehicleType(userToUse.vehicles[0].type);
+          if (userToUse.vehicles[0].model) setVehicleModel(userToUse.vehicles[0].model);
+        }
+      }
+    }
+  }, [currentUser]);
 
   // Coupon
   const [couponCode, setCouponCode] = useState('');
@@ -336,63 +363,12 @@ export default function BookingFlow({
       const createdBooking = bookingRes.data.booking || bookingRes.data;
       const trackingCode = createdBooking.trackingCode;
 
-      // Helper to auto dispatch WhatsApp confirmation with tracking link to customer
-      const autoDispatchWhatsApp = (bData, waNotif) => {
-        try {
-          let targetUrl = waNotif?.waLinkCustomer || waNotif?.waLink;
-          if (!targetUrl && bData) {
-            const cleanPhone = (bData.phone || phone || '').replace(/\D/g, '');
-            const custPhone = cleanPhone.startsWith('91') ? cleanPhone : `91${cleanPhone.slice(-10)}`;
-            const siteBase = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://car-wash-grow-owl.vercel.app');
-            const trackUrl = `${siteBase}/?track=${bData.trackingCode || trackingCode}`;
-            const invUrl = `${siteBase}/?track=${bData.trackingCode || trackingCode}&invoice=1`;
-            const siteDisplay = siteBase.replace(/^https?:\/\//, '');
-            const rawSvc = bData.serviceName || serviceNameVal || 'Full Auto Spa & Wash';
-            const svcParts = rawSvc.split('+').map(s => s.trim()).filter(Boolean);
-            const formattedSvc = svcParts.length > 3 
-              ? `${svcParts.slice(0, 2).join(', ')} + ${svcParts.length - 2} more services` 
-              : svcParts.join(', ');
-
-            const msg = 
-              `*CAR WASH AUTO SPA*\n` +
-              `_Appointment Confirmation_\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `Dear *${bData.customerName || customerName}*,\n` +
-              `Your car wash appointment has been successfully confirmed.\n\n` +
-              `*APPOINTMENT & VEHICLE DETAILS*\n` +
-              `• Tracking ID: *${bData.trackingCode || trackingCode}*\n` +
-              `• Vehicle: *${bData.vehicleNumber || vehicleNumber}* (${bData.vehicleModel || vehicleType})\n` +
-              `• Date & Time: ${bData.date || selectedDate} at ${bData.slotTime || selectedSlot}\n` +
-              `• Service: ${formattedSvc}\n` +
-              `• Total Amount: Rs. ${bData.totalAmount || finalAmount} (${bData.paymentStatus || 'Pending'})\n\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n` +
-              `*LIVE STATUS TRACKING*\n` +
-              `Track live bay progress and technician updates in real-time:\n` +
-              `${trackUrl}\n\n` +
-              `*DIGITAL TAX INVOICE*\n` +
-              `View and download your official tax invoice:\n` +
-              `${invUrl}\n` +
-              `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-              `*CAR WASH AUTO SPA*\n` +
-              `• Helpline: +91 86095 04186\n` +
-              `• Website: ${siteDisplay}\n` +
-              `_Drive Clean. Go Further._`;
-            targetUrl = `https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`;
-          }
-          if (targetUrl) {
-            window.open(targetUrl, '_blank');
-          }
-        } catch (e) {
-          console.warn('Auto WhatsApp dispatch caught:', e);
-        }
-      };
-
       // Case A: Pay After Service
       if (!isPayOnline) {
         setConfirmedBooking(createdBooking);
         setShowInvoiceModal(true);
         if (onBookingComplete) onBookingComplete(trackingCode);
-        autoDispatchWhatsApp(createdBooking, bookingRes.data?.whatsappNotification);
+        notifyLiveSync({ type: 'BOOKING_CREATED', booking: createdBooking, trackingCode });
         setIsSubmitting(false);
         return;
       }
@@ -445,13 +421,12 @@ export default function BookingFlow({
               setConfirmedBooking(verifiedBooking);
               setShowInvoiceModal(true);
               if (onBookingComplete) onBookingComplete(trackingCode);
-              autoDispatchWhatsApp(verifiedBooking, verifyRes.data?.whatsappNotification || bookingRes.data?.whatsappNotification);
+              notifyLiveSync({ type: 'BOOKING_CREATED', booking: verifiedBooking, trackingCode });
             } catch (vErr) {
               console.error('Verification error:', vErr);
               alert(vErr.response?.data?.error || 'Payment received, but confirmation sync is in progress. Check tracking portal.');
               setConfirmedBooking(createdBooking);
               setShowInvoiceModal(true);
-              autoDispatchWhatsApp(createdBooking, bookingRes.data?.whatsappNotification);
             } finally {
               setIsSubmitting(false);
             }
@@ -478,7 +453,7 @@ export default function BookingFlow({
         setConfirmedBooking(createdBooking);
         setShowInvoiceModal(true);
         if (onBookingComplete) onBookingComplete(trackingCode);
-        autoDispatchWhatsApp(createdBooking, bookingRes.data?.whatsappNotification);
+        notifyLiveSync({ type: 'BOOKING_CREATED', booking: createdBooking, trackingCode });
         setIsSubmitting(false);
       }
     } catch (err) {

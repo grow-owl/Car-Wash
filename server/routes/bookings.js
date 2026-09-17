@@ -170,7 +170,7 @@ router.get('/bays', async (req, res) => {
     }
 
     // Sync bay status with current live bookings
-    const activeStatuses = ['washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay'];
+    const activeStatuses = ['in_progress', 'washing', 'detailing', 'vehicle_received', 'quality_check', 'in_bay', 'confirmed', 'pending'];
     for (let bay of bays) {
       const bayStr = `BAY ${bay.bayNumber}`;
       const activeBooking = await Booking.findOne({
@@ -206,12 +206,30 @@ router.put('/bays/:id', async (req, res) => {
   }
 });
 
-// GET single booking by tracking code
-router.get('/track/:code', async (req, res) => {
+// GET single booking by vehicle number or tracking code
+router.get('/track/:query', async (req, res) => {
   try {
-    const booking = await Booking.findOne({ trackingCode: req.params.code.toUpperCase() });
+    const raw = (req.params.query || '').trim();
+    if (!raw) {
+      return res.status(400).json({ error: 'Please enter a vehicle number' });
+    }
+    const q = raw.toUpperCase();
+    const cleanVeh = q.replace(/[\s-]/g, '');
+
+    // Search by vehicleNumber first (allowing optional spaces between letters/digits),
+    // then fallback to exact trackingCode or phone
+    const regexPattern = cleanVeh.split('').map(c => `[${c}]`).join('\\s*[-]?\\s*');
+    const booking = await Booking.findOne({
+      $or: [
+        { vehicleNumber: q },
+        { vehicleNumber: { $regex: new RegExp(`^\\s*${regexPattern}\\s*$`, 'i') } },
+        { trackingCode: q },
+        { phone: q }
+      ]
+    }).sort({ createdAt: -1 });
+
     if (!booking) {
-      return res.status(404).json({ error: 'Booking code not found. Please check your tracking ID.' });
+      return res.status(404).json({ error: `No booking found for vehicle "${raw}". Please verify the vehicle number.` });
     }
     res.json(booking);
   } catch (err) {
@@ -453,28 +471,10 @@ router.post('/', async (req, res) => {
       await customer.save();
     }
 
-    // Generate Automated WhatsApp Notification Payload with Tracking Link
-    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
-    const waNotification = buildOfficialInvoiceWhatsAppMessage(newBooking, newBooking.status, clientOrigin);
-
     res.status(201).json({
-      message: 'Booking confirmed successfully! Automated WhatsApp notification generated.',
+      message: 'Booking confirmed successfully!',
       booking: newBooking,
-      trackingCode: newBooking.trackingCode,
-      whatsappNotification: {
-        sent: true,
-        phone: newBooking.phone,
-        customerName: newBooking.customerName,
-        message: waNotification.text,
-        waLink: waNotification.waLinkCustomer,
-        waLinkCustomer: waNotification.waLinkCustomer,
-        waLinkOwner: waNotification.waLinkOwner,
-        trackUrl: waNotification.trackUrl,
-        invoiceUrl: waNotification.invoiceUrl,
-        invoiceNumber: waNotification.invoiceNumber,
-        trackingCode: waNotification.trackingCode,
-        status: waNotification.status
-      }
+      trackingCode: newBooking.trackingCode
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -577,27 +577,10 @@ router.post('/walkin', async (req, res) => {
       await customer.save();
     }
 
-    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
-    const waNotification = buildOfficialInvoiceWhatsAppMessage(walkInBooking, walkInBooking.status, clientOrigin);
-
     res.status(201).json({
       message: 'Walk-in Ticket created & Job started in Bay',
       booking: walkInBooking,
-      trackingCode: walkInBooking.trackingCode,
-      whatsappNotification: {
-        sent: true,
-        phone: walkInBooking.phone,
-        customerName: walkInBooking.customerName,
-        message: waNotification.text,
-        waLink: waNotification.waLinkCustomer,
-        waLinkCustomer: waNotification.waLinkCustomer,
-        waLinkOwner: waNotification.waLinkOwner,
-        trackUrl: waNotification.trackUrl,
-        invoiceUrl: waNotification.invoiceUrl,
-        invoiceNumber: waNotification.invoiceNumber,
-        trackingCode: waNotification.trackingCode,
-        status: waNotification.status
-      }
+      trackingCode: walkInBooking.trackingCode
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -776,28 +759,9 @@ router.patch('/:id/status', async (req, res) => {
       await awardReferralPointsIfApplicable(booking);
     }
 
-    // Generate Automated WhatsApp Notification Payload
-    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
-    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
-    console.log(`[AUTOMATED WHATSAPP INVOICE TRIGGERED] To: ${booking.phone} (${booking.customerName}) & Owner (+91 86095 04186) | Status: ${booking.status}`);
-
     res.json({
-      message: `Status updated to ${booking.status}. Official Invoice WhatsApp notification generated!`,
-      booking,
-      whatsappNotification: {
-        sent: true,
-        phone: booking.phone,
-        customerName: booking.customerName,
-        message: waNotification.text,
-        waLink: waNotification.waLinkCustomer,
-        waLinkCustomer: waNotification.waLinkCustomer,
-        waLinkOwner: waNotification.waLinkOwner,
-        trackUrl: waNotification.trackUrl,
-        invoiceUrl: waNotification.invoiceUrl,
-        invoiceNumber: waNotification.invoiceNumber,
-        trackingCode: waNotification.trackingCode,
-        status: waNotification.status
-      }
+      message: `Status updated to ${booking.status}.`,
+      booking
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -820,23 +784,9 @@ router.patch('/:id/pay', async (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     await awardReferralPointsIfApplicable(booking);
 
-    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
-    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
-
     res.json({
       message: 'Payment recorded successfully',
-      booking,
-      whatsappNotification: {
-        sent: true,
-        phone: booking.phone,
-        customerName: booking.customerName,
-        message: waNotification.text,
-        waLink: waNotification.waLinkCustomer,
-        waLinkCustomer: waNotification.waLinkCustomer,
-        waLinkOwner: waNotification.waLinkOwner,
-        trackUrl: waNotification.trackUrl,
-        invoiceUrl: waNotification.invoiceUrl
-      }
+      booking
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -859,23 +809,9 @@ router.patch('/track/:code/pay', async (req, res) => {
     if (!booking) return res.status(404).json({ error: 'Booking tracking code not found' });
     await awardReferralPointsIfApplicable(booking);
 
-    const clientOrigin = req.headers.origin || req.headers.referer ? new URL(req.headers.origin || req.headers.referer).origin : '';
-    const waNotification = buildOfficialInvoiceWhatsAppMessage(booking, booking.status, clientOrigin);
-
     res.json({
       message: 'Payment confirmed successfully',
-      booking,
-      whatsappNotification: {
-        sent: true,
-        phone: booking.phone,
-        customerName: booking.customerName,
-        message: waNotification.text,
-        waLink: waNotification.waLinkCustomer,
-        waLinkCustomer: waNotification.waLinkCustomer,
-        waLinkOwner: waNotification.waLinkOwner,
-        trackUrl: waNotification.trackUrl,
-        invoiceUrl: waNotification.invoiceUrl
-      }
+      booking
     });
   } catch (err) {
     res.status(400).json({ error: err.message });

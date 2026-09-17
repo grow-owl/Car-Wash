@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plus, Sparkles, CheckCircle2, ChevronRight, Clock, ShieldCheck, User } from 'lucide-react';
 import { formatCurrency } from '../../../utils';
 import { getVehicleIcon } from '../../../utils/constants';
@@ -11,12 +11,94 @@ export default function AdminAnalyticsTab({
   handleStatusChange,
   handleBayChange,
   setAllotModalBay,
-  setWalkInVeh,
   setShowWalkInModal,
   handleOpenCustomerTimeline,
   setActiveSubTab
 }) {
 
+// Active statuses where a car is occupying a bay and work is ongoing/waiting in bay
+const isBookingOccupyingBay = (booking) => {
+  if (!booking) return false;
+  const s = String(booking.status || '').toLowerCase().trim();
+  if (s === 'completed' || s === 'cancelled') return false;
+  const activeStatuses = ['washing', 'in_progress', 'detailing', 'vehicle_received', 'quality_check', 'ready_for_pickup', 'confirmed', 'pending', 'in_bay'];
+  return activeStatuses.includes(s);
+};
+
+// Check if a specific bay is occupied by another car
+const getOccupyingCar = (bayNumOrName, currentBookingId, allBookings = []) => {
+  const bayStr = typeof bayNumOrName === 'number' ? `BAY ${bayNumOrName}` : String(bayNumOrName || '').toUpperCase();
+  return allBookings.find(item => {
+    if (item._id === currentBookingId) return false;
+    if (!isBookingOccupyingBay(item)) return false;
+    const assigned = String(item.bayAssigned || item.assignedBay || '').toUpperCase();
+    return assigned.includes(bayStr);
+  });
+};
+
+// Helper to convert booking date and slotTime to comparable timestamp for sorting
+const getBookingDateTimeValue = (b) => {
+  if (!b) return 0;
+  const dateStr = b.date || (b.createdAt ? new Date(b.createdAt).toISOString().split('T')[0] : '');
+  let timeStr = String(b.slotTime || '').trim().toUpperCase();
+
+  let hours = 10;
+  let minutes = 0;
+
+  if (timeStr.includes('NOW')) {
+    if (b.createdAt) {
+      const d = new Date(b.createdAt);
+      hours = d.getHours();
+      minutes = d.getMinutes();
+    } else {
+      hours = 23;
+      minutes = 59;
+    }
+  } else {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})(?:\s*(AM|PM))?/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const meridiem = match[3];
+      if (meridiem) {
+        if (meridiem === 'PM' && h < 12) h += 12;
+        if (meridiem === 'AM' && h === 12) h = 0;
+      }
+      hours = h;
+      minutes = m;
+    }
+  }
+
+  if (dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(year, month, day, hours, minutes, 0).getTime();
+    }
+  }
+
+  if (b.createdAt) {
+    return new Date(b.createdAt).getTime();
+  }
+
+  return 0;
+};
+
+  // Sort Recent Queue by Date and Time (newest / most recent first) exclusively for overview page
+  const sortedRecentBookings = useMemo(() => {
+    return [...bookings].sort((a, b) => {
+      const timeA = getBookingDateTimeValue(a);
+      const timeB = getBookingDateTimeValue(b);
+      if (timeB !== timeA) {
+        return timeB - timeA;
+      }
+      const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdB - createdA;
+    });
+  }, [bookings]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -57,7 +139,7 @@ export default function AdminAnalyticsTab({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))',
           gap: '16px',
-          alignItems: 'start'
+          alignItems: 'stretch'
         }}>
           {[
             { bayNumber: 1, name: 'BAY 1' },
@@ -72,10 +154,9 @@ export default function AdminAnalyticsTab({
               const s = String(status || '').toLowerCase().trim();
               if (s === 'confirmed') return 'CONFIRMED';
               if (s === 'vehicle_received' || s === 'received') return 'RECEIVED';
-              if (s === 'in_progress' || s === 'washing') return 'IN PROGRESS';
-              if (s === 'quality_check') return 'QUALITY CHECK';
-              if (s === 'ready_for_pickup' || s === 'ready') return 'READY';
-              if (s === 'completed') return 'COMPLETED';
+              if (s === 'in_progress' || s === 'washing' || s === 'quality_check' || s === 'detailing') return 'IN PROGRESS';
+              if (s === 'completed' || s === 'ready' || s === 'ready_for_pickup') return 'COMPLETE';
+              if (s === 'cancelled') return 'CANCELLED';
               return (status || 'Active').toUpperCase().replace('_', ' ');
             };
 
@@ -89,8 +170,8 @@ export default function AdminAnalyticsTab({
                   border: isOccupied ? '1.5px solid rgba(0, 229, 255, 0.5)' : '1px solid var(--border-light)',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'flex-start',
-                  minHeight: '210px',
+                  justifyContent: 'space-between',
+                  height: '100%',
                   boxSizing: 'border-box',
                   width: '100%',
                   gap: '14px',
@@ -183,7 +264,7 @@ export default function AdminAnalyticsTab({
                     </div>
 
                     {/* Quick Stage Controls (Desktop & Mobile Unified Grid) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', alignItems: 'center', marginTop: 'auto' }}>
                       <select
                         value={activeCar.status}
                         onChange={(e) => handleStatusChange(activeCar._id, e.target.value)}
@@ -200,9 +281,8 @@ export default function AdminAnalyticsTab({
                         <option value="confirmed">1. Confirmed</option>
                         <option value="vehicle_received">2. Received</option>
                         <option value="in_progress">3. In Progress</option>
-                        <option value="quality_check">4. Quality Check</option>
-                        <option value="ready_for_pickup">5. Ready</option>
-                        <option value="completed">6. Completed</option>
+                        <option value="completed">4. Complete</option>
+                        <option value="cancelled">Cancelled</option>
                       </select>
 
                       <button
@@ -230,43 +310,66 @@ export default function AdminAnalyticsTab({
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '22px 10px',
-                    gap: '14px',
-                    textAlign: 'center'
+                    justifyContent: 'space-between',
+                    flex: 1,
+                    gap: '12px'
                   }}>
                     <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '50%',
-                      background: 'rgba(37, 211, 102, 0.1)',
-                      border: '1px solid rgba(37, 211, 102, 0.25)',
+                      background: 'rgba(0, 0, 0, 0.25)',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(74, 92, 106, 0.25)',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      flex: 1,
+                      gap: '10px',
+                      textAlign: 'center'
                     }}>
-                      <Sparkles size={20} color="#25D366" />
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        background: 'rgba(37, 211, 102, 0.12)',
+                        border: '1px solid rgba(37, 211, 102, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Sparkles size={18} color="#25D366" />
+                      </div>
+
+                      <div style={{ fontSize: '0.84rem', color: 'var(--ice-tint)', lineHeight: 1.4 }}>
+                        {bayName} is currently clean and ready for next car
+                      </div>
                     </div>
 
-                    <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', lineHeight: 1.4 }}>
-                      {bayName} is currently clean and ready for next car
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '8px',
+                      alignItems: 'center',
+                      marginTop: 'auto',
+                      width: '100%'
+                    }}>
                       <button
                         onClick={() => setAllotModalBay(bayName)}
                         className="btn-primary"
                         style={{
-                          padding: '8px 16px',
+                          height: '36px',
+                          minHeight: '36px',
+                          maxHeight: '36px',
+                          padding: '0 12px',
                           fontSize: '0.8rem',
                           fontWeight: 800,
                           borderRadius: '8px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          flex: '1 1 auto',
-                          justifyContent: 'center'
+                          justifyContent: 'center',
+                          width: '100%',
+                          boxSizing: 'border-box'
                         }}
                       >
                         Allot Waiting Car ({waitingCars.length})
@@ -274,17 +377,22 @@ export default function AdminAnalyticsTab({
 
                       <button
                         onClick={() => {
-                          setWalkInVeh('');
                           setShowWalkInModal(true);
                         }}
                         className="btn-secondary"
                         style={{
-                          padding: '8px 16px',
+                          height: '36px',
+                          minHeight: '36px',
+                          maxHeight: '36px',
+                          padding: '0 14px',
                           fontSize: '0.8rem',
                           fontWeight: 700,
                           borderRadius: '8px',
-                          flex: '1 1 auto',
-                          justifyContent: 'center'
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '100%',
+                          boxSizing: 'border-box'
                         }}
                       >
                         + Walk-In
@@ -328,69 +436,100 @@ export default function AdminAnalyticsTab({
             <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--ice-tint)' }}>
-                  <th style={{ padding: '12px 10px', width: '90px' }}>Code</th>
-                  <th style={{ padding: '12px 10px', width: '130px' }}>Date & Slot</th>
-                  <th style={{ padding: '12px 10px', width: '160px' }}>Customer</th>
-                  <th style={{ padding: '12px 10px', width: '150px' }}>Vehicle</th>
-                  <th style={{ padding: '12px 10px' }}>Service</th>
-                  <th style={{ padding: '12px 10px', width: '95px' }}>Bay</th>
-                  <th style={{ padding: '12px 10px', width: '160px' }}>Status</th>
-                  <th style={{ padding: '12px 10px', width: '100px', textAlign: 'right' }}>Amount</th>
+                  <th style={{ padding: '14px 12px', width: '135px' }}>Date & Slot</th>
+                  <th style={{ padding: '14px 12px', width: '175px' }}>Customer</th>
+                  <th style={{ padding: '14px 12px', width: '165px' }}>Vehicle</th>
+                  <th style={{ padding: '14px 12px' }}>Service / Package</th>
+                  <th style={{ padding: '14px 12px', width: '110px' }}>Bay</th>
+                  <th style={{ padding: '14px 12px', width: '165px' }}>Status</th>
+                  <th style={{ padding: '14px 12px', width: '110px', textAlign: 'right' }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.slice(0, 6).map((b) => {
-                  const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
+                {sortedRecentBookings.slice(0, 6).map((b) => {
+                  const isDone = b.status === 'completed' || b.status === 'cancelled';
+                  const bay1Car = getOccupyingCar(1, b._id, bookings);
+                  const bay2Car = getOccupyingCar(2, b._id, bookings);
+
+                  const isBay1Busy = !!bay1Car;
+                  const isBay2Busy = !!bay2Car;
+
+                  const currentAssigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+                  const isCurrentInBay1 = currentAssigned.includes('BAY 1');
+                  const isCurrentInBay2 = currentAssigned.includes('BAY 2');
+
+                  const areBothBaysBusy = isBay1Busy && isBay2Busy;
+                  const isSelectDisabled = isDone || (areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2);
+
                   return (
                     <tr key={b._id} style={{ borderBottom: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                      {/* Tracking Code */}
-                      <td style={{ padding: '12px 10px', fontWeight: 800, color: 'var(--accent-cyan)', whiteSpace: 'nowrap' }}>
-                        {code}
-                      </td>
-
                       {/* Date & Slot */}
-                      <td style={{ padding: '12px 10px', color: '#CCD0CF', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '14px 12px', color: '#CCD0CF', whiteSpace: 'nowrap' }}>
                         <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.date || 'Today'}</div>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold)' }}>{b.slotTime || '10:00 AM'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', marginTop: '2px' }}>{b.slotTime || '10:00 AM'}</div>
                       </td>
 
                       {/* Customer */}
-                      <td style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
                         <div
                           onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
                           style={{ fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
-                          title="Click to view 2-Year Lifetime History"
+                          title="Click to view Customer Lifetime History"
                         >
                           {b.customerName}
                         </div>
-                        <div style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>{b.phone}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontFamily: 'monospace', marginTop: '2px' }}>{b.phone}</div>
                       </td>
 
                       {/* Vehicle */}
-                      <td style={{ padding: '12px 10px', color: 'var(--ice-tint)', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                        {b.vehicleModel && <div style={{ fontSize: '0.74rem' }}>{b.vehicleModel}</div>}
+                      <td style={{ padding: '14px 12px', color: 'var(--ice-tint)', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                          <span>{b.vehicleNumber}</span>
+                        </div>
+                        {b.vehicleModel && <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>{b.vehicleModel}</div>}
                       </td>
 
                       {/* Service with clean interactive dropdown formatting */}
-                      <td style={{ padding: '12px 10px' }}>
+                      <td style={{ padding: '14px 12px' }}>
                         <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
                       </td>
 
-                      {/* Bay Selector */}
-                      <td style={{ padding: '12px 10px' }}>
+                      {/* Bay Selector with Occupancy Check */}
+                      <td style={{ padding: '14px 12px' }}>
                         <select
-                          value={b.bayAssigned || 'BAY 1'}
+                          value={b.bayAssigned || (isBay1Busy && !isBay2Busy ? 'BAY 2' : 'BAY 1')}
                           onChange={(e) => handleBayChange(b._id, e.target.value)}
+                          disabled={isSelectDisabled}
                           className="admin-select-table"
+                          title={
+                            isDone
+                              ? 'Service finished. Bay assignment closed.'
+                              : areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2
+                              ? 'Both Bay 1 and Bay 2 are currently busy with ongoing work'
+                              : 'Select Bay'
+                          }
                         >
-                          <option value="BAY 1">BAY 1</option>
-                          <option value="BAY 2">BAY 2</option>
+                          {areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2 && (
+                            <option value="" disabled>Both Bays Busy</option>
+                          )}
+                          <option
+                            value="BAY 1"
+                            disabled={isBay1Busy}
+                          >
+                            BAY 1 {isBay1Busy ? `(Busy - ${bay1Car.vehicleNumber || 'Occupied'})` : ''}
+                          </option>
+                          <option
+                            value="BAY 2"
+                            disabled={isBay2Busy}
+                          >
+                            BAY 2 {isBay2Busy ? `(Busy - ${bay2Car.vehicleNumber || 'Occupied'})` : ''}
+                          </option>
                         </select>
                       </td>
 
                       {/* Status Selector */}
-                      <td style={{ padding: '12px 10px' }}>
+                      <td style={{ padding: '14px 12px' }}>
                         <select
                           value={b.status}
                           onChange={(e) => handleStatusChange(b._id, e.target.value)}
@@ -402,17 +541,15 @@ export default function AdminAnalyticsTab({
                           <option value="confirmed">1. Confirmed</option>
                           <option value="vehicle_received">2. Received</option>
                           <option value="in_progress">3. In Progress</option>
-                          <option value="quality_check">4. Quality Check</option>
-                          <option value="ready_for_pickup">5. Ready</option>
-                          <option value="completed">6. Completed</option>
+                          <option value="completed">4. Complete</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
                       </td>
 
                       {/* Amount */}
-                      <td style={{ padding: '12px 10px', fontWeight: 800, color: 'var(--accent-gold)', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                      <td style={{ padding: '14px 12px', fontWeight: 800, color: 'var(--accent-gold)', whiteSpace: 'nowrap', textAlign: 'right' }}>
                         ₹{b.totalAmount}
-                        <div style={{ fontSize: '0.68rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700 }}>
+                        <div style={{ fontSize: '0.68rem', color: b.paymentStatus === 'Paid' ? '#25D366' : '#FF5964', fontWeight: 700, marginTop: '2px' }}>
                           {b.paymentStatus || 'Pending'}
                         </div>
                       </td>
@@ -426,9 +563,21 @@ export default function AdminAnalyticsTab({
 
         {/* MOBILE QUEUE CARDS VIEW (< 768px) */}
         <div className="queue-mobile-cards">
-          {bookings.slice(0, 6).map((b) => {
-            const code = b.trackingCode || b.bookingCode || ('CW-' + (b._id ? b._id.slice(-4).toUpperCase() : '1001'));
-            const isDone = b.status === 'completed' || b.status === 'ready';
+          {sortedRecentBookings.slice(0, 6).map((b) => {
+            const isDone = b.status === 'completed' || b.status === 'cancelled';
+            const bay1Car = getOccupyingCar(1, b._id, bookings);
+            const bay2Car = getOccupyingCar(2, b._id, bookings);
+
+            const isBay1Busy = !!bay1Car;
+            const isBay2Busy = !!bay2Car;
+
+            const currentAssigned = String(b.bayAssigned || b.assignedBay || '').toUpperCase();
+            const isCurrentInBay1 = currentAssigned.includes('BAY 1');
+            const isCurrentInBay2 = currentAssigned.includes('BAY 2');
+
+            const areBothBaysBusy = isBay1Busy && isBay2Busy;
+            const isSelectDisabled = isDone || (areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2);
+
             return (
               <div
                 key={b._id}
@@ -444,11 +593,12 @@ export default function AdminAnalyticsTab({
                   marginBottom: '10px'
                 }}
               >
-                {/* Top Row: Code + Bay Tag + Status Badge */}
+                {/* Top Row: Vehicle Number + Bay Tag + Status Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 900, color: 'var(--accent-cyan)', fontSize: '0.92rem' }}>
-                      {code}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                      {b.vehicleNumber}
                     </span>
                     <span style={{
                       fontSize: '0.68rem',
@@ -477,30 +627,30 @@ export default function AdminAnalyticsTab({
                 </div>
 
                 {/* Customer & Vehicle Info Box */}
-                <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.2)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                <div style={{ background: 'rgba(0, 0, 0, 0.28)', padding: '11px 14px', borderRadius: '8px', border: '1px solid rgba(74, 92, 106, 0.25)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                     <span
                       onClick={() => handleOpenCustomerTimeline(b.phone || b.vehicleNumber, b.customerName)}
-                      style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.88rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                      style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'rgba(0, 229, 255, 0.4)' }}
+                      title="Click to view Customer Lifetime History"
                     >
                       {b.customerName}
                     </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--ice-tint)', fontFamily: 'monospace' }}>
                       {b.phone}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem', color: 'var(--ice-tint)' }}>
-                    <span style={{ fontWeight: 700, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
-                      {b.vehicleNumber} {b.vehicleModel ? `• ${b.vehicleModel}` : `• ${b.vehicleType}`}
+                    <span style={{ color: 'var(--ice-tint)', fontWeight: 600 }}>
+                      {b.vehicleModel && b.vehicleModel !== b.vehicleType ? `${b.vehicleModel} • ` : ''}{b.vehicleType || 'Sedan'}
                     </span>
-                    <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.74rem' }}>
-                      {b.slotTime || '10:00 AM'}
+                    <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.75rem' }}>
+                      {b.date ? `${b.date} • ` : ''}{b.slotTime || '10:00 AM'}
                     </span>
                   </div>
 
-                  <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
+                  <div style={{ marginTop: '3px', paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.25)' }}>
                     <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} />
                   </div>
                 </div>
@@ -522,15 +672,14 @@ export default function AdminAnalyticsTab({
                     <option value="confirmed">1. Confirmed</option>
                     <option value="vehicle_received">2. Received</option>
                     <option value="in_progress">3. In Progress</option>
-                    <option value="quality_check">4. Quality Check</option>
-                    <option value="ready_for_pickup">5. Ready</option>
-                    <option value="completed">6. Completed</option>
+                    <option value="completed">4. Complete</option>
                     <option value="cancelled">Cancelled</option>
                   </select>
 
                   <select
-                    value={b.bayAssigned || 'BAY 1'}
+                    value={b.bayAssigned || (isBay1Busy && !isBay2Busy ? 'BAY 2' : 'BAY 1')}
                     onChange={(e) => handleBayChange(b._id, e.target.value)}
+                    disabled={isSelectDisabled}
                     className="admin-select"
                     style={{
                       height: '34px',
@@ -538,9 +687,29 @@ export default function AdminAnalyticsTab({
                       fontSize: '0.75rem',
                       width: '100%'
                     }}
+                    title={
+                      isDone
+                        ? 'Service finished. Bay assignment closed.'
+                        : areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2
+                        ? 'Both Bay 1 and Bay 2 are currently busy with ongoing work'
+                        : 'Select Bay'
+                    }
                   >
-                    <option value="BAY 1">BAY 1</option>
-                    <option value="BAY 2">BAY 2</option>
+                    {areBothBaysBusy && !isCurrentInBay1 && !isCurrentInBay2 && (
+                      <option value="" disabled>Both Bays Busy</option>
+                    )}
+                    <option
+                      value="BAY 1"
+                      disabled={isBay1Busy}
+                    >
+                      BAY 1 {isBay1Busy ? `(Busy - ${bay1Car.vehicleNumber || 'Occupied'})` : ''}
+                    </option>
+                    <option
+                      value="BAY 2"
+                      disabled={isBay2Busy}
+                    >
+                      BAY 2 {isBay2Busy ? `(Busy - ${bay2Car.vehicleNumber || 'Occupied'})` : ''}
+                    </option>
                   </select>
 
                   <div style={{
