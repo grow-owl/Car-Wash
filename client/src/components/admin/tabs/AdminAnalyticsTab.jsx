@@ -229,8 +229,7 @@ const getBookingDateTimeValue = (b) => {
                     }}>
                       {/* Top Row: Vehicle Number & Type */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '1.02rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.02em', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <img src={getVehicleIcon(activeCar.vehicleType || activeCar.vehicleModel)} alt="" style={{ height: '16px', maxWidth: '28px', objectFit: 'contain' }} />
+                        <span style={{ fontSize: '1.02rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '0.02em' }}>
                           {activeCar.vehicleNumber}
                         </span>
                         <span style={{
@@ -483,9 +482,8 @@ const getBookingDateTimeValue = (b) => {
 
                       {/* Vehicle */}
                       <td style={{ padding: '14px 12px', color: 'var(--ice-tint)', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
-                          <span>{b.vehicleNumber}</span>
+                        <div style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.92rem' }}>
+                          {b.vehicleNumber}
                         </div>
                         {b.vehicleModel && <div style={{ fontSize: '0.74rem', marginTop: '2px' }}>{b.vehicleModel}</div>}
                       </td>
@@ -596,8 +594,7 @@ const getBookingDateTimeValue = (b) => {
                 {/* Top Row: Vehicle Number + Bay Tag + Status Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem' }}>
                       {b.vehicleNumber}
                     </span>
                     <span style={{

@@ -1,6 +1,5 @@
 import React from 'react';
 import { History, X, Loader2, FileText } from 'lucide-react';
-import { getVehicleIcon } from '../../../utils/constants';
 
 export default function CustomerTimelineModal({
   isOpen,
@@ -147,9 +146,8 @@ export default function CustomerTimelineModal({
                         </td>
                         <td style={{ padding: '10px' }}>
                           <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <img src={getVehicleIcon(b.vehicleType)} alt="" style={{ height: '13px', maxWidth: '20px', objectFit: 'contain' }} />
-                            <span>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</span>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--ice-tint)' }}>
+                            {b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}
                           </div>
                         </td>
                         <td style={{ padding: '10px' }}>

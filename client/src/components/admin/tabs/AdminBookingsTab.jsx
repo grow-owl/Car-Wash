@@ -1,7 +1,6 @@
 import React from 'react';
 import { Download, Plus, Calendar, Search, MessageSquare, History, FileText, Trash2 } from 'lucide-react';
 import { generateInvoiceWhatsAppUrl } from '../../../utils';
-import { getVehicleIcon } from '../../../utils/constants';
 import ServiceDropdownPill from '../ServiceDropdownPill';
 
 export default function AdminBookingsTab({
@@ -194,9 +193,8 @@ export default function AdminBookingsTab({
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ fontWeight: 700, color: '#FFFFFF' }}>{b.vehicleNumber}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <img src={getVehicleIcon(b.vehicleType)} alt="" style={{ height: '14px', maxWidth: '22px', objectFit: 'contain' }} />
-                          <span>{b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}</span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--ice-tint)' }}>
+                          {b.vehicleType} {b.vehicleModel ? `• ${b.vehicleModel}` : ''}
                         </div>
                       </td>
                       <td style={{ padding: '10px' }}>
@@ -430,8 +428,7 @@ export default function AdminBookingsTab({
                 {/* Top Row: Vehicle Number + Bay Tag + Status Badge */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                      <img src={getVehicleIcon(b.vehicleType || b.vehicleModel)} alt="" style={{ height: '14px', maxWidth: '24px', objectFit: 'contain' }} />
+                    <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.98rem' }}>
                       {b.vehicleNumber}
                     </span>
                     <span style={{
