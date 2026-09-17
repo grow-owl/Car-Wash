@@ -115,21 +115,8 @@ const getBookingDateTimeValue = (b) => {
             fontSize: '1.25rem',
             fontWeight: 800,
             margin: 0,
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
+            color: '#FFFFFF'
           }}>
-            <img
-              src={getVehicleIcon('Sedan')}
-              alt=""
-              style={{
-                height: '22px',
-                maxWidth: '34px',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.8))'
-              }}
-            />
             Live Bay Management
           </h3>
         </div>
@@ -256,9 +243,9 @@ const getBookingDateTimeValue = (b) => {
                         <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{activeCar.phone}</span>
                       </div>
 
-                      {/* Service list: Directly visible and scrollable in fixed container */}
+                      {/* Service list: Compact with floating dropdown or popup */}
                       <div style={{ paddingTop: '6px', borderTop: '1px dashed rgba(74, 92, 106, 0.3)', marginTop: '2px' }}>
-                        <ServiceDropdownPill serviceStr={activeCar.serviceName || activeCar.packageName} addons={activeCar.addons} alwaysOpen={true} />
+                        <ServiceDropdownPill serviceStr={activeCar.serviceName || activeCar.packageName} addons={activeCar.addons} services={activeCar.services} />
                       </div>
                     </div>
 
@@ -336,7 +323,15 @@ const getBookingDateTimeValue = (b) => {
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>
-                        <Sparkles size={18} color="#25D366" />
+                        <img
+                          src={getVehicleIcon('Sedan')}
+                          alt=""
+                          style={{
+                            height: '18px',
+                            maxWidth: '28px',
+                            objectFit: 'contain'
+                          }}
+                        />
                       </div>
 
                       <div style={{ fontSize: '0.84rem', color: 'var(--ice-tint)', lineHeight: 1.4 }}>
@@ -490,7 +485,7 @@ const getBookingDateTimeValue = (b) => {
 
                       {/* Service with clean interactive dropdown formatting */}
                       <td style={{ padding: '14px 12px' }}>
-                        <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
+                        <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} services={b.services} compact={true} />
                       </td>
 
                       {/* Bay Selector with Occupancy Check */}

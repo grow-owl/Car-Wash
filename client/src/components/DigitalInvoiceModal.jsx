@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Printer, MessageSquare, ExternalLink, X } from 'lucide-react';
+import { getBasePriceForService } from '../utils/constants';
 
 export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, onTrackLive }) {
   if (!booking || isOpen === false) return null;
+
+  // Lock background scrolling when invoice modal is open
+  useEffect(() => {
+    const origOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = origOverflow;
+    };
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -43,19 +53,50 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
 
   const subtotal = totalAmount + discount;
 
-  // Split multiple booked services cleanly into individual line items
-  const rawServices = (booking.serviceName || booking.packageName || 'Full Car Wash & Detailing Service')
-    .split('+')
-    .map(s => s.trim())
-    .filter(Boolean);
+  // Extract all individual services cleanly into separate numbered rows
+  const extractItems = (raw) => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw.flatMap(extractItems);
+    }
+    const str = typeof raw === 'string' ? raw : (raw?.name || raw?.title || raw?.addonName || '');
+    return str
+      .split(/[+,]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  };
+
+  const parsedServices = extractItems(
+    (Array.isArray(booking.services) && booking.services.length > 0)
+      ? booking.services
+      : (booking.serviceName || booking.packageName || 'Full Car Wash & Detailing Service')
+  );
+
+  const uniqueServices = [];
+  parsedServices.forEach(s => {
+    if (s && !uniqueServices.includes(s)) {
+      uniqueServices.push(s);
+    }
+  });
+
+  if (uniqueServices.length === 0) {
+    uniqueServices.push('Full Car Wash & Detailing Service');
+  }
 
   let lineItems = [];
-  if (rawServices.length > 1) {
-    const perServicePrice = Math.round(servicePrice / rawServices.length);
-    lineItems = rawServices.map((svc, i) => {
-      const itemPrice = (i === rawServices.length - 1)
-        ? Math.max(0, servicePrice - (perServicePrice * (rawServices.length - 1)))
-        : perServicePrice;
+  if (uniqueServices.length > 1) {
+    const rawPrices = uniqueServices.map(s => getBasePriceForService(s));
+    const totalRaw = rawPrices.reduce((acc, p) => acc + p, 0) || 1;
+
+    let runningSum = 0;
+    lineItems = uniqueServices.map((svc, i) => {
+      let itemPrice;
+      if (i === uniqueServices.length - 1) {
+        itemPrice = Math.max(0, servicePrice - runningSum);
+      } else {
+        itemPrice = Math.round((rawPrices[i] / totalRaw) * servicePrice);
+        runningSum += itemPrice;
+      }
       return {
         description: svc,
         qty: 1,
@@ -66,7 +107,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
   } else {
     lineItems = [
       {
-        description: rawServices[0] || 'Full Car Wash & Detailing Service',
+        description: uniqueServices[0] || 'Full Car Wash & Detailing Service',
         qty: 1,
         unitPrice: servicePrice,
         amount: servicePrice
@@ -74,14 +115,18 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     ];
   }
 
-  // Append any addons
+  // Append each addon as individual line items
   if (addons && addons.length > 0) {
     addons.forEach((addon) => {
-      lineItems.push({
-        description: `Add-on: ${addon.name}`,
-        qty: 1,
-        unitPrice: Number(addon.price) || 0,
-        amount: Number(addon.price) || 0
+      const addonItems = extractItems(addon);
+      const subPrice = Math.round((Number(addon.price) || 0) / Math.max(1, addonItems.length));
+      addonItems.forEach(name => {
+        lineItems.push({
+          description: `Add-on: ${name}`,
+          qty: 1,
+          unitPrice: subPrice,
+          amount: subPrice
+        });
       });
     });
   }
@@ -647,34 +692,34 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
             <table style={{
               width: '100%',
               borderCollapse: 'collapse',
-              fontSize: lineItems.length > 5 ? '0.68rem' : '0.72rem',
+              fontSize: lineItems.length > 10 ? '0.64rem' : (lineItems.length > 5 ? '0.68rem' : '0.72rem'),
               border: '1.5px solid #BAE6FD'
             }}>
               <thead>
                 <tr style={{ background: '#E0F2FE', color: '#0369A1', textAlign: 'left', borderBottom: '1.5px solid #BAE6FD' }}>
-                  <th style={{ width: '28px', padding: '3px 4px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>#</th>
-                  <th style={{ padding: '3px 6px', borderRight: '1px solid #BAE6FD' }}>Service Description</th>
-                  <th style={{ width: '38px', padding: '3px 4px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>Qty</th>
-                  <th style={{ width: '80px', padding: '3px 6px', textAlign: 'right', borderRight: '1px solid #BAE6FD' }}>Unit Price (₹)</th>
-                  <th style={{ width: '85px', padding: '3px 6px', textAlign: 'right' }}>Amount (₹)</th>
+                  <th style={{ width: '28px', padding: lineItems.length > 10 ? '2px 4px' : '3px 4px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>#</th>
+                  <th style={{ padding: lineItems.length > 10 ? '2px 6px' : '3px 6px', borderRight: '1px solid #BAE6FD' }}>Service Description</th>
+                  <th style={{ width: '38px', padding: lineItems.length > 10 ? '2px 4px' : '3px 4px', textAlign: 'center', borderRight: '1px solid #BAE6FD' }}>Qty</th>
+                  <th style={{ width: '80px', padding: lineItems.length > 10 ? '2px 6px' : '3px 6px', textAlign: 'right', borderRight: '1px solid #BAE6FD' }}>Unit Price (₹)</th>
+                  <th style={{ width: '85px', padding: lineItems.length > 10 ? '2px 6px' : '3px 6px', textAlign: 'right' }}>Amount (₹)</th>
                 </tr>
               </thead>
               <tbody>
                 {lineItems.map((item, index) => (
                   <tr key={index} style={{ borderBottom: '1px solid #E2E8F0', background: index % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
-                    <td style={{ padding: '2.5px 4px', textAlign: 'center', fontWeight: 700, color: '#0369A1', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: lineItems.length > 10 ? '2px 4px' : '2.5px 4px', textAlign: 'center', fontWeight: 700, color: '#0369A1', borderRight: '1px solid #BAE6FD' }}>
                       {index + 1}
                     </td>
-                    <td style={{ padding: '2.5px 6px', fontWeight: 600, color: '#0F172A', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: lineItems.length > 10 ? '2px 6px' : '2.5px 6px', fontWeight: 600, color: '#0F172A', borderRight: '1px solid #BAE6FD' }}>
                       {item.description}
                     </td>
-                    <td style={{ padding: '2.5px 4px', textAlign: 'center', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: lineItems.length > 10 ? '2px 4px' : '2.5px 4px', textAlign: 'center', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
                       {item.qty}
                     </td>
-                    <td style={{ padding: '2.5px 6px', textAlign: 'right', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
+                    <td style={{ padding: lineItems.length > 10 ? '2px 6px' : '2.5px 6px', textAlign: 'right', color: '#334155', borderRight: '1px solid #BAE6FD' }}>
                       ₹{item.unitPrice.toLocaleString('en-IN')}
                     </td>
-                    <td style={{ padding: '2.5px 6px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
+                    <td style={{ padding: lineItems.length > 10 ? '2px 6px' : '2.5px 6px', textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
                       ₹{item.amount.toLocaleString('en-IN')}
                     </td>
                   </tr>

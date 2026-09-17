@@ -12,7 +12,7 @@ const MULTIPLIERS = {
   'Compact SUV': 1.15,
   'SUV': 1.35,
   'SUV / MUV': 1.35,
-  'Luxury': 1.6
+  'Luxury': 1.5
 };
 
 const TIME_SLOTS = [

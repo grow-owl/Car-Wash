@@ -35,7 +35,7 @@ import {
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import { cleanText } from '../utils/cleanText';
-import { VEHICLE_ICONS } from '../utils/constants';
+import { VEHICLE_ICONS, getVehicleMultiplier } from '../utils/constants';
 import { notifyLiveSync } from '../utils';
 
 // Fallback high-resolution service catalog images hosted on Cloudinary
@@ -298,12 +298,15 @@ export default function BookingFlow({
     });
   };
 
-  // Pricing calculations
+  // Pricing calculations with vehicle size multiplier
   const calculateBaseTotal = () => {
+    const mult = getVehicleMultiplier(vehicleType);
     if (bookingMode === 'custom') {
-      return selectedCustomServices.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
+      const sum = selectedCustomServices.reduce((acc, s) => acc + (Number(s.price) || 0), 0);
+      return Math.round(sum * mult);
     }
-    return Number(selectedService?.price) || 799;
+    const pkgPrice = Number(selectedService?.price) || 799;
+    return Math.round(pkgPrice * mult);
   };
 
   const calculateFinalTotal = () => {
@@ -673,8 +676,9 @@ export default function BookingFlow({
                 ) : (
                   <div className="services-box-grid">
                     {filteredServices.map((s) => {
-                      const basePrice = Number(s.price || s.basePrice || 499);
-                      const origPrice = s.originalPrice ? Number(s.originalPrice) : Math.round(basePrice * 1.35);
+                      const mult = getVehicleMultiplier(vehicleType);
+                      const basePrice = Math.round(Number(s.price || s.basePrice || 499) * mult);
+                      const origPrice = s.originalPrice ? Math.round(Number(s.originalPrice) * mult) : Math.round(basePrice * 1.35);
                       const isChecked = selectedCustomServices.some(cs => cs._id === s._id || cs.name.toLowerCase() === s.name.toLowerCase());
                       const serviceImg = (s.image && typeof s.image === 'string' && s.image.trim().length > 5)
                         ? s.image.trim()
@@ -796,7 +800,10 @@ export default function BookingFlow({
                   const isSelected = (selectedService?.name === pkgName) || (selectedService?.title === pkgName);
                   const isPopular = pkg.isPopular || pkgName.toLowerCase().includes('premium shine');
                   const servicesList = pkg.includedServices || pkg.services || [];
-                  const origPrice = pkg.originalPrice || (pkg.price === 499 ? 699 : pkg.price === 799 ? 1099 : 1999);
+                  const mult = getVehicleMultiplier(vehicleType);
+                  const scaledPkgPrice = Math.round(Number(pkg.price || 799) * mult);
+                  const rawOrig = pkg.originalPrice || (pkg.price === 499 ? 699 : pkg.price === 799 ? 1099 : 1999);
+                  const origPrice = Math.round(rawOrig * mult);
 
                   return (
                     <div
@@ -883,7 +890,7 @@ export default function BookingFlow({
                               ₹{origPrice}
                             </span>
                             <span style={{ fontSize: '1.95rem', fontWeight: 900, color: (isPopular && !isSelected) ? 'var(--accent-gold)' : 'var(--accent-cyan)' }}>
-                              ₹{pkg.price}
+                              ₹{scaledPkgPrice}
                             </span>
                           </div>
                           <span style={{ fontSize: '0.74rem', color: 'var(--ice-tint)', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 8px', borderRadius: '6px' }}>

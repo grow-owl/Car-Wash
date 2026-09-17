@@ -9,7 +9,6 @@ import { getVehicleIcon } from '../utils/constants';
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService, onSelectPackage }) {
   const [packages, setPackages] = useState([]);
   const [dbServices, setDbServices] = useState([]);
-  const [selectedVehicle] = useState('Sedan');
   const [vehicleSize, setVehicleSize] = useState('Sedan');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -22,12 +21,12 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
   useEffect(() => {
     fetchData();
-  }, [selectedVehicle, vehicleSize]);
+  }, [vehicleSize]);
 
   const fetchData = async () => {
     try {
       const [pkgRes, svcRes] = await Promise.all([
-        getPackages(selectedVehicle),
+        getPackages(vehicleSize),
         getServices(vehicleSize)
       ]);
       if (pkgRes.data && pkgRes.data.length > 0) {

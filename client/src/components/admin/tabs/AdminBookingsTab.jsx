@@ -197,7 +197,7 @@ export default function AdminBookingsTab({
                         </div>
                       </td>
                       <td style={{ padding: '10px' }}>
-                        <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} compact={true} />
+                        <ServiceDropdownPill serviceStr={b.serviceName || b.packageName} addons={b.addons} services={b.services} compact={true} />
                       </td>
                       <td style={{ padding: '10px' }}>
                         <select

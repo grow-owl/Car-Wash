@@ -67,19 +67,31 @@ export const getLocalDateString = (d = new Date()) => {
  * @param {Array} [addons=[]] 
  * @returns {{ primary: string, extraCount: number, allList: string[], fullText: string }}
  */
-export const formatServiceSummary = (serviceStr, addons = []) => {
-  if (!serviceStr && (!addons || addons.length === 0)) {
-    return { primary: 'Pro Wash', extraCount: 0, allList: ['Pro Wash'], fullText: 'Pro Wash' };
-  }
-  const parts = (serviceStr || '').split('+').map(s => s.trim()).filter(Boolean);
-  const addonNames = (addons || []).map(a => {
-    if (typeof a === 'string') return a.trim();
-    return (a?.name || a?.title || '').trim();
-  }).filter(Boolean);
+export const formatServiceSummary = (serviceStr, addons = [], servicesArr = []) => {
+  const extractItems = (raw) => {
+    if (!raw) return [];
+    if (Array.isArray(raw)) {
+      return raw.flatMap(extractItems);
+    }
+    const str = typeof raw === 'string' ? raw : (raw?.name || raw?.title || raw?.addonName || '');
+    return str
+      .split(/[+,]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  };
 
-  const combined = [...parts, ...addonNames];
+  const parsedServices = extractItems(servicesArr.length > 0 ? servicesArr : serviceStr);
+  const parsedAddons = extractItems(addons);
+
+  const combined = [];
+  [...parsedServices, ...parsedAddons].forEach(item => {
+    if (item && !combined.includes(item)) {
+      combined.push(item);
+    }
+  });
+
   if (combined.length === 0) {
-    return { primary: 'Pro Wash', extraCount: 0, allList: ['Pro Wash'], fullText: 'Pro Wash' };
+    return { primary: 'Standard Wash', extraCount: 0, allList: ['Standard Wash'], fullText: 'Standard Wash' };
   }
 
   return {

@@ -49,3 +49,71 @@ export const EXPENSE_CATEGORIES = [
 ];
 
 export const BAYS = ['BAY 1', 'BAY 2'];
+
+export const VEHICLE_MULTIPLIERS = {
+  '2-Wheeler': 0.5,
+  'Bike': 0.5,
+  'Hatchback': 0.85,
+  'Sedan': 1.0,
+  'Compact SUV': 1.15,
+  'SUV': 1.35,
+  'SUV / MUV': 1.35,
+  'Luxury': 1.5
+};
+
+export const getVehicleMultiplier = (type = '') => {
+  if (!type) return 1.0;
+  const t = String(type).trim();
+  if (VEHICLE_MULTIPLIERS[t] !== undefined) return VEHICLE_MULTIPLIERS[t];
+  const lower = t.toLowerCase();
+  if (lower.includes('bike') || lower.includes('2-wheeler')) return 0.5;
+  if (lower.includes('hatch')) return 0.85;
+  if (lower.includes('compact') || lower.includes('creta') || lower.includes('brezza')) return 1.15;
+  if (lower.includes('suv') || lower.includes('muv') || lower.includes('fortuner')) return 1.35;
+  if (lower.includes('lux') || lower.includes('bmw') || lower.includes('audi') || lower.includes('mercedes') || lower.includes('jaguar')) return 1.5;
+  return 1.0;
+};
+
+export const SERVICE_CATALOG_PRICES = {
+  'exterior car wash': 299,
+  'full car wash': 649,
+  'interior cleaning': 349,
+  'interior vacuum cleaning': 249,
+  'interior vacuum': 249,
+  'car interior detailing': 1499,
+  'wheel & tyre cleaning': 249,
+  'wheel and tyre cleaning': 249,
+  'car waxing': 899,
+  'waxing': 899,
+  'car polishing': 1899,
+  'polishing': 1899,
+  'engine bay cleaning': 549,
+  'engine cleaning': 549,
+  'car spa & premium detailing': 3499,
+  'car spa': 3499,
+  'basic refresh': 499,
+  'premium shine': 799,
+  'ultimate detail': 1499,
+  'foam wash': 299,
+  'express foam wash': 299,
+  'interior steam spa': 899,
+  'leather seat conditioning': 599,
+  'paint correction & rubbing': 1499,
+  'ceramic booster & polish': 1299,
+  '9h ceramic coating': 4999,
+  'underbody anti-rust coating': 999
+};
+
+export const getBasePriceForService = (name = '') => {
+  if (!name) return 499;
+  const lower = String(name).toLowerCase().trim();
+  if (SERVICE_CATALOG_PRICES[lower]) return SERVICE_CATALOG_PRICES[lower];
+
+  for (const [key, price] of Object.entries(SERVICE_CATALOG_PRICES)) {
+    if (lower.includes(key) || key.includes(lower)) {
+      return price;
+    }
+  }
+
+  return 499;
+};

@@ -429,34 +429,37 @@ export default function TrackBooking({ activeCode = '' }) {
               marginBottom: '14px',
               gap: '8px'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: '1.3rem',
-                    fontWeight: 900,
-                    color: '#FFFFFF',
-                    letterSpacing: '0.03em',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <img src={getVehicleIcon(booking.vehicleType || booking.vehicleModel)} alt="" style={{ height: '20px', maxWidth: '32px', objectFit: 'contain' }} />
-                    {booking.vehicleNumber}
-                  </span>
-                  <span style={{
-                    padding: '3px 10px',
-                    borderRadius: '6px',
-                    background: 'rgba(0, 229, 255, 0.12)',
-                    border: '1px solid rgba(0, 229, 255, 0.3)',
-                    color: 'var(--accent-cyan)',
-                    fontSize: '0.78rem',
-                    fontWeight: 700
-                  }}>
-                    {booking.vehicleModel || booking.vehicleType || 'Vehicle'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)', marginTop: '4px' }}>
-                  {booking.customerName} {booking.phone ? `• ${booking.phone}` : ''}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img
+                  src={getVehicleIcon(booking.vehicleType || booking.vehicleModel)}
+                  alt=""
+                  style={{ height: '26px', maxWidth: '38px', objectFit: 'contain', flexShrink: 0 }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '1.28rem',
+                      fontWeight: 900,
+                      color: '#FFFFFF',
+                      letterSpacing: '0.03em'
+                    }}>
+                      {booking.vehicleNumber}
+                    </span>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      background: 'rgba(0, 229, 255, 0.12)',
+                      border: '1px solid rgba(0, 229, 255, 0.3)',
+                      color: 'var(--accent-cyan)',
+                      fontSize: '0.74rem',
+                      fontWeight: 700
+                    }}>
+                      {booking.vehicleModel || booking.vehicleType || 'Vehicle'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--ice-tint)' }}>
+                    {booking.customerName} {booking.phone ? `• ${booking.phone}` : ''}
+                  </div>
                 </div>
               </div>
 
@@ -797,57 +800,113 @@ export default function TrackBooking({ activeCode = '' }) {
                 </div>
               </div>
 
-              {/* Row 2: Clean Spacious Box for Services */}
-              <div style={{
-                background: 'rgba(0, 20, 26, 0.75)',
-                border: '1px solid rgba(0, 210, 180, 0.25)',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    BOOKED SERVICES & DETAILING
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>
-                    {((booking.serviceName || booking.packageName || '').split('+').filter(Boolean).length || 1)} Item(s)
-                  </span>
-                </div>
+              {/* Row 2: Clean Spacious Box for Services (One by one line & scrollable) */}
+              {(() => {
+                const rawServices = [];
+                if (Array.isArray(booking.services) && booking.services.length > 0) {
+                  booking.services.forEach(s => {
+                    const str = typeof s === 'string' ? s : (s?.name || s?.title || '');
+                    str.split(/[+,]/).forEach(p => {
+                      const t = p.trim();
+                      if (t && !rawServices.includes(t)) rawServices.push(t);
+                    });
+                  });
+                } else {
+                  const baseStr = booking.serviceName || booking.packageName || 'Full Car Wash & Detailing Service';
+                  baseStr.split(/[+,]/).forEach(p => {
+                    const t = p.trim();
+                    if (t && !rawServices.includes(t)) rawServices.push(t);
+                  });
+                }
 
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '6px',
-                  maxHeight: '220px',
-                  overflowY: 'auto'
-                }}>
-                  {(booking.serviceName || booking.packageName || 'Pro Detailing Package')
-                    .split('+')
-                    .map(s => s.trim())
-                    .filter(Boolean)
-                    .map((svc, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: 'rgba(0, 210, 180, 0.12)',
-                          border: '1px solid rgba(0, 210, 180, 0.3)',
-                          color: '#FFFFFF',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          lineHeight: 1.3
-                        }}
-                      >
-                        {svc}
+                if (Array.isArray(booking.addons) && booking.addons.length > 0) {
+                  booking.addons.forEach(a => {
+                    const str = typeof a === 'string' ? a : (a?.name || a?.title || a?.addonName || '');
+                    str.split(/[+,]/).forEach(p => {
+                      const t = p.trim();
+                      if (t && !rawServices.includes(t)) rawServices.push(`Add-on: ${t}`);
+                    });
+                  });
+                }
+
+                const servicesList = rawServices.length > 0 ? rawServices : ['Full Car Wash & Detailing Service'];
+
+                return (
+                  <div style={{
+                    background: 'rgba(0, 20, 26, 0.75)',
+                    border: '1px solid rgba(0, 210, 180, 0.25)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--ice-tint)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        BOOKED SERVICES & DETAILING
                       </span>
-                    ))}
-                </div>
-              </div>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--accent-aqua)', fontWeight: 800 }}>
+                        {servicesList.length} Item(s)
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      maxHeight: '170px',
+                      overflowY: 'auto',
+                      paddingRight: '4px',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'var(--accent-aqua) rgba(0,0,0,0.3)'
+                    }}>
+                      {servicesList.map((svc, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            background: idx === 0 ? 'rgba(0, 210, 180, 0.14)' : 'rgba(0, 210, 180, 0.07)',
+                            border: idx === 0 ? '1px solid rgba(0, 210, 180, 0.4)' : '1px solid rgba(0, 210, 180, 0.2)',
+                            color: '#FFFFFF',
+                            fontSize: '0.80rem',
+                            fontWeight: 600,
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: idx === 0 ? 'var(--accent-aqua)' : 'var(--accent-cyan)',
+                            flexShrink: 0
+                          }} />
+                          <span style={{ flex: 1, wordBreak: 'break-word', lineHeight: 1.25 }}>
+                            {svc}
+                          </span>
+                          {idx === 0 && (
+                            <span style={{
+                              fontSize: '0.58rem',
+                              fontWeight: 800,
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              background: 'rgba(0, 210, 180, 0.25)',
+                              color: 'var(--accent-aqua)',
+                              flexShrink: 0
+                            }}>
+                              PRIMARY
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Row 3: Payment & Online Pay Button */}
               <div style={{
