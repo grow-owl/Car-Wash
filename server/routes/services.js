@@ -52,15 +52,26 @@ router.post('/upload', async (req, res) => {
 });
 
 const multiplierMap = {
-  '2-Wheeler': 0.5,
-  'Bike': 0.5,
+  '2-Wheeler': 0.60,
   'Hatchback': 0.85,
-  'Sedan': 1.0,
+  'Sedan': 1.00,
   'Compact SUV': 1.15,
-  'SUV': 1.35,
-  'SUV / MUV': 1.35,
-  'Luxury': 1.5,
-  'Truck': 1.4
+  'SUV / MUV': 1.25,
+  'Luxury': 1.50,
+  'Truck': 1.35
+};
+
+const getMultiplier = (type = '') => {
+  if (!type) return 1.0;
+  if (multiplierMap[type] !== undefined) return multiplierMap[type];
+  const lower = String(type).toLowerCase();
+  if (lower.includes('bike') || lower.includes('2-wheeler')) return 0.60;
+  if (lower.includes('hatch')) return 0.85;
+  if (lower.includes('compact')) return 1.15;
+  if (lower.includes('suv') || lower.includes('muv')) return 1.25;
+  if (lower.includes('lux')) return 1.50;
+  if (lower.includes('truck')) return 1.35;
+  return 1.0;
 };
 
 // GET all services (optional query vehicleType, category)
@@ -71,7 +82,7 @@ router.get('/', async (req, res) => {
     if (category) query.category = category;
 
     let services = await Service.find(query);
-    const mult = multiplierMap[vehicleType] || 1.0;
+    const mult = getMultiplier(vehicleType);
 
     const cleanedServices = services.map(s => {
       const obj = s.toObject ? s.toObject() : s;
@@ -102,7 +113,7 @@ router.get('/packages', async (req, res) => {
   try {
     const { vehicleType } = req.query;
     let packages = await Package.find({}).sort({ price: 1 });
-    const mult = multiplierMap[vehicleType] || 1.0;
+    const mult = getMultiplier(vehicleType);
 
     const scaledPackages = packages.map(pkg => {
       const obj = pkg.toObject ? pkg.toObject() : pkg;

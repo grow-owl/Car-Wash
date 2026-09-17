@@ -2,7 +2,15 @@
  * System Constants, Enums & Presets
  */
 
-export const VEHICLE_TYPES = ['Hatchback', 'Sedan', 'SUV'];
+export const VEHICLE_TYPES = [
+  '2-Wheeler',
+  'Hatchback',
+  'Sedan',
+  'Compact SUV',
+  'SUV / MUV',
+  'Luxury',
+  'Truck'
+];
 
 export const VEHICLE_ICONS = {
   '2-Wheeler': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789288623/car-wash/vehicles/two-wheeler.png',
@@ -10,8 +18,8 @@ export const VEHICLE_ICONS = {
   'Sedan': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789289215/car-wash/vehicles/sedan.png',
   'Compact SUV': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789289216/car-wash/vehicles/compact-suv.png',
   'SUV / MUV': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789289217/car-wash/vehicles/suv-muv.png',
-  'SUV': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789289217/car-wash/vehicles/suv-muv.png',
-  'Luxury': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789288626/car-wash/vehicles/luxury.png'
+  'Luxury': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789288626/car-wash/vehicles/luxury.png',
+  'Truck': 'https://res.cloudinary.com/xa8njngd/image/upload/v1789289217/car-wash/vehicles/suv-muv.png'
 };
 
 export const getVehicleIcon = (type = '') => {
@@ -51,14 +59,13 @@ export const EXPENSE_CATEGORIES = [
 export const BAYS = ['BAY 1', 'BAY 2'];
 
 export const VEHICLE_MULTIPLIERS = {
-  '2-Wheeler': 0.5,
-  'Bike': 0.5,
+  '2-Wheeler': 0.60,
   'Hatchback': 0.85,
-  'Sedan': 1.0,
+  'Sedan': 1.00,
   'Compact SUV': 1.15,
-  'SUV': 1.35,
-  'SUV / MUV': 1.35,
-  'Luxury': 1.5
+  'SUV / MUV': 1.25,
+  'Luxury': 1.50,
+  'Truck': 1.35
 };
 
 export const getVehicleMultiplier = (type = '') => {
@@ -66,11 +73,12 @@ export const getVehicleMultiplier = (type = '') => {
   const t = String(type).trim();
   if (VEHICLE_MULTIPLIERS[t] !== undefined) return VEHICLE_MULTIPLIERS[t];
   const lower = t.toLowerCase();
-  if (lower.includes('bike') || lower.includes('2-wheeler')) return 0.5;
+  if (lower.includes('bike') || lower.includes('2-wheeler') || lower.includes('scooter')) return 0.60;
   if (lower.includes('hatch')) return 0.85;
-  if (lower.includes('compact') || lower.includes('creta') || lower.includes('brezza')) return 1.15;
-  if (lower.includes('suv') || lower.includes('muv') || lower.includes('fortuner')) return 1.35;
-  if (lower.includes('lux') || lower.includes('bmw') || lower.includes('audi') || lower.includes('mercedes') || lower.includes('jaguar')) return 1.5;
+  if (lower.includes('compact') || lower.includes('creta') || lower.includes('brezza') || lower.includes('nexon')) return 1.15;
+  if (lower.includes('suv') || lower.includes('muv') || lower.includes('fortuner') || lower.includes('innova')) return 1.25;
+  if (lower.includes('lux') || lower.includes('bmw') || lower.includes('audi') || lower.includes('mercedes') || lower.includes('jaguar')) return 1.50;
+  if (lower.includes('truck') || lower.includes('commercial')) return 1.35;
   return 1.0;
 };
 

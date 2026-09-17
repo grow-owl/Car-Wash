@@ -2,18 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { getSlotsAvailability } from '../../../api';
-import { getVehicleIcon } from '../../../utils/constants';
-
-const MULTIPLIERS = {
-  '2-Wheeler': 0.5,
-  'Bike': 0.5,
-  'Hatchback': 0.85,
-  'Sedan': 1.0,
-  'Compact SUV': 1.15,
-  'SUV': 1.35,
-  'SUV / MUV': 1.35,
-  'Luxury': 1.5
-};
+import { getVehicleIcon, getVehicleMultiplier, VEHICLE_TYPES } from '../../../utils/constants';
 
 const TIME_SLOTS = [
   'NOW (Immediate)',
@@ -137,7 +126,7 @@ export default function WalkInBookingModal({
   }, [services]);
 
   const scalePrice = (basePrice, vehType) => {
-    const mult = MULTIPLIERS[vehType] || 1.0;
+    const mult = getVehicleMultiplier(vehType);
     return Math.round(Number(basePrice || 0) * mult);
   };
 
@@ -397,12 +386,13 @@ export default function WalkInBookingModal({
                   color: 'var(--accent-cyan)'
                 }}
               >
-                <option value="2-Wheeler">2-Wheeler</option>
-                <option value="Hatchback">Hatchback</option>
-                <option value="Sedan">Sedan</option>
-                <option value="Compact SUV">Compact SUV</option>
-                <option value="SUV">SUV / MUV</option>
-                <option value="Luxury">Luxury</option>
+                <option value="2-Wheeler">2-Wheeler (Bike / Scooter)</option>
+                <option value="Hatchback">Hatchback (Swift, i20, etc.)</option>
+                <option value="Sedan">Sedan (City, Verna, etc.)</option>
+                <option value="Compact SUV">Compact SUV (Brezza, Creta, etc.)</option>
+                <option value="SUV / MUV">SUV / MUV (Fortuner, Innova, etc.)</option>
+                <option value="Luxury">Luxury (BMW, Audi, Mercedes, Jaguar)</option>
+                <option value="Truck">Truck / Commercial</option>
               </select>
             </div>
           </div>

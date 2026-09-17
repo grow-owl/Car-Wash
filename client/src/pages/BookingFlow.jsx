@@ -35,7 +35,7 @@ import {
 import { launchRazorpayCheckout } from '../utils/razorpay';
 import DigitalInvoiceModal from '../components/DigitalInvoiceModal';
 import { cleanText } from '../utils/cleanText';
-import { VEHICLE_ICONS, getVehicleMultiplier } from '../utils/constants';
+import { VEHICLE_ICONS, getVehicleMultiplier, getBasePriceForService } from '../utils/constants';
 import { notifyLiveSync } from '../utils';
 
 // Fallback high-resolution service catalog images hosted on Cloudinary
@@ -302,11 +302,15 @@ export default function BookingFlow({
   const calculateBaseTotal = () => {
     const mult = getVehicleMultiplier(vehicleType);
     if (bookingMode === 'custom') {
-      const sum = selectedCustomServices.reduce((acc, s) => acc + (Number(s.price) || 0), 0);
+      const sum = selectedCustomServices.reduce((acc, s) => {
+        const base = getBasePriceForService(s.name || s.title) || Number(s.basePrice || s.price || 499);
+        return acc + base;
+      }, 0);
       return Math.round(sum * mult);
     }
-    const pkgPrice = Number(selectedService?.price) || 799;
-    return Math.round(pkgPrice * mult);
+    const rawPkgBase = selectedService?.basePrice || selectedService?.price || 799;
+    const pkgBase = getBasePriceForService(selectedService?.name || selectedService?.title) || Number(rawPkgBase);
+    return Math.round(pkgBase * mult);
   };
 
   const calculateFinalTotal = () => {
@@ -496,6 +500,11 @@ export default function BookingFlow({
       type: 'Luxury',
       desc: 'BMW / Audi / Mercedes / Jaguar',
       icon: VEHICLE_ICONS['Luxury']
+    },
+    {
+      type: 'Truck',
+      desc: 'Commercial / Pickup / Heavy',
+      icon: VEHICLE_ICONS['Truck']
     }
   ];
 
@@ -568,6 +577,7 @@ export default function BookingFlow({
         {/* STEP 1: DYNAMIC SERVICE SELECTION (FROM OWNER DATABASE ONLY) */}
         {step === 1 && (
           <div>
+            {/* STEP 1 HEADER & CONTROLS */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid rgba(74, 92, 106, 0.25)' }}>
               <div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
@@ -577,6 +587,55 @@ export default function BookingFlow({
               <span className="badge badge-aqua" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
                 Step 1 of 3
               </span>
+            </div>
+
+            {/* VEHICLE TYPE QUICK SWITCHER (Ensures accurate live prices for selected car) */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginBottom: '16px',
+              padding: '10px 14px',
+              background: 'rgba(0, 49, 53, 0.45)',
+              borderRadius: '12px',
+              border: '1px solid rgba(0, 229, 255, 0.25)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--ice-tint)', fontWeight: 700 }}>
+                  Pricing for:
+                </span>
+                <span style={{ fontSize: '0.88rem', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                  {vehicleType} ({getVehicleMultiplier(vehicleType)}x rate)
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                {vehiclesList.map(v => (
+                  <button
+                    key={v.type}
+                    type="button"
+                    onClick={() => setVehicleType(v.type)}
+                    style={{
+                      background: vehicleType === v.type ? 'var(--accent-cyan)' : 'rgba(255, 255, 255, 0.06)',
+                      color: vehicleType === v.type ? '#06141B' : '#FFFFFF',
+                      border: vehicleType === v.type ? '1px solid var(--accent-cyan)' : '1px solid rgba(74, 92, 106, 0.3)',
+                      borderRadius: '8px',
+                      padding: '4px 10px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {v.type}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* SWITCHER TABS */}
@@ -677,7 +736,8 @@ export default function BookingFlow({
                   <div className="services-box-grid">
                     {filteredServices.map((s) => {
                       const mult = getVehicleMultiplier(vehicleType);
-                      const basePrice = Math.round(Number(s.price || s.basePrice || 499) * mult);
+                      const baseCatalogPrice = getBasePriceForService(s.name) || Number(s.basePrice || s.price || 499);
+                      const basePrice = Math.round(baseCatalogPrice * mult);
                       const origPrice = s.originalPrice ? Math.round(Number(s.originalPrice) * mult) : Math.round(basePrice * 1.35);
                       const isChecked = selectedCustomServices.some(cs => cs._id === s._id || cs.name.toLowerCase() === s.name.toLowerCase());
                       const serviceImg = (s.image && typeof s.image === 'string' && s.image.trim().length > 5)

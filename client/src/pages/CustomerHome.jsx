@@ -4,7 +4,7 @@ import { getPackages, getServices } from '../api';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import SectionDivider from '../components/SectionDivider';
 import { cleanText } from '../utils/cleanText';
-import { getVehicleIcon } from '../utils/constants';
+import { getVehicleIcon, getVehicleMultiplier, VEHICLE_MULTIPLIERS } from '../utils/constants';
 
 export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelectService, onSelectPackage }) {
   const [packages, setPackages] = useState([]);
@@ -55,20 +55,20 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   // Default fallback catalog from Cloudinary
   const defaultServicesList = [
     // Wash
-    { category: 'wash', title: 'Exterior Car Wash', prices: { Hatchback: 249, Sedan: 299, SUV: 349 }, origPrices: { Hatchback: 399, Sedan: 499, SUV: 599 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
-    { category: 'wash', title: 'Full Car Wash', prices: { Hatchback: 549, Sedan: 649, SUV: 749 }, origPrices: { Hatchback: 799, Sedan: 899, SUV: 999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
-    { category: 'wash', title: 'Wheel & Tyre Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
+    { category: 'wash', title: 'Exterior Car Wash', prices: { 'Hatchback': 249, 'Sedan': 299, 'SUV / MUV': 374, 'Luxury': 449 }, origPrices: { 'Hatchback': 399, 'Sedan': 499, 'SUV / MUV': 599, 'Luxury': 699 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764056/car-wash/services/Exterior_Car_Wash_Foam_wash_pressure_wash_hand_drying.jpg' },
+    { category: 'wash', title: 'Full Car Wash', prices: { 'Hatchback': 549, 'Sedan': 649, 'SUV / MUV': 811, 'Luxury': 974 }, origPrices: { 'Hatchback': 799, 'Sedan': 899, 'SUV / MUV': 999, 'Luxury': 1299 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764057/car-wash/services/Full_Car_Wash_Complete_interior_exterior_cleaning.jpg' },
+    { category: 'wash', title: 'Wheel & Tyre Cleaning', prices: { 'Hatchback': 199, 'Sedan': 249, 'SUV / MUV': 311, 'Luxury': 374 }, origPrices: { 'Hatchback': 349, 'Sedan': 399, 'SUV / MUV': 499, 'Luxury': 599 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764061/car-wash/services/Wheel_Tyre_Cleaning_Wheel_cleaning_tyre_dressing.jpg' },
 
     // Interior
-    { category: 'interior', title: 'Interior Cleaning', prices: { Hatchback: 299, Sedan: 349, SUV: 399 }, origPrices: { Hatchback: 499, Sedan: 599, SUV: 699 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg' },
-    { category: 'interior', title: 'Interior Vacuum Cleaning', prices: { Hatchback: 199, Sedan: 249, SUV: 299 }, origPrices: { Hatchback: 349, Sedan: 399, SUV: 499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg' },
-    { category: 'interior', title: 'Car Interior Detailing', prices: { Hatchback: 1299, Sedan: 1499, SUV: 1799 }, origPrices: { Hatchback: 1899, Sedan: 2199, SUV: 2499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
+    { category: 'interior', title: 'Interior Cleaning', prices: { 'Hatchback': 299, 'Sedan': 349, 'SUV / MUV': 436, 'Luxury': 524 }, origPrices: { 'Hatchback': 499, 'Sedan': 599, 'SUV / MUV': 699, 'Luxury': 799 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764058/car-wash/services/Interior_Cleaning_Dashboard_doors_seats_surfaces.jpg' },
+    { category: 'interior', title: 'Interior Vacuum Cleaning', prices: { 'Hatchback': 199, 'Sedan': 249, 'SUV / MUV': 311, 'Luxury': 374 }, origPrices: { 'Hatchback': 349, 'Sedan': 399, 'SUV / MUV': 499, 'Luxury': 599 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764059/car-wash/services/Interior_Vacuum_Cleaning_Seats_mats_floor_boot.jpg' },
+    { category: 'interior', title: 'Car Interior Detailing', prices: { 'Hatchback': 1299, 'Sedan': 1499, 'SUV / MUV': 1874, 'Luxury': 2249 }, origPrices: { 'Hatchback': 1899, 'Sedan': 2199, 'SUV / MUV': 2499, 'Luxury': 2999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764060/car-wash/services/Car_Interior_Detailing_Deep_cleaning_of_complete_cabin.jpg' },
 
     // Polish & Detailing
-    { category: 'detailing', title: 'Car Waxing', prices: { Hatchback: 749, Sedan: 899, SUV: 1099 }, origPrices: { Hatchback: 1199, Sedan: 1499, SUV: 1799 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
-    { category: 'detailing', title: 'Car Polishing', prices: { Hatchback: 1599, Sedan: 1899, SUV: 2299 }, origPrices: { Hatchback: 2499, Sedan: 2899, SUV: 3499 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
-    { category: 'detailing', title: 'Engine Bay Cleaning', prices: { Hatchback: 449, Sedan: 549, SUV: 649 }, origPrices: { Hatchback: 699, Sedan: 799, SUV: 899 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
-    { category: 'detailing', title: 'Car Spa & Premium Detailing', prices: { Hatchback: 2999, Sedan: 3499, SUV: 3999 }, origPrices: { Hatchback: 4499, Sedan: 4999, SUV: 5999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
+    { category: 'detailing', title: 'Car Waxing', prices: { 'Hatchback': 749, 'Sedan': 899, 'SUV / MUV': 1124, 'Luxury': 1349 }, origPrices: { 'Hatchback': 1199, 'Sedan': 1499, 'SUV / MUV': 1799, 'Luxury': 1999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764062/car-wash/services/Car_Waxing_Shine_basic_paint_protection.jpg' },
+    { category: 'detailing', title: 'Car Polishing', prices: { 'Hatchback': 1599, 'Sedan': 1899, 'SUV / MUV': 2374, 'Luxury': 2849 }, origPrices: { 'Hatchback': 2499, 'Sedan': 2899, 'SUV / MUV': 3499, 'Luxury': 3999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764063/car-wash/services/Car_Polishing_Restore_gloss_remove_minor_dullness.jpg' },
+    { category: 'detailing', title: 'Engine Bay Cleaning', prices: { 'Hatchback': 449, 'Sedan': 549, 'SUV / MUV': 686, 'Luxury': 824 }, origPrices: { 'Hatchback': 699, 'Sedan': 799, 'SUV / MUV': 899, 'Luxury': 1099 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764064/car-wash/services/Engine_Bay_Cleaning_Safe_cleaning_of_engine_compartment.jpg' },
+    { category: 'detailing', title: 'Car Spa & Premium Detailing', prices: { 'Hatchback': 2999, 'Sedan': 3499, 'SUV / MUV': 4374, 'Luxury': 5249 }, origPrices: { 'Hatchback': 4499, 'Sedan': 4999, 'SUV / MUV': 5999, 'Luxury': 6999 }, img: 'https://res.cloudinary.com/xa8njngd/image/upload/f_auto,q_auto/v1788764066/car-wash/services/Car_Spa_Premium_Detailing_Comprehensive_exterior_interior_treatment.jpg' }
   ];
 
   const defaultPackages = [
@@ -99,17 +99,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
   ];
 
   const displayPackages = packages.length >= 3 ? packages : defaultPackages;
-
-  const multiplierMap = {
-    '2-Wheeler': 0.5,
-    'Hatchback': 0.85,
-    'Sedan': 1.0,
-    'Compact SUV': 1.15,
-    'SUV / MUV': 1.35,
-    'SUV': 1.35,
-    'Truck': 1.45
-  };
-  const mult = multiplierMap[vehicleSize] || 1.0;
+  const mult = getVehicleMultiplier(vehicleSize);
 
   // Resolve service images with fallback to Cloudinary hosted images
   const getFallbackServiceImage = (titleOrCategory = '') => {
@@ -127,35 +117,26 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
   const resolvedServices = dbServices && dbServices.length > 0
     ? dbServices.map(s => {
-        const base = Number(s.basePrice || s.price || 499);
-        return {
-          _id: s._id,
-          category: (s.category || 'wash').toLowerCase(),
-          title: s.name || s.title || 'Car Service',
-          name: s.name || s.title || 'Car Service',
-          prices: {
-            '2-Wheeler': Math.round(base * 0.5),
-            'Hatchback': Math.round(base * 0.85),
-            'Sedan': base,
-            'Compact SUV': Math.round(base * 1.15),
-            'SUV / MUV': Math.round(base * 1.35),
-            'SUV': Math.round(base * 1.35),
-            'Truck': Math.round(base * 1.45)
-          },
-          origPrices: {
-            '2-Wheeler': Math.round(base * 0.5 * 1.35),
-            'Hatchback': Math.round(base * 0.85 * 1.35),
-            'Sedan': Math.round(base * 1.35),
-            'Compact SUV': Math.round(base * 1.15 * 1.35),
-            'SUV / MUV': Math.round(base * 1.35 * 1.35),
-            'SUV': Math.round(base * 1.35 * 1.35),
-            'Truck': Math.round(base * 1.45 * 1.35)
-          },
-          img: s.image && typeof s.image === 'string' && s.image.trim().length > 3
-            ? s.image.trim()
-            : getFallbackServiceImage(s.name || s.category)
-        };
-      })
+      const base = Number(s.basePrice || s.price || 499);
+      const prices = {};
+      const origPrices = {};
+      Object.entries(VEHICLE_MULTIPLIERS).forEach(([vType, vMult]) => {
+        prices[vType] = Math.round(base * vMult);
+        origPrices[vType] = Math.round(base * vMult * 1.35);
+      });
+
+      return {
+        _id: s._id,
+        category: (s.category || 'wash').toLowerCase(),
+        title: s.name || s.title || 'Car Service',
+        name: s.name || s.title || 'Car Service',
+        prices,
+        origPrices,
+        img: s.image && typeof s.image === 'string' && s.image.trim().length > 3
+          ? s.image.trim()
+          : getFallbackServiceImage(s.name || s.category)
+      };
+    })
     : defaultServicesList;
 
   const filteredServices = selectedCategory === 'all'
@@ -165,7 +146,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
   return (
     <div style={{ position: 'relative' }}>
-      
+
       {/* 1. HERO SECTION */}
       <section style={{
         position: 'relative',
@@ -177,7 +158,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
       }}>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div style={{ maxWidth: '580px' }}>
-            
+
             <h1 style={{
               fontSize: 'clamp(1.85rem, 5vw, 3rem)',
               lineHeight: '1.15',
@@ -199,7 +180,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
             <div className="hero-cta-group" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => onStartBooking(selectedVehicle)}
+                onClick={() => {
+                  if (onSelectVehicle) onSelectVehicle(vehicleSize);
+                  onStartBooking(vehicleSize);
+                }}
                 className="btn-primary"
                 style={{
                   padding: '12px 26px',
@@ -228,7 +212,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           </div>
         </div>
       </section>
-      
+
       <SectionDivider variant="cyan" icon="droplet" badge="REAL TRANSFORMATION" spacing="default" />
 
       {/* 2. BEFORE / AFTER SLIDER */}
@@ -258,7 +242,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
           {/* Vehicle & Category Controls */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', marginBottom: '26px' }}>
-            
+
             {/* Vehicle Selector Dropdown */}
             <div style={{
               display: 'flex',
@@ -298,7 +282,11 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
 
                 <select
                   value={vehicleSize}
-                  onChange={(e) => setVehicleSize(e.target.value)}
+                  onChange={(e) => {
+                    const newVeh = e.target.value;
+                    setVehicleSize(newVeh);
+                    if (onSelectVehicle) onSelectVehicle(newVeh);
+                  }}
                   aria-label="Select Vehicle Type"
                   style={{
                     width: '100%',
@@ -323,6 +311,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   <option value="Sedan" style={{ background: '#06141B', color: '#FFFFFF' }}>Sedan (City, Verna, etc.)</option>
                   <option value="Compact SUV" style={{ background: '#06141B', color: '#FFFFFF' }}>Compact SUV (Brezza, Creta, etc.)</option>
                   <option value="SUV / MUV" style={{ background: '#06141B', color: '#FFFFFF' }}>SUV / MUV (Fortuner, Innova, etc.)</option>
+                  <option value="Luxury" style={{ background: '#06141B', color: '#FFFFFF' }}>Luxury (BMW, Audi, Mercedes, Jaguar)</option>
                   <option value="Truck" style={{ background: '#06141B', color: '#FFFFFF' }}>Truck / Commercial</option>
                 </select>
 
@@ -380,6 +369,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                   key={idx}
                   className="glass-card"
                   onClick={() => {
+                    if (onSelectVehicle) onSelectVehicle(vehicleSize);
                     const itemToBook = {
                       ...sc,
                       name: sc.title,
@@ -498,7 +488,10 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
                 </div>
 
                 <button
-                  onClick={() => onSelectPackage(pkg)}
+                  onClick={() => {
+                    if (onSelectVehicle) onSelectVehicle(vehicleSize);
+                    onSelectPackage(pkg);
+                  }}
                   className={pkg.isPopular ? "btn-gold" : "btn-cyan"}
                   style={{ width: '100%', justifyContent: 'center', padding: '10px', fontSize: '0.88rem', fontWeight: 800, borderRadius: '10px' }}
                 >
@@ -523,7 +516,7 @@ export default function CustomerHome({ onStartBooking, onSelectVehicle, onSelect
           </div>
 
           <div className="grid-2" style={{ gap: '20px' }}>
-            
+
             {/* Quick Enquiry Form */}
             <div className="glass-panel" style={{ padding: '24px', borderRadius: '14px' }}>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 4px 0' }}>Quick Enquiry</h3>

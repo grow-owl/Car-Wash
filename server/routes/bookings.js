@@ -39,6 +39,7 @@ router.get('/', async (req, res) => {
     if (search && search.trim().length > 0) {
       const s = search.trim();
       query.$or = [
+        { invoiceNumber: { $regex: s, $options: 'i' } },
         { customerName: { $regex: s, $options: 'i' } },
         { phone: { $regex: s, $options: 'i' } },
         { trackingCode: { $regex: s, $options: 'i' } },

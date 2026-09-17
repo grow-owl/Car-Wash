@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Printer, MessageSquare, ExternalLink, X } from 'lucide-react';
-import { getBasePriceForService } from '../utils/constants';
+import { getBasePriceForService, getVehicleMultiplier } from '../utils/constants';
 
 export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, onTrackLive }) {
   if (!booking || isOpen === false) return null;
@@ -45,13 +45,9 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
   const addons = booking.addons || [];
   const addonsTotal = addons.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
   const discount = Number(booking.discountAmount) || 0;
-  const totalAmount = Number(booking.totalAmount) || 0;
+  const rawTotalAmount = Number(booking.totalAmount) || 0;
   
-  const servicePrice = booking.servicePrice !== undefined 
-    ? Number(booking.servicePrice) 
-    : Math.max(0, totalAmount + discount - addonsTotal);
-
-  const subtotal = totalAmount + discount;
+  const mult = getVehicleMultiplier(booking.vehicleType || booking.vehicleModel || 'Sedan');
 
   // Extract all individual services cleanly into separate numbered rows
   const extractItems = (raw) => {
@@ -83,6 +79,25 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     uniqueServices.push('Full Car Wash & Detailing Service');
   }
 
+  // Calculate base catalog total for Sedan
+  const rawBaseSum = uniqueServices.reduce((acc, s) => acc + getBasePriceForService(s), 0);
+
+  // If totalAmount was saved with unscaled Sedan price (e.g. 10140 for Luxury car), scale it to vehicle rate
+  let effectiveServicePrice;
+  if (booking.servicePrice !== undefined) {
+    effectiveServicePrice = Number(booking.servicePrice);
+  } else {
+    const rawServicePrice = Math.max(0, rawTotalAmount + discount - addonsTotal);
+    if (mult !== 1.0 && (rawServicePrice === rawBaseSum || rawServicePrice === Math.round(rawBaseSum * 1.0))) {
+      effectiveServicePrice = Math.round(rawBaseSum * mult);
+    } else {
+      effectiveServicePrice = rawServicePrice;
+    }
+  }
+
+  const effectiveTotal = Math.max(0, effectiveServicePrice + addonsTotal - discount);
+  const subtotal = effectiveServicePrice + addonsTotal;
+
   let lineItems = [];
   if (uniqueServices.length > 1) {
     const rawPrices = uniqueServices.map(s => getBasePriceForService(s));
@@ -92,9 +107,9 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     lineItems = uniqueServices.map((svc, i) => {
       let itemPrice;
       if (i === uniqueServices.length - 1) {
-        itemPrice = Math.max(0, servicePrice - runningSum);
+        itemPrice = Math.max(0, effectiveServicePrice - runningSum);
       } else {
-        itemPrice = Math.round((rawPrices[i] / totalRaw) * servicePrice);
+        itemPrice = Math.round((rawPrices[i] / totalRaw) * effectiveServicePrice);
         runningSum += itemPrice;
       }
       return {
@@ -109,8 +124,8 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
       {
         description: uniqueServices[0] || 'Full Car Wash & Detailing Service',
         qty: 1,
-        unitPrice: servicePrice,
-        amount: servicePrice
+        unitPrice: effectiveServicePrice,
+        amount: effectiveServicePrice
       }
     ];
   }
@@ -145,7 +160,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
     `• Invoice No: *${invoiceNumber}*\n` +
     `• Vehicle: ${vehicleNumber} (${vehicleModel})\n` +
     `• Service: ${booking.serviceName || booking.packageName}\n` +
-    `• Total Amount: Rs. ${totalAmount} (${paymentStatus})\n\n` +
+    `• Total Amount: Rs. ${effectiveTotal} (${paymentStatus})\n\n` +
     `━━━━━━━━━━━━━━━━━━━━━━\n` +
     `*DIGITAL TAX INVOICE*\n` +
     `View and download your official tax invoice:\n` +
@@ -780,7 +795,7 @@ export default function DigitalInvoiceModal({ booking, isOpen = true, onClose, o
                 marginTop: '1px'
               }}>
                 <span>Total Amount</span>
-                <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+                <span>₹{effectiveTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
